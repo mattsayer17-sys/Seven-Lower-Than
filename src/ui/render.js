@@ -103,6 +103,11 @@ function computeLayout() {
   });
   const pileList = store.ui.hold ? store.ui.hold : g.pile;
   const holdSet = new Set((store.ui.hold || []).map(c => c.id));
+  // invisible cards sitting on top of the pile keep a slow see-through flicker until something covers them
+  let ghostFrom = pileList.length;
+  if (!store.ui.hold) while (ghostFrom > 0 && Shed.effect(g.rules, pileList[ghostFrom - 1]) === 'transparent') ghostFrom--;
+  // a live stinger smoulders round its edge until it's picked up or covered by another stinger
+  const stingId = !store.ui.hold && ghostFrom > 0 && Shed.effect(g.rules, pileList[ghostFrom - 1]) === 'stinger' ? pileList[ghostFrom - 1].id : -1;
   pileList.forEach((c, i) => {
     pos[c.id] = {
       cx: pileX + (c.id * 53 % 9 - 4) * 1.6,
@@ -111,7 +116,9 @@ function computeLayout() {
       s: 1,
       z: 100 + i,
       down: false,
-      nosh: i < pileList.length - 4
+      nosh: i < pileList.length - 4,
+      ghost: i >= ghostFrom,
+      sting: c.id === stingId
     };
   });
   g.burned.forEach((c, i) => {
@@ -225,6 +232,8 @@ function render() {
     el.style.opacity = p.op != null ? p.op : 1;
     el.classList.toggle('down', !!p.down);
     el.classList.toggle('nosh', !!p.nosh);
+    el.classList.toggle('ghosting', !!p.ghost);
+    el.classList.toggle('stinging', !!p.sting);
     const c = findCard(+id);
     let tap = false,
       dim = false;

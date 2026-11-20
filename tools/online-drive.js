@@ -90,8 +90,9 @@ function decide(g) {
     await until(() => window.__ms && window.__ms.game() && !window.__ms.ui().busy, 'game ready');
     await ev(s => window.__ms.setSettings(s), settings);
     await click('#bNew');
-    await until(() => !!document.querySelector('#onlineBtn'), 'setup sheet');
-    await click('#onlineBtn');
+    await until(() => !!document.querySelector('#mode'), 'setup sheet');
+    await click('#mode button[data-m="online"]');
+    await click('#rNew');
     await until(() => !!document.querySelector('#olMake'), 'online sheet');
     await ev(() => { document.querySelector('#olName').value = 'Matt'; });
     await click('#olMake');
@@ -138,8 +139,9 @@ function decide(g) {
         await page.reload();
         await until(() => window.__ms && window.__ms.game() && !window.__ms.ui().busy, 'reloaded');
         await click('#bNew');
-        await until(() => !!document.querySelector('#onlineBtn'), 'setup sheet 2');
-        await click('#onlineBtn');
+        await until(() => !!document.querySelector('#mode'), 'setup sheet 2');
+        await click('#mode button[data-m="online"]');
+        await click('#rNew');
         await until(() => !!document.querySelector('.olRes'), 'your tables list');
         assert.match(await text('#olMine'), new RegExp(code));
         assert.match(await text('#olMine'), /Your turn|Their turn/);

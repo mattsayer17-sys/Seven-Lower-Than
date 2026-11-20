@@ -95,7 +95,9 @@ let steps0 = [];
   assert.match(await text('#aiNote'), /8 is already used by the skip a go rule/);
   ok('and your rule cannot be ticked back on while skip holds the card');
 
-  await pick('#mRank', '8'); await pick('#mEff', 'reverse');
+  assert.equal(await ev(() => { const o = document.querySelector('#mRank option[value="8"]'); return o.disabled && /in use/.test(o.textContent); }), true);
+  ok('the builder greys out a card that is already in use');
+  await ev(() => { document.querySelector('#mRank').value = '8'; document.querySelector('#mEff').value = 'reverse'; });
   await click('#mAdd');
   assert.match(await text('#aiNote'), /8 is already used by the skip a go rule/);
   assert.equal(await ev(() => document.querySelectorAll('#customRows .row').length), 1);
@@ -126,8 +128,31 @@ let steps0 = [];
   assert.equal(await ev(() => JSON.parse(localStorage.getItem('ms.settings')).motion), 'off');
   await pick('#rMotion', 'normal');
   await ev(() => { const id = window.__ms.game().players[0].up[0].id; window.__ms.fx.burn(); window.__ms.fx.stung(1); window.__ms.fx.sting(id); window.__ms.fx.ghost(id); });
-  assert.ok(await ev(() => !!document.querySelector('#fx .stung') && !!document.querySelector('#fx .bucket')));
+  assert.ok(await ev(() => !!document.querySelector('#fx .stung') && !!document.querySelector('#fx .wash')));
   ok('card effects setting: Normal, Fast, Off saved, and all four effects fire');
+
+  // saved rule sets and the colour builder
+  await click('#tabRules');
+  await pick('#rPreset', 'classic');
+  await pick('#mEff', 'colour');
+  assert.equal(await shown('#mColRow'), true);
+  await ev(() => { const r = document.querySelector('#mRank'); r.value = 'Q'; r.dispatchEvent(new Event('change', { bubbles: true })); });
+  await pick('#mCol', 'blackNext');
+  assert.match(await text('#mDesc'), /When a Q is played: next card must be black/);
+  await click('#mAdd');
+  assert.match(await text('#customRows'), /Q\s*next card must be black/);
+  await click('#saveBtn');
+  await ev(() => { document.querySelector('#saveName').value = 'Pub rules'; });
+  await click('#saveGo');
+  assert.equal(await ev(() => document.querySelector('#rPreset').value), 'saved:0');
+  assert.match(await text('#saveLbl'), /Saved as Pub rules/);
+  await pick('#rPreset', 'classic');
+  assert.equal(await ev(() => document.querySelectorAll('#customRows .row').length), 0);
+  await pick('#rPreset', 'saved:0');
+  assert.match(await text('#customRows'), /next card must be black/);
+  await click('#savedDel');
+  assert.equal(await ev(() => JSON.parse(localStorage.getItem('ms.settings')).saved.length), 0);
+  ok('colour rule built from three dropdowns; rules saved by name, reloaded from Preset, deleted');
 
   assert.deepEqual(errors, []);
   console.log(steps.join('\n') + '\npage errors: 0');

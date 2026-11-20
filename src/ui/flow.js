@@ -194,7 +194,7 @@ function flashLabel(ev) {
   if (ev.again) return 'AGAIN';
   const c = ev.cards && ev.cards[ev.cards.length - 1];
   if (c && ev.type !== 'pickup' && Shed.effect(store.game.rules, c) === 'reset') return 'RESET';
-  if (isSting(ev)) return 'STINGER';
+  if (isSting(ev)) return fxOn() ? '' : 'STINGER'; // with effects on, the card itself smoulders instead
   return '';
 }
 

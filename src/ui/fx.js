@@ -1,5 +1,4 @@
 import { $, table } from './dom.js';
-import Shed from '../engine.js';
 import { store } from './state.js';
 import { SFX } from './audio.js';
 import { isSting } from './flow.js';
@@ -32,6 +31,7 @@ const keepStream = n => {
 // CSS reads --fxk so every effect animation runs at the same speed as its timers.
 function applyMotion() {
   document.documentElement.style.setProperty('--fxk', String(fxK()));
+  document.documentElement.dataset.fx = fxMode();
 }
 
 // ---------- effects: motion that explains play ----------
@@ -60,9 +60,7 @@ function addFx(cls, x, y, html, ms, css) {
   return d;
 }
 
-// Burn: a bucket of cold water over the pile. Bucket tips, water lands, splash, a puff of steam. About half a second.
-const BUCKET = '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M7 10h26l-3 25H10z" fill="#8a96a3" stroke="#3d4650" stroke-width="2" stroke-linejoin="round"/><path d="M7 10h26" stroke="#c9d3dc" stroke-width="3"/><path d="M9 11c0-9 22-9 22 0" fill="none" stroke="#3d4650" stroke-width="2"/><path d="M10 13h20" stroke="#5fb3ff" stroke-width="3"/></svg>';
-
+// Burn: a bucket's worth of cold water drops onto the 10, washes over the pile and trickles out across the felt. About a second.
 function burnFx() {
   const L = store.lastL;
   if (!L) return;
@@ -70,38 +68,20 @@ function burnFx() {
     ch = store.ch,
     x = L.pileX,
     y = L.centerCy;
-  addFx('bucket', x + cw * .62, y - ch * .92, '', 520, 'width:' + cw + 'px;height:' + cw + 'px').innerHTML = BUCKET;
-  addFx('stream', x + cw * .12, y - ch * .78, '', 440, 'width:' + cw * .3 + 'px;height:' + ch * .85 + 'px');
-  addFx('wash', x, y, '', 560, 'width:' + cw * 1.35 + 'px;height:' + ch * 1.05 + 'px');
-  for (let i = 0; i < 14; i++) {
-    const a = Math.PI * (1.05 + rnd() * .9),
-      r = cw * (.6 + rnd() * .7);
-    addFx('drop', x + (rnd() * 2 - 1) * cw * .35, y + ch * .3, '', 560, '--dx:' + (Math.cos(a) * r * (rnd() < .5 ? -1 : 1)).toFixed(0) + 'px;--dy:' + (Math.sin(a) * r * .55).toFixed(0) + 'px;animation-delay:' + kms(200 + (rnd() * 60 | 0)) + 'ms');
+  addFx('fall', x, y, '', 420, 'width:' + cw * .9 + 'px;height:' + ch * 1.3 + 'px;--from:' + (-ch * 2.4).toFixed(0) + 'px');
+  addFx('wash', x, y, '', 1150, 'width:' + cw * 1.7 + 'px;height:' + ch * 1.35 + 'px');
+  for (let i = 0; i < 12; i++) {
+    const a = rnd() * Math.PI * 2,
+      r = cw * (.7 + rnd() * .6);
+    addFx('drop', x, y, '', 700, '--dx:' + (Math.cos(a) * r).toFixed(0) + 'px;--dy:' + (Math.sin(a) * r * .7 - ch * .25).toFixed(0) + 'px;animation-delay:' + kms(240 + (rnd() * 60 | 0)) + 'ms');
   }
-  for (let i = 0; i < 6; i++) addFx('steam', x + (rnd() * 2 - 1) * cw * .45, y + (rnd() * .3 - .1) * ch, '', 760, 'width:' + cw * .5 + 'px;height:' + cw * .5 + 'px;--dx:' + ((rnd() * 2 - 1) * cw * .3).toFixed(0) + 'px;animation-delay:' + kms(280 + i * 30) + 'ms');
-}
-
-// Stinger played: the card's outline flares red, then it is a normal card again.
-function stingGlow(ev) {
-  const c = ev.cards[ev.cards.length - 1],
-    el = c && store.els[c.id];
-  if (!el) return;
-  el.classList.remove('stingfx');
-  void el.offsetWidth;
-  el.classList.add('stingfx');
-  setTimeout(() => el.classList.remove('stingfx'), kms(560));
-}
-
-// Invisible card played: it flickers see-through, then settles back.
-function ghostFx(ev) {
-  ev.cards.filter(c => Shed.effect(store.game.rules, c) === 'transparent').forEach(c => {
-    const el = store.els[c.id];
-    if (!el) return;
-    el.classList.remove('ghostfx');
-    void el.offsetWidth;
-    el.classList.add('ghostfx');
-    setTimeout(() => el.classList.remove('ghostfx'), kms(520));
-  });
+  // the felt darkens where it's wet, then runs of water trickle outwards and soak away
+  addFx('wet', x, y, '', 1500, 'width:' + cw * 2.3 + 'px;height:' + ch * 1.8 + 'px;animation-delay:' + kms(260) + 'ms');
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2 + rnd() * .5,
+      d = cw * (.9 + rnd() * .7);
+    addFx('run', x + Math.cos(a) * cw * .45, y + Math.sin(a) * ch * .4, '', 1400, 'width:' + (cw * (.35 + rnd() * .2)).toFixed(0) + 'px;height:' + (7 + rnd() * 4).toFixed(0) + 'px;--a:' + (a * 180 / Math.PI).toFixed(0) + 'deg;--d:' + d.toFixed(0) + 'px;animation-delay:' + kms(360 + (rnd() * 160 | 0)) + 'ms');
+  }
 }
 
 // Stung: STUNG bursts into flame over the pile, where everyone is looking, and the stung player's seat pulses red.
@@ -115,10 +95,11 @@ function stungFx(i) {
     setTimeout(() => s.classList.remove('stungseat'), kms(900));
   }
   if (!L) return;
-  addFx('stung', L.pileX, L.centerCy, 'STUNG', 1050);
+  const sy = L.centerCy - store.ch * .95;
+  addFx('stung', L.pileX, sy, 'STUNG', 1150);
   for (let k = 0; k < 12; k++) {
     const dx = (rnd() * 2 - 1) * store.cw * .5;
-    addFx('ember', L.pileX + (rnd() * 2 - 1) * store.cw * .9, L.centerCy + store.ch * .12, '', 900, '--dx:' + dx.toFixed(0) + 'px;animation-delay:' + kms(rnd() * 200 | 0) + 'ms');
+    addFx('ember', L.pileX + (rnd() * 2 - 1) * store.cw * .9, sy + store.ch * .12, '', 900, '--dx:' + dx.toFixed(0) + 'px;animation-delay:' + kms(rnd() * 200 | 0) + 'ms');
   }
   SFX.stung(i === 0);
 }
@@ -180,13 +161,10 @@ function fxForEvent(ev) {
   if (ev.burned) keepStream(64);
   if (picked >= 10) keepStream(72);
   if (!fxOn()) return;
-  const played = ev.cards && ev.type !== 'pickup' && (ev.type !== 'blind' || ev.success);
   if (ev.burned) burnFx();
-  if (played && !ev.burned) ghostFx(ev);
   if (ev.skipped != null) (ev.skippedAll || [ev.skipped]).forEach(skipFx);
   if (isSting(ev) && !ev.burned) {
     lockFx();
-    stingGlow(ev);
   }
   if (ev.stung) {
     stungFx(ev.pi);
@@ -207,8 +185,8 @@ function fxForEvent(ev) {
 const fxTest = {
   burn: burnFx,
   stung: stungFx,
-  sting: id => stingGlow({ cards: [{ id }] }),
-  ghost: id => { const el = store.els[id]; if (el) { el.classList.add('ghostfx'); setTimeout(() => el.classList.remove('ghostfx'), kms(520)); } }
+  sting: id => { const el = store.els[id]; if (el) el.classList.add('stinging'); },
+  ghost: id => { const el = store.els[id]; if (el) el.classList.add('ghosting'); }
 };
 
 export { applyMotion, fxForEvent, fxOn, fxTest, pickFx };

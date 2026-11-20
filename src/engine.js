@@ -14,6 +14,8 @@
     again: 'You play again',
     pickup: 'Next player must pick up the pile',
     stinger: 'Plays on anything. Only the same rank can be played on it (invisible cards still allowed). Burned, not picked up, if the pile is taken',
+    redNext: 'Next card must be red (hearts or diamonds), any rank. Only an invisible card gets round it',
+    blackNext: 'Next card must be black (spades or clubs), any rank. Only an invisible card gets round it',
   };
   const EFFECTS = Object.keys(EFFECT_INFO);
   const RANK_LIST = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
@@ -117,6 +119,8 @@
     if (!top) return true;
     const ce = effect(rules, card);
     const te = effect(rules, top);
+    // Colour demand: the next card must be that colour, any rank. Only an invisible card plays round it (the demand stays in force underneath).
+    if (te === 'redNext' || te === 'blackNext') return ce === 'transparent' || !!RED[card.suit] === (te === 'redNext');
     // Stinger: only the same rank goes on it. An invisible card is the one exception, and the stinger stays in force underneath it.
     if (te === 'stinger') return card.rank === top.rank || ce === 'transparent';
     // The stinger itself goes on anything (except another stinger, handled above).

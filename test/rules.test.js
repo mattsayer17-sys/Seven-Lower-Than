@@ -244,3 +244,16 @@ test('only the card showing matters: a skip buried under an ordinary card does n
   const r = S.makeRuleset({ transparentOn: true, transparentRank: '4', skipOn: true, skipRank: '8' });
   assert.ok(can(r, '4H', ['8S', '6D']), 'the 6 on top is what counts');
 });
+
+test('colour demand: next card must be that colour, any rank; only an invisible card gets round it', () => {
+  const r = S.makeRuleset({ transparentOn: true, custom: [{ rank: 'Q', effect: 'redNext' }, { rank: 'J', effect: 'blackNext' }] });
+  assert.ok(can(r, '3H', ['QS']), 'a red 3 goes on a red-demand Q');
+  assert.ok(can(r, '7D', ['QC']), 'a red 7 is legal');
+  assert.ok(!can(r, 'AS', ['QH']), 'a black ace is not');
+  assert.ok(!can(r, '10C', ['QH']), 'a black 10 cannot burn it');
+  assert.ok(can(r, '10H', ['QH']), 'a red 10 can');
+  assert.ok(can(r, '4S', ['QH']), 'the invisible 4 gets round it');
+  assert.ok(!can(r, 'KS', ['QH', '4C']), 'the demand stays in force under the invisible card');
+  assert.ok(can(r, '5S', ['JD']) && !can(r, '5H', ['JD']), 'black demand');
+  assert.deepEqual(S.validateCustom([{ rank: 'Q', effect: 'redNext' }]).rejected, []);
+});

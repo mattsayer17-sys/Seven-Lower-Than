@@ -48,9 +48,9 @@ const ACH = [{
   i: '🥇'
 }, {
   id: 'burn',
-  n: 'Burn it down',
-  d: 'Burn the pile',
-  i: '🔥'
+  n: 'Cold water',
+  d: 'Pour cold water on the pile',
+  i: '💧'
 }, {
   id: 'four',
   n: 'Four of a kind',

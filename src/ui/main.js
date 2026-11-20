@@ -1,5 +1,6 @@
 import Shed from '../engine.js';
-import { applyFelt, store } from './state.js';
+import { FAST, applyFelt, store } from './state.js';
+import { showSetup } from './setup.js';
 import { render } from './render.js';
 import { advance, newGame } from './flow.js';
 import { initInput } from './input.js';
@@ -53,6 +54,11 @@ window.__ms = {
 updateStats();
 applyFelt();
 newGame();
+// Every visit starts on the setup sheet with the last choices ticked. First-timers get the welcome instead.
+{
+  const p = prof();
+  if (p && (p.flags.welcomed || p.flags.offer || p.g > 0) && (!FAST || window.__MS_START)) showSetup('game');
+}
 // once the first deal has settled, say hello (once per profile)
 let welcomeTries = 0;
 const welcomeTimer = setInterval(() => { if (maybeWelcome() || ++welcomeTries > 40) clearInterval(welcomeTimer); }, 500);

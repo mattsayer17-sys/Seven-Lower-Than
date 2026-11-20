@@ -15,7 +15,9 @@ import { hideModal, showModal } from './sheets.js';
 import { sndIcon } from './header.js';
 import { applyMotion } from './fx.js';
 
-let aiBusy = false;
+// What a card can do, in plain words. Every choice maps to one engine effect, so a rule can never be something the game can't play.
+const ACTIONS = [['stinger', 'Stinger: only the same card can follow'], ['pickup', 'Next player picks up the pile'], ['skip', 'Next player misses a go'], ['colour', 'Next card must be a colour'], ['lower', 'Next player must play lower'], ['reverse', 'Reverse the direction'], ['again', 'Play again'], ['burn', 'Burn the pile'], ['reset', 'Reset: plays on anything'], ['transparent', 'Invisible: the card underneath counts'], ['none', 'No special power']];
+const MAX_SAVED = 12;
 let lastTab = 'game';
 const TABS = [['game', 'Game'], ['rules', 'Rules'], ['look', 'Look and feel']];
 
@@ -24,9 +26,7 @@ function showSetup(tab) {
   const inGame = store.game && store.game.phase !== 'over';
   const seg = [2, 3, 4, 5].map(n => '<button data-n="' + n + '" class="' + (store.settings.players === n ? 'on' : '') + '">' + n + '</button>').join('');
   const sw = Object.keys(FELTS).map(k => '<button data-f="' + k + '" class="' + (store.settings.felt === k ? 'on' : '') + '" style="background:radial-gradient(circle at 35% 30%,' + FELTS[k][0] + ',' + FELTS[k][2] + ')" aria-label="' + k + '"></button>').join('');
-  const ranks = Shed.RANK_LIST.map(k => '<option>' + k + '</option>').join('');
-  const effs = '<option value="none">plain card</option>' + Shed.EFFECTS.map(k => '<option value="' + k + '">' + k + '</option>').join('');
-  showModal('<h2>New game</h2><p>You against 1 to 4 CPUs. Last one holding cards gets the Wooden Spoon.</p>' + '<div class="tabs" role="tablist" aria-label="Setup sections">' + TABS.map(([k, n]) => '<button type="button" role="tab" class="tab" id="tab' + k[0].toUpperCase() + k.slice(1) + '" data-tab="' + k + '" aria-controls="p' + k[0].toUpperCase() + k.slice(1) + '">' + n + '</button>').join('') + '</div>' + '<div role="tabpanel" id="pGame" aria-labelledby="tabGame">' + topPanel() + '<h3>Players and CPU level</h3><div class="seg" id="seg">' + seg + '</div><div id="lv"></div>' + '</div><div role="tabpanel" id="pLook" aria-labelledby="tabLook"><h3>Card back</h3><div class="sw" id="swb">' + Object.keys(BACKS).map(k => '<button data-b="' + k + '" class="' + (store.settings.back === k ? 'on' : '') + '" style="background:' + BACKS[k][0] + ';border-radius:6px;width:30px;height:42px" aria-label="' + k + '"></button>').join('') + '</div>' + '<h3>Felt</h3><div class="sw" id="sw">' + sw + '</div>' + '<h3>Comfort</h3>' + '<label class="row"><span>Tips<small>Tell me what to do each turn</small></span><input type="checkbox" id="rTips"' + (store.settings.tips ? ' checked' : '') + '></label>' + '<label class="row"><span>One tap to play<small>Off: tap a card, then tap it again (or Play)</small></span><input type="checkbox" id="rInst"' + (store.settings.oneTap ? ' checked' : '') + '></label>' + '<label class="row"><span>Colour-blind suits<small>Diamonds blue, clubs green</small></span><input type="checkbox" id="rCb"' + (store.settings.cb ? ' checked' : '') + '></label>' + '<label class="row"><span>Sound and haptics<small>Card sounds, vibration on phones</small></span><input type="checkbox" id="rSnd"' + (store.settings.sound ? ' checked' : '') + '></label>' + '<label class="row"><span>Haptics<small>Taps and thumps you can feel</small></span><input type="checkbox" id="rHap"' + (store.settings.haptic !== false ? ' checked' : '') + '></label>' + '<label class="row"><span>Fast mode<small>Quicker deals and CPU turns</small></span><input type="checkbox" id="rFast"' + (store.settings.fast ? ' checked' : '') + '></label>' + '<div class="row"><span>Card effects<small>Flames, water and flickers on special cards</small></span><span class="ctl"><select id="rMotion" aria-label="Card effects">' + [['normal', 'Normal'], ['fast', 'Fast'], ['off', 'Off']].map(([v, t]) => '<option value="' + v + '"' + (store.settings.motion === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></span></div>' + '</div><div role="tabpanel" id="pRules" aria-labelledby="tabRules">' + '<h3>House rules</h3>' + '<div class="row"><span>Preset<small id="presetBlurb"></small></span><span class="ctl"><select id="rPreset" aria-label="Rule preset"></select></span></div>' + '<div class="row"><span>Share these rules<small>A code a friend can paste in</small></span><span class="ctl"><button class="btn sm" id="codeCopy">Copy code</button></span></div>' + '<div class="inp"><input id="codeIn" placeholder="Paste a rules code" aria-label="Rules code" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn" id="codeUse">Use</button></div>' + '<div class="note" id="codeNote"></div>' + '<label class="row"><span>7s force lower<small>Next player must play 7 or lower</small></span><input type="checkbox" id="rSev"' + (store.settings.sevensLower ? ' checked' : '') + '></label>' + '<div class="row"><span>Transparent card<small>Plays on anything except a skip card. The card underneath still counts</small></span><span class="ctl"><select id="rTrRank" aria-label="Transparent card"></select><input type="checkbox" id="rTr" aria-label="Transparent card on"' + (store.settings.transparentOn ? ' checked' : '') + '></span></div>' + '<div class="row"><span>Skip a go<small>Next player misses a turn. Two together skip two players. With 2 players you go again</small></span><span class="ctl"><select id="rSkRank" aria-label="Skip card"></select><input type="checkbox" id="rSk" aria-label="Skip a go on"' + (store.settings.skipOn ? ' checked' : '') + '></span></div>' + '<label class="row"><span>Four of a kind burns<small>Four matching cards in a row clear the pile</small></span><input type="checkbox" id="rFour"' + (store.settings.fourBurns ? ' checked' : '') + '></label>' + '<div id="customRows"></div>' + '<h3>Your own special cards</h3>' + '<div id="aiBox" class="hidden"><div class="inp"><input id="aiText" aria-label="Describe your rule" placeholder="e.g. Jacks reverse the direction" maxlength="160"><button class="btn" id="aiGo">Add</button></div>' + '<div class="ex">Try: <button data-ex="5s make the next player miss a turn">5s skip</button> · <button data-ex="Queens force the next player to pick up the pile">Q pickup</button> · <button data-ex="3s are the highest card">3 high</button> · <button data-ex="3s are stingers, only a 3 can be played on them">3 stinger</button></div></div>' + '<div class="note" id="aiNote"></div>' + '<h3>Or pick one yourself</h3><div class="inp"><select id="mRank" aria-label="Card">' + ranks + '</select><select id="mEff" aria-label="What it does">' + effs + '</select><button class="btn" id="mAdd">Add</button></div>' + '</div>' + '<p class="ex hidden" id="ruleNote">Rule changes start with a new game. Press Start to play with them.</p>' + '<div class="btns stick">' + (inGame ? '<button class="btn" id="rClose">Keep playing</button>' : '') + '<button class="btn primary" id="rNew">Start</button></div>');
+  showModal('<h2>New game</h2><p id="modeBlurb"></p>' + '<div class="tabs" role="tablist" aria-label="Setup sections">' + TABS.map(([k, n]) => '<button type="button" role="tab" class="tab" id="tab' + k[0].toUpperCase() + k.slice(1) + '" data-tab="' + k + '" aria-controls="p' + k[0].toUpperCase() + k.slice(1) + '">' + n + '</button>').join('') + '</div>' + '<div role="tabpanel" id="pGame" aria-labelledby="tabGame">' + '<h3>How are you playing?</h3><div class="seg" id="mode" role="radiogroup" aria-label="How are you playing"><button data-m="cpu" role="radio">Against CPU</button><button data-m="online" role="radio">Online with friends</button></div>' + '<h3 id="segHead">Players and CPU level</h3><div class="seg" id="seg">' + seg + '</div><div id="lv"></div>' + '<h3>More</h3>' + topPanel() + '</div><div role="tabpanel" id="pLook" aria-labelledby="tabLook"><h3>Card back</h3><div class="sw" id="swb">' + Object.keys(BACKS).map(k => '<button data-b="' + k + '" class="' + (store.settings.back === k ? 'on' : '') + '" style="background:' + BACKS[k][0] + ';border-radius:6px;width:30px;height:42px" aria-label="' + k + '"></button>').join('') + '</div>' + '<h3>Felt</h3><div class="sw" id="sw">' + sw + '</div>' + '<h3>Comfort</h3>' + '<label class="row"><span>Tips<small>Tell me what to do each turn</small></span><input type="checkbox" id="rTips"' + (store.settings.tips ? ' checked' : '') + '></label>' + '<label class="row"><span>One tap to play<small>Off: tap a card, then tap it again (or Play)</small></span><input type="checkbox" id="rInst"' + (store.settings.oneTap ? ' checked' : '') + '></label>' + '<label class="row"><span>Colour-blind suits<small>Diamonds blue, clubs green</small></span><input type="checkbox" id="rCb"' + (store.settings.cb ? ' checked' : '') + '></label>' + '<label class="row"><span>Sound and haptics<small>Card sounds, vibration on phones</small></span><input type="checkbox" id="rSnd"' + (store.settings.sound ? ' checked' : '') + '></label>' + '<label class="row"><span>Haptics<small>Taps and thumps you can feel</small></span><input type="checkbox" id="rHap"' + (store.settings.haptic !== false ? ' checked' : '') + '></label>' + '<label class="row"><span>Fast mode<small>Quicker deals and CPU turns</small></span><input type="checkbox" id="rFast"' + (store.settings.fast ? ' checked' : '') + '></label>' + '<div class="row"><span>Card effects<small>Flames, water and flickers on special cards</small></span><span class="ctl"><select id="rMotion" aria-label="Card effects">' + [['normal', 'Normal'], ['fast', 'Fast'], ['off', 'Off']].map(([v, t]) => '<option value="' + v + '"' + (store.settings.motion === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></span></div>' + '</div><div role="tabpanel" id="pRules" aria-labelledby="tabRules">' + '<h3>House rules</h3>' + '<div class="row"><span>Preset<small id="presetBlurb"></small></span><span class="ctl"><select id="rPreset" aria-label="Rule preset"></select></span></div>' + '<div class="row"><span>Share these rules<small>A code a friend can paste in</small></span><span class="ctl"><button class="btn sm" id="codeCopy">Copy code</button></span></div>' + '<div class="inp"><input id="codeIn" placeholder="Paste a rules code" aria-label="Rules code" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn" id="codeUse">Use</button></div>' + '<div class="note" id="codeNote"></div>' + '<div class="row"><span><span id="saveLbl">Save these rules</span><small id="saveSub">Keep this mix and pick it from Preset next time</small></span><span class="ctl"><button class="btn sm" id="saveBtn">Save</button><button class="btn sm hidden" id="savedDel">Delete</button></span></div>' + '<div class="inp hidden" id="saveBox"><input id="saveName" maxlength="24" placeholder="Name it, e.g. Friday night" aria-label="Name for these rules" autocomplete="off"><button class="btn" id="saveGo">Save</button></div><div class="note" id="saveNote" role="status"></div>' + '<label class="row"><span>7s force lower<small>Next player must play 7 or lower</small></span><input type="checkbox" id="rSev"' + (store.settings.sevensLower ? ' checked' : '') + '></label>' + '<div class="row"><span>Transparent card<small>Plays on anything except a skip card. The card underneath still counts</small></span><span class="ctl"><select id="rTrRank" aria-label="Transparent card"></select><input type="checkbox" id="rTr" aria-label="Transparent card on"' + (store.settings.transparentOn ? ' checked' : '') + '></span></div>' + '<div class="row"><span>Skip a go<small>Next player misses a turn. Two together skip two players. With 2 players you go again</small></span><span class="ctl"><select id="rSkRank" aria-label="Skip card"></select><input type="checkbox" id="rSk" aria-label="Skip a go on"' + (store.settings.skipOn ? ' checked' : '') + '></span></div>' + '<label class="row"><span>Four of a kind burns<small>Four matching cards in a row clear the pile</small></span><input type="checkbox" id="rFour"' + (store.settings.fourBurns ? ' checked' : '') + '></label>' + '<div id="customRows"></div>' + '<h3>Add a card rule</h3><div class="builder">' + '<label class="bl"><span>When this card is played</span><select id="mRank"></select></label>' + '<label class="bl"><span>It does this</span><select id="mEff">' + ACTIONS.map(([v, t]) => '<option value="' + v + '">' + t + '</option>').join('') + '</select></label>' + '<label class="bl hidden" id="mColRow"><span>Which colour</span><select id="mCol"><option value="redNext">Red (hearts or diamonds)</option><option value="blackNext">Black (spades or clubs)</option></select></label>' + '<p class="bdesc" id="mDesc"></p><button class="btn primary wide" id="mAdd">Add rule</button><div class="note" id="aiNote" role="status"></div></div>' + '</div>' + '<p class="ex hidden" id="ruleNote">Rule changes start with a new game. Press Start to play with them.</p>' + '<div class="btns stick">' + (inGame ? '<button class="btn" id="rClose">Keep playing</button>' : '') + '<button class="btn primary" id="rNew">Start</button></div>');
   const showTab = (k, focus) => {
     lastTab = k;
     TABS.forEach(([t]) => {
@@ -112,6 +112,7 @@ function showSetup(tab) {
     }
     refreshNote();
     syncPreset();
+    if ($('#mRank')) drawBuilder();
   };
   function refreshNote() {
     if (!inGame || !store.game || !store.game.meta || store.game.meta.daily || store.game.meta.tour) return;
@@ -146,8 +147,8 @@ function showSetup(tab) {
   fillRank($('#rTrRank'), store.settings.transparentRank, {});
   fillRank($('#rSkRank'), store.settings.skipRank, {});
   refreshPickers();
-  $('#rTrRank').onchange = refreshPickers;
-  $('#rSkRank').onchange = refreshPickers;
+  $('#rTrRank').onchange = () => { refreshPickers(); drawBuilder(); };
+  $('#rSkRank').onchange = () => { refreshPickers(); drawBuilder(); };
   // ticking a house rule whose card is already taken by one of your own rules is refused
   [['#rSev', 'sevensLower'], ['#rTr', 'transparentOn'], ['#rSk', 'skipOn']].forEach(([id, key]) => {
     $(id).onchange = () => {
@@ -184,15 +185,68 @@ function showSetup(tab) {
     });
     refreshPickers();
     syncPreset();
+    if ($('#mRank')) drawBuilder();
   };
   // presets and share codes. Everything goes through Presets, so a code can never give rules the table would refuse.
   const currentOpts = () => Presets.normalise({ sevensLower: $('#rSev').checked, transparentOn: $('#rTr').checked, transparentRank: $('#rTrRank').value, skipOn: $('#rSk').checked, skipRank: $('#rSkRank').value, fourBurns: $('#rFour').checked, custom: store.settings.custom });
+  // saved rule sets live in settings, so they come back next time
+  const savedList = () => (store.settings.saved = Array.isArray(store.settings.saved) ? store.settings.saved : []);
+  const same = (a, b) => JSON.stringify(Presets.normalise(a)) === JSON.stringify(Presets.normalise(b));
   function syncPreset() {
     const sel = $('#rPreset');
     if (!sel) return;
-    const hit = Presets.find(currentOpts());
-    sel.value = hit ? hit.id : 'mix';
-    $('#presetBlurb').textContent = hit ? hit.blurb : 'Your own mix of rules';
+    const cur = currentOpts();
+    const hit = Presets.find(cur);
+    const si = hit ? -1 : savedList().findIndex(x => same(x.opts, cur));
+    sel.value = hit ? hit.id : si >= 0 ? 'saved:' + si : 'mix';
+    $('#presetBlurb').textContent = hit ? hit.blurb : si >= 0 ? 'Your saved rules' : 'Your own mix of rules';
+    $('#savedDel').classList.toggle('hidden', si < 0);
+    $('#saveLbl').textContent = si >= 0 ? 'Saved as ' + savedList()[si].name : 'Save these rules';
+    $('#saveSub').textContent = si >= 0 ? 'Change any rule to save a new set' : hit ? 'This is a built-in preset' : 'Keep this mix and pick it from Preset next time';
+    $('#saveBtn').classList.toggle('hidden', !!hit || si >= 0);
+  }
+  function fillPresets() {
+    const sel = $('#rPreset');
+    const sv = savedList();
+    sel.innerHTML = Presets.PRESETS.map(p => '<option value="' + p.id + '">' + esc(p.name) + '</option>').join('') + (sv.length ? '<optgroup label="Your saved rules">' + sv.map((x, i) => '<option value="saved:' + i + '">' + esc(x.name) + '</option>').join('') + '</optgroup>' : '') + '<option value="mix" disabled>Your own mix</option>';
+    syncPreset();
+  }
+  function wireSaved() {
+    const box = $('#saveBox'),
+      sn = $('#saveNote');
+    $('#saveBtn').onclick = () => {
+      box.classList.toggle('hidden');
+      if (!box.classList.contains('hidden')) $('#saveName').focus();
+    };
+    const go = () => {
+      const name = $('#saveName').value.trim().slice(0, 24);
+      sn.className = 'note';
+      if (!name) { sn.className = 'note err'; sn.textContent = 'Give it a name first.'; return; }
+      const sv = savedList();
+      const at = sv.findIndex(x => x.name.toLowerCase() === name.toLowerCase());
+      if (at < 0 && sv.length >= MAX_SAVED) { sn.className = 'note err'; sn.textContent = 'You can keep ' + MAX_SAVED + ' sets. Delete one first.'; return; }
+      const entry = { name, opts: currentOpts() };
+      if (at >= 0) sv[at] = entry; else sv.push(entry);
+      save();
+      $('#saveName').value = '';
+      box.classList.add('hidden');
+      fillPresets();
+      sn.textContent = 'Saved as ' + name + '.';
+    };
+    $('#saveGo').onclick = go;
+    $('#saveName').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+    $('#savedDel').onclick = () => {
+      const v = $('#rPreset').value;
+      if (!v.startsWith('saved:')) return;
+      const sv = savedList(),
+        i = +v.slice(6),
+        nm = sv[i] && sv[i].name;
+      sv.splice(i, 1);
+      save();
+      fillPresets();
+      sn.className = 'note';
+      sn.textContent = nm ? 'Deleted ' + nm + '. The rules stay ticked until you change them.' : '';
+    };
   }
   function setOpts(o) {
     $('#rSev').checked = o.sevensLower;
@@ -207,11 +261,12 @@ function showSetup(tab) {
   }
   function wirePresets() {
     const sel = $('#rPreset');
-    sel.innerHTML = Presets.PRESETS.map(p => '<option value="' + p.id + '">' + esc(p.name) + '</option>').join('') + '<option value="mix" disabled>Your own mix</option>';
-    syncPreset();
+    fillPresets();
+    wireSaved();
     sel.onchange = () => {
       const p = Presets.PRESETS.find(x => x.id === sel.value);
-      if (p) { setOpts(Presets.normalise(p.opts)); note(''); }
+      const sv = sel.value.startsWith('saved:') ? savedList()[+sel.value.slice(6)] : null;
+      if (p) { setOpts(Presets.normalise(p.opts)); note(''); } else if (sv) { setOpts(Presets.normalise(sv.opts)); note(''); }
     };
     $('#codeCopy').onclick = () => { const hit = Presets.find(currentOpts()); copyText(Presets.encode(currentOpts(), hit ? hit.name : ''), $('#codeCopy')); };
     const use = () => {
@@ -244,76 +299,64 @@ function showSetup(tab) {
   };
   drawChips();
   wirePresets();
+  // the rule builder: card, then what it does, then (for colour) which colour. Taken cards are greyed out.
+  function effOf() {
+    return $('#mEff').value === 'colour' ? $('#mCol').value : $('#mEff').value;
+  }
+  function drawBuilder() {
+    const sel = $('#mRank');
+    if (!sel) return;
+    const held = Meta.heldRanks(liveOpts());
+    const cur = sel.value;
+    sel.innerHTML = Meta.PICKABLE.map(k => '<option value="' + k + '"' + (held[k] ? ' disabled' : '') + '>' + k + (held[k] ? ' (in use)' : '') + '</option>').join('');
+    const free = Meta.PICKABLE.filter(k => !held[k]);
+    sel.value = cur && !held[cur] ? cur : free[0] || Meta.PICKABLE[0];
+    describeBuilder();
+  }
+  function describeBuilder() {
+    $('#mColRow').classList.toggle('hidden', $('#mEff').value !== 'colour');
+    const e = effOf(),
+      k = $('#mRank').value;
+    $('#mDesc').textContent = 'When a ' + k + ' is played: ' + (e === 'none' ? 'it is a plain card with no power.' : Shed.EFFECT_INFO[e].replace(/^./, c => c.toLowerCase()).replace(/the same rank/, 'another ' + k) + '.');
+  }
+  $('#mRank').onchange = describeBuilder;
+  $('#mEff').onchange = describeBuilder;
+  $('#mCol').onchange = describeBuilder;
   $('#mAdd').onclick = () => {
-    const eff = $('#mEff').value;
     const res = addRules([{
       rank: $('#mRank').value,
-      effect: eff
+      effect: effOf()
     }]);
     const n = $('#aiNote');
     n.className = 'note' + (res.blocked.length ? ' err' : '');
     n.textContent = res.blocked.length ? res.blocked.join('. ') + '. Untick or remove it first.' : '';
+    drawBuilder();
   };
-  // AI rule maker, only when the page may ask Claude
   const note = (t, err) => {
     const n = $('#aiNote');
     n.className = 'note' + (err ? ' err' : '');
     n.textContent = t || '';
   };
-  (async () => {
-    let sample = null;
-    try {
-      sample = window.claude && claude.use ? await claude.use('sample') : null;
-    } catch (e) {
-      sample = null;
-    }
-    if (!sample || !$('#aiBox')) return;
-    $('#aiBox').classList.remove('hidden');
-    document.querySelectorAll('.ex button').forEach(b => b.onclick = () => {
-      $('#aiText').value = b.dataset.ex;
+  drawBuilder();
+  // how you're playing: against the CPU, or online with friends
+  const drawMode = () => {
+    const on = store.settings.mode === 'online';
+    document.querySelectorAll('#mode button').forEach(b => {
+      const me = b.dataset.m === (on ? 'online' : 'cpu');
+      b.classList.toggle('on', me);
+      b.setAttribute('aria-checked', String(me));
     });
-    const go = async () => {
-      const text = $('#aiText').value.trim();
-      if (!text || aiBusy) return;
-      aiBusy = true;
-      $('#aiGo').textContent = '…';
-      note('Working out the rule…');
-      const prompt = 'You turn a plain-English house rule for a Shithead / Palace card game into JSON for a rules engine.\n' + 'Ranks: 2,3,4,5,6,7,8,9,10,J,Q,K,A. Normal order low to high: 2 is 2 ... 10 is 10, J 11, Q 12, K 13, A 14.\n' + 'Allowed effects (a rank has at most one):\n' + Shed.EFFECTS.map(k => '- ' + k + ': ' + Shed.EFFECT_INFO[k]).join('\n') + '\n- none: an ordinary card\n' + 'Optional "power" (number 1 to 20) changes how high the rank counts when comparing cards.\n' + 'Current special cards: ' + (Shed.RANK_LIST.map(k => ({
-        k,
-        e: Shed.makeRuleset(store.settings).ranks[k].effect
-      })).filter(x => x.e).map(x => x.k + '=' + x.e).join(', ') || 'none') + '.\n' + 'Rule request: "' + text.replace(/"/g, "'") + '"\n' + 'Reply with JSON only, no prose: {"rules":[{"rank":"J","effect":"reverse","power":null}],"cant":""}. ' + 'Use "cant" for a short note about any part that the allowed effects cannot express. If nothing can be expressed, return an empty rules list and explain in "cant".';
-      try {
-        const res = await sample(prompt, {
-          modelTier: 'quick',
-          cache: false
-        });
-        const raw = String(res && res.text || '');
-        const a = raw.indexOf('{'),
-          b = raw.lastIndexOf('}');
-        const obj = JSON.parse(raw.slice(a, b + 1));
-        const v = addRules(Array.isArray(obj.rules) ? obj.rules.map(r => ({
-          rank: r.rank,
-          effect: r.effect == null ? undefined : r.effect,
-          power: r.power == null ? undefined : r.power
-        })) : []);
-        const parts = [];
-        if (obj.rules && obj.rules.length && v.rules.length) parts.push('Added. Check the card below before you start.');
-        if (v.blocked.length) parts.push(v.blocked.join('. ') + '. Untick or remove it first.');
-        if (obj.cant) parts.push(String(obj.cant));
-        if (!obj.rules || !obj.rules.length || !v.rules.length) parts.unshift(v.blocked.length ? "Couldn't add that." : "Couldn't turn that into a card rule.");
-        note(parts.join(' '), !(obj.rules && obj.rules.length && v.rules.length));
-        $('#aiText').value = '';
-      } catch (err) {
-        note(err && err.code === 'rate_limited' ? 'Too many requests, try again in a minute.' : err && err.code === 'not_granted' ? 'Permission was declined, use the picker below.' : "That didn't work. Try rewording it or use the picker below.", true);
-      }
-      aiBusy = false;
-      if ($('#aiGo')) $('#aiGo').textContent = 'Add';
-    };
-    $('#aiGo').onclick = go;
-    $('#aiText').addEventListener('keydown', e => {
-      if (e.key === 'Enter') go();
-    });
-  })();
+    $('#lv').classList.toggle('hidden', on);
+    $('#segHead').textContent = on ? 'Players at the table' : 'Players and CPU level';
+    $('#modeBlurb').textContent = on ? 'Make a table with these rules and share the code, or join a friend\'s. Last one holding cards gets the Wooden Spoon.' : 'You against 1 to 4 CPUs. Last one holding cards gets the Wooden Spoon.';
+    $('#rNew').textContent = on ? 'Next: online table' : 'Start';
+  };
+  document.querySelectorAll('#mode button').forEach(b => b.onclick = () => {
+    store.settings.mode = b.dataset.m;
+    save();
+    drawMode();
+  });
+  drawMode();
   const dp = $('#dPlay');
   if (dp) dp.onclick = () => {
     hideModal();
@@ -326,7 +369,6 @@ function showSetup(tab) {
   $('#tourBtn').onclick = startDemo;
   $('#primerBtn').onclick = showPrimer;
   $('#voteBtn').onclick = showTable;
-  $('#onlineBtn').onclick = showOnline;
   if (inGame) $('#rClose').onclick = () => {
     apply();
     hideModal();
@@ -334,6 +376,7 @@ function showSetup(tab) {
   };
   $('#rNew').onclick = () => {
     apply();
+    if (store.settings.mode === 'online') return showOnline();
     newGame();
   };
   $('#modal').onchange = () => {

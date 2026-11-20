@@ -74,7 +74,7 @@ function topPanel() {
     d = p.daily[k],
     st = dailyStreak(p);
   const daily = d ? '<div class="row"><span>Daily deal<small>' + dailyLine(d) + (st > 1 ? ' · ' + st + ' day streak' : '') + '</small></span><span class="ctl"><button class="btn sm" id="dShare">Copy result</button></span></div>' : '<div class="row"><span>Daily deal<small>Same cards for everyone today' + (st ? ' · ' + st + ' day streak' : '') + '</small></span><span class="ctl"><button class="btn sm primary" id="dPlay">Play</button></span></div>';
-  return daily + '<div class="row"><span>How to play<small>Watch a short walkthrough or read it</small></span><span class="ctl"><button class="btn sm" id="tourBtn">Watch</button><button class="btn sm" id="primerBtn">Read</button></span></div>' + '<div class="row"><span>Play online<small>Make a table, share the code, play friends</small></span><span class="ctl"><button class="btn sm primary" id="onlineBtn">Play</button></span></div>' + '<div class="row"><span>Table rules vote<small>Preview: propose house rules and vote with pretend friends</small></span><span class="ctl"><button class="btn sm" id="voteBtn">Try</button></span></div>';
+  return daily + '<div class="row"><span>How to play<small>Watch a short walkthrough or read it</small></span><span class="ctl"><button class="btn sm" id="tourBtn">Watch</button><button class="btn sm" id="primerBtn">Read</button></span></div>' + '<div class="row"><span>Table rules vote<small>Preview: propose house rules and vote with pretend friends</small></span><span class="ctl"><button class="btn sm" id="voteBtn">Try</button></span></div>';
 }
 
 // ---------- effects: motion that explains play ----------

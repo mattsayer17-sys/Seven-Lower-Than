@@ -56,6 +56,16 @@ function initDialogs() {
   const after = () => setTimeout(syncPressed, 0);
   m.addEventListener('click', after);
   m.addEventListener('change', after);
+  // Tab and Shift+Tab wrap round inside an open sheet, so focus never drops out to the page behind
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Tab' || !seen() || walking()) return;
+    const f = [...m.querySelectorAll('button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && x.offsetParent !== null && x.tabIndex >= 0);
+    if (!f.length) return;
+    const first = f[0],
+      last = f[f.length - 1],
+      a = document.activeElement;
+    if (e.shiftKey && (a === first || !m.contains(a))) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && (a === last || !m.contains(a))) { e.preventDefault(); first.focus(); }
+  });
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape' || !seen() || walking()) return;
     const b = ['#tblLeave', '#rClose', '#lClose', '#lgClose', '#pClose', '#olClose'].map(s => m.querySelector(s)).find(Boolean);
