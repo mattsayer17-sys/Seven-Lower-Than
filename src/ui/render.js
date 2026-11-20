@@ -267,6 +267,12 @@ function render() {
   const lm = $('#lblMe');
   lm.style.left = '12px';
   lm.style.top = L.meHandCy - store.ch * .5 - 18 + 'px';
+  // the chat / react button sits level with your name plate, on the right, clear of your hand
+  const cb = $('#chatBtn');
+  if (cb) {
+    cb.style.top = L.meHandCy - store.ch * .5 - 30 + 'px';
+    cb.style.bottom = 'auto';
+  }
   lm.classList.toggle('active', g.phase === 'play' && g.turn === 0);
   lm.classList.toggle('out', me.out);
   g.players.slice(1).forEach((p, k) => {
