@@ -240,7 +240,7 @@
     for (let i = 0; i < n; i++) { t = (t + g.dir + n) % n; if (!g.players[t].out) { g.turn = t; return; } }
   }
 
-  // Safety net for wild custom rules: if a game drags on, whoever holds the most cards is the Mouse.
+  // Safety net for wild custom rules: if a game drags on, whoever holds the most cards gets the Wooden Spoon.
   function checkStalemate(g) {
     if (g.phase !== 'play' || g.turns < g.rules.maxTurns) return;
     const left = g.players.filter(q => !q.out);

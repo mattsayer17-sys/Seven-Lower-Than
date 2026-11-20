@@ -13,6 +13,20 @@ const run = (file, seed) => {
   if (r.status !== 0) throw new Error('driver failed on ' + file + ' seed ' + seed + '\n' + r.stderr.slice(0, 600));
   return JSON.parse(r.stdout);
 };
+// Deliberate wording changes since the reference build. Applied to the baseline only, so behaviour still has to match exactly.
+const REWORD = [
+  ["You're the Mouse", 'Wooden Spoon for you'],
+  ['Back to the shed.', 'Shuffle up and get revenge.'],
+  [/ is the Mouse this round\./g, ' gets the Wooden Spoon this round.'],
+  [/ is the Mouse\./g, ' gets the Wooden Spoon.'],
+  ['is the Mouse.', 'gets the Wooden Spoon.'],
+  [/· Mouse (\d+)/g, '· 🥄 $1'],
+  [/1ST (\d+) MOUSE/g, '1ST $1 SPOONS'],
+  ['🧀 Escape artist Avoid being the Mouse 5 games running', '😅 Escape artist Dodge the Wooden Spoon 5 games running'],
+  [/Profile 🐭 /g, 'Profile 🦊 '],
+  ['The Mouse Shed', 'Seven Lower Than'],
+];
+const reword = t => REWORD.reduce((s, [a, b]) => typeof a === 'string' ? s.split(a).join(b) : s.replace(a, b), String(t));
 let bad = 0;
 for (const seed of seeds) {
   const a = run(baseline, seed), b = run('dist/index.html', seed);
@@ -20,7 +34,7 @@ for (const seed of seeds) {
   for (let i = 0; i < Math.max(a.transcript.length, b.transcript.length); i++) {
     // innerText spacing depends on whether a panel is on screen, so compare with spaces removed
     const squash = t => String(t).replace(/\s+/g, '');
-    if (squash(a.transcript[i]) !== squash(b.transcript[i])) { if (++diff <= 3) console.log('  differs at ' + i + '\n    baseline: ' + a.transcript[i] + '\n    current : ' + b.transcript[i]); }
+    if (squash(reword(a.transcript[i])) !== squash(b.transcript[i])) { if (++diff <= 3) console.log('  differs at ' + i + '\n    baseline: ' + a.transcript[i] + '\n    current : ' + b.transcript[i]); }
   }
   const ok = diff === 0 && b.errors.length === 0;
   if (!ok) bad++;

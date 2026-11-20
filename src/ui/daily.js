@@ -26,11 +26,11 @@ function dailyStreak(p) {
   return n;
 }
 
-const dailyLine = d => (d.res === 'win' ? 'Out first' : d.res === 'mouse' ? 'Mouse' : 'Safe') + ' in ' + d.turns + ' turns';
+const dailyLine = d => (d.res === 'win' ? 'Out first' : d.res === 'mouse' ? 'Wooden Spoon' : 'Safe') + ' in ' + d.turns + ' turns';
 
 function shareText(day, d) {
   if (!d) return '';
-  return 'Seven Lower Than daily ' + day + '\n' + (d.res === 'win' ? '🏆 Out first' : d.res === 'mouse' ? '🐭 I was the Mouse' : '🧀 Safe, not the Mouse') + ' in ' + d.turns + ' turns\n' + (d.res === 'mouse' ? 'Left holding ' + d.left + ' cards' : 'CPU left holding ' + d.left + ' cards') + '\nSame deal for everyone.';
+  return 'Seven Lower Than daily ' + day + '\n' + (d.res === 'win' ? '🏆 Out first' : d.res === 'mouse' ? '🥄 I got the Wooden Spoon' : '😅 Safe, dodged the Spoon') + ' in ' + d.turns + ' turns\n' + (d.res === 'mouse' ? 'Left holding ' + d.left + ' cards' : 'CPU left holding ' + d.left + ' cards') + '\nSame deal for everyone.';
 }
 
 function copyText(t, btn) {
