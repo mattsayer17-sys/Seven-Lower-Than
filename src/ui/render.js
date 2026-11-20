@@ -107,7 +107,16 @@ function computeLayout() {
   let ghostFrom = pileList.length;
   if (!store.ui.hold) while (ghostFrom > 0 && Shed.effect(g.rules, pileList[ghostFrom - 1]) === 'transparent') ghostFrom--;
   // a live stinger smoulders round its edge until it's picked up or covered by another stinger
-  const stingId = !store.ui.hold && ghostFrom > 0 && Shed.effect(g.rules, pileList[ghostFrom - 1]) === 'stinger' ? pileList[ghostFrom - 1].id : -1;
+  // Every stinger and invisible card stacked on a live stinger catches fire too, and they all burn until someone is stung.
+  const fire = new Set();
+  if (!store.ui.hold) {
+    let k = pileList.length, low = -1;
+    while (k > 0 && ['stinger', 'transparent'].includes(Shed.effect(g.rules, pileList[k - 1]))) {
+      k--;
+      if (Shed.effect(g.rules, pileList[k]) === 'stinger') low = k;
+    }
+    if (low >= 0) for (let i = low; i < pileList.length; i++) fire.add(pileList[i].id);
+  }
   pileList.forEach((c, i) => {
     pos[c.id] = {
       cx: pileX + (c.id * 53 % 9 - 4) * 1.6,
@@ -118,7 +127,7 @@ function computeLayout() {
       down: false,
       nosh: i < pileList.length - 4,
       ghost: i >= ghostFrom,
-      sting: c.id === stingId
+      sting: fire.has(c.id)
     };
   });
   g.burned.forEach((c, i) => {

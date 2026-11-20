@@ -134,10 +134,8 @@ let steps0 = [];
   // saved rule sets and the colour builder
   await click('#tabRules');
   await pick('#rPreset', 'classic');
-  await pick('#mEff', 'colour');
-  assert.equal(await shown('#mColRow'), true);
+  await pick('#mEff', 'blackNext');
   await ev(() => { const r = document.querySelector('#mRank'); r.value = 'Q'; r.dispatchEvent(new Event('change', { bubbles: true })); });
-  await pick('#mCol', 'blackNext');
   assert.match(await text('#mDesc'), /When a Q is played: next card must be black/);
   await click('#mAdd');
   assert.match(await text('#customRows'), /Q\s*next card must be black/);
@@ -152,7 +150,7 @@ let steps0 = [];
   assert.match(await text('#customRows'), /next card must be black/);
   await click('#savedDel');
   assert.equal(await ev(() => JSON.parse(localStorage.getItem('ms.settings')).saved.length), 0);
-  ok('colour rule built from three dropdowns; rules saved by name, reloaded from Preset, deleted');
+  ok('colour rule picked as an action; rules saved by name, reloaded from Preset, deleted');
 
   assert.deepEqual(errors, []);
   console.log(steps.join('\n') + '\npage errors: 0');

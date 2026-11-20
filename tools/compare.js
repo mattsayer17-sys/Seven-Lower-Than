@@ -26,7 +26,7 @@ const REWORD = [
   [/Profile 🐭 /g, 'Profile 🦊 '],
   ['The Mouse Shed', 'Seven Lower Than'],
   ['🔥 Burn it down Burn the pile 🃏', '💧 Cold water Pour cold water on the pile 🃏'],
-  // Setup sheet headings: + How are you playing, + More, + Add a card rule, - Your own special cards, - Or pick one yourself
+  // Setup sheet headings: + Play against, + More, + Add a card rule, - Your own special cards, - Or pick one yourself
   [/^setup 7$/, 'setup 8'],
 ];
 const reword = t => REWORD.reduce((s, [a, b]) => typeof a === 'string' ? s.split(a).join(b) : s.replace(a, b), String(t));
