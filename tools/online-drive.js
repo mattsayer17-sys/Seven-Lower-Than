@@ -100,6 +100,13 @@ function decide(g) {
     const code = (await text('.sheet h2')).replace('Table ', '').trim();
     assert.equal(await ev(() => document.querySelector('#olStart').disabled), true);
     ok(label + ': table ' + code + ' made, Start locked while alone');
+    const inv = await ev(() => ({ wa: document.querySelector('#olWa').getAttribute('href'), copy: !!document.querySelector('#olCopy') }));
+    assert.match(decodeURIComponent(inv.wa), new RegExp('\\?join=' + code));
+    assert.ok(inv.copy);
+    await click('#olQr');
+    assert.equal(await ev(() => !!document.querySelector('#olQrBox svg')), true);
+    await click('#olQr');
+    ok(label + ': invite by WhatsApp link, copy link and QR code all carry ?join=' + code);
     await wait(1800); await page.screenshot({ path: '/tmp/online-lobby-' + nBots + '.png' });
     const bots = await makeBots(nBots);
     for (const b of bots) await b.c.join(code);

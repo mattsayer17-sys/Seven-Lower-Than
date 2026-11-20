@@ -4,7 +4,7 @@ import { later, store, who } from './state.js';
 import { SFX, buzz } from './audio.js';
 import { findCard } from './cards.js';
 import { hint, humanLegal, render, setMsg } from './render.js';
-import { advance, afterAction } from './flow.js';
+import { advance, afterAction, hurry } from './flow.js';
 
 // ---------- input: tap and drag ----------
 function humanTap(id) {
@@ -244,6 +244,11 @@ $('#bSkip').onclick = () => {
   later(advance, 100);
 };
 
+// waiting on the CPUs? a tap anywhere on the table hurries the next one along
+$('#table').addEventListener('pointerdown', () => {
+  const g = store.game;
+  if (g && g.phase === 'play' && store.ui.busy && !store.remote && !store.tour) hurry();
+});
 // ---------- profiles, records, achievements ----------
 }
 

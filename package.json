@@ -18,5 +18,8 @@
     "eslint": "^9.39.5",
     "globals": "^17.14.0",
     "puppeteer-core": "^25.18.1"
+  },
+  "dependencies": {
+    "qrcode-generator": "^1.4.4"
   }
 }

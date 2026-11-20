@@ -9,13 +9,17 @@ import { trackEvent } from './profile.js';
 import { hashSeed } from './daily.js';
 import { fxForEvent, fxOn } from './fx.js';
 import { rigTour } from './tour.js';
-import { chatReset } from './chat.js';
+import { chatReset, chatSync, reactTo } from './chat.js';
 import { hideModal, showOver } from './sheets.js';
 
 // ---------- new game: blank felt, then the deck, then the deal ----------
 function newGame(o) {
   o = o && o.type ? {} : o || {};
   store.gen++;
+  if (pend) {
+    clearTimeout(pend.t);
+    pend = null;
+  }
   store.tour = null;
   $('#offer').classList.add('hidden');
   chatReset();
@@ -59,6 +63,7 @@ function newGame(o) {
     keys: lv.map(k => 'cpu-' + k),
     online: !!o.remote
   };
+  chatSync();
   if (!o.remote) applySkill();
   if (o.daily || o.tour) store.game.players.slice(1).forEach(p => {
     p.rp = SKILL.normal;
@@ -225,6 +230,7 @@ function afterAction(r) {
   if ((ev.again || ev.reversed) && !ev.burned) setTimeout(SFX.again, 150);
   fxForEvent(ev);
   trackEvent(ev);
+  reactTo(ev);
   let delay = 600;
   const fl = flashLabel(ev);
   if (fl) {
@@ -259,7 +265,32 @@ function afterAction(r) {
       render();
     }, 700);
   } else render();
+  // a CPU's move: shorter pause at busy tables, and a tap on the table can hurry it along
+  if (!mine && !store.remote) {
+    if (g.players.length > 2) delay = Math.round(delay * .7);
+    return schedule(advance, delay);
+  }
   later(advance, delay);
+}
+
+// The next CPU step waits here so a tap on the table can run it straight away.
+let pend = null;
+function schedule(fn, ms) {
+  if (pend) clearTimeout(pend.t);
+  const p = { fn };
+  p.t = later(() => {
+    if (pend === p) pend = null;
+    fn();
+  }, ms);
+  pend = p;
+}
+function hurry() {
+  if (!pend || store.tour || store.remote) return false;
+  const p = pend;
+  pend = null;
+  clearTimeout(p.t);
+  p.fn();
+  return true;
 }
 
 function advance() {
@@ -301,7 +332,9 @@ function advance() {
   if (!g.players[g.turn].human) {
     store.ui.busy = true;
     render();
-    later(cpuStep, (g.players[0].out ? 350 : 750) + Math.random() * 350);
+    // three or more players means more CPUs to wait for, so each one thinks a little quicker
+    const busy = g.players.length > 2;
+    schedule(cpuStep, (g.players[0].out ? 350 : busy ? 450 : 750) + Math.random() * (busy ? 250 : 350));
   } else {
     store.ui.busy = false;
     render();
@@ -332,4 +365,4 @@ function cpuStep() {
 
 // ---------- input: tap and drag ----------
 
-export { advance, afterAction, cpuStep, isSting, newGame };
+export { advance, afterAction, cpuStep, hurry, isSting, newGame };

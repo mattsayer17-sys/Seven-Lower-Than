@@ -29,6 +29,15 @@ const REWORD = [
   // Setup sheet headings: + Play against, + More, + Add a card rule, - Your own special cards, - Or pick one yourself
   [/^setup 7$/, 'setup 8'],
 ];
+// Achievements added 20 Nov 2026. The current build lists and unlocks these on top of the original 13, so drop them from
+// the current transcript and don't compare the unlocked count; which of the original 13 unlock is still compared via "ach=".
+const NEW_ACH = ['clean', 'nosting', 'gotyou', 'lastcard', 'flawless', 'shutout', 'burn3', 'comeback', 'streak3', 'quick', 'full', 'win50', 'games25', 'daily7', 'banter', 'rules', 'host', 'collector'];
+// the new ones are listed after the original 13, between the daily streak badge and the Add profile box
+const NEW_ACH_TEXT = /(3 days in a row).*?(?= Add profile)/u;
+const unNew = t => String(t)
+  .replace(/ach=([\w,]*)/, (m, l) => 'ach=' + l.split(',').filter(x => x && !NEW_ACH.includes(x)).join(','))
+  .replace(NEW_ACH_TEXT, '$1')
+  .replace(/ACHIEVEMENTS \d+\/\d+/, 'ACHIEVEMENTS #');
 const reword = t => REWORD.reduce((s, [a, b]) => typeof a === 'string' ? s.split(a).join(b) : s.replace(a, b), String(t));
 let bad = 0;
 for (const seed of seeds) {
@@ -37,7 +46,7 @@ for (const seed of seeds) {
   for (let i = 0; i < Math.max(a.transcript.length, b.transcript.length); i++) {
     // innerText spacing depends on whether a panel is on screen, so compare with spaces removed
     const squash = t => String(t).replace(/\s+/g, '');
-    if (squash(reword(a.transcript[i])) !== squash(b.transcript[i])) { if (++diff <= 3) console.log('  differs at ' + i + '\n    baseline: ' + a.transcript[i] + '\n    current : ' + b.transcript[i]); }
+    if (squash(unNew(reword(a.transcript[i]))) !== squash(unNew(b.transcript[i]))) { if (++diff <= 3) console.log('  differs at ' + i + '\n    baseline: ' + a.transcript[i] + '\n    current : ' + b.transcript[i]); }
   }
   const ok = diff === 0 && b.errors.length === 0;
   if (!ok) bad++;

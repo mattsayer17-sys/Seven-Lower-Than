@@ -96,7 +96,103 @@ const ACH = [{
   n: 'Three days running',
   d: 'Finish the daily deal 3 days in a row',
   i: '📆'
+}, {
+  id: 'clean',
+  n: 'Untouchable',
+  d: 'Finish a game without picking up once',
+  i: '🧤'
+}, {
+  id: 'nosting',
+  n: 'Stingproof',
+  d: 'Finish a game with stingers in it without getting stung',
+  i: '🛡️'
+}, {
+  id: 'gotyou',
+  n: 'Got you',
+  d: 'Sting another player with your stinger',
+  i: '🦂'
+}, {
+  id: 'lastcard',
+  n: 'Down to the wire',
+  d: 'Win with your very last face-down card',
+  i: '🎯'
+}, {
+  id: 'flawless',
+  n: 'Clean sweep',
+  d: 'Win before anyone else reaches their face-up cards',
+  i: '🧹'
+}, {
+  id: 'shutout',
+  n: 'Lights out',
+  d: 'Win before anyone else reaches their face-down cards',
+  i: '🌙'
+}, {
+  id: 'burn3',
+  n: 'Fire brigade',
+  d: 'Burn the pile three times in one game',
+  i: '🚒'
+}, {
+  id: 'comeback',
+  n: 'Comeback',
+  d: 'Win after picking up 10 or more cards in one go',
+  i: '🔄'
+}, {
+  id: 'streak3',
+  n: 'Hat-trick',
+  d: 'Win 3 games in a row',
+  i: '🎩'
+}, {
+  id: 'quick',
+  n: 'Speed run',
+  d: 'Win a game in 40 turns or fewer',
+  i: '⚡'
+}, {
+  id: 'full',
+  n: 'Full table',
+  d: 'Win a 5-player game',
+  i: '👑'
+}, {
+  id: 'win50',
+  n: 'Card shark',
+  d: 'Win 50 games',
+  i: '🦈'
+}, {
+  id: 'games25',
+  n: 'Pull up a chair',
+  d: 'Play 25 games',
+  i: '🪑'
+}, {
+  id: 'daily7',
+  n: 'Week of deals',
+  d: 'Finish the daily deal 7 days in a row',
+  i: '🗓️'
+}, {
+  id: 'banter',
+  n: 'Banter',
+  d: 'Send a reaction at the table',
+  i: '💬'
+}, {
+  id: 'rules',
+  n: 'House rules',
+  d: 'Save your own set of rules',
+  i: '📜'
+}, {
+  id: 'host',
+  n: 'Host',
+  d: 'Make an online table for friends',
+  i: '🏠'
+}, {
+  id: 'collector',
+  n: 'Collector',
+  d: 'Unlock 20 achievements',
+  i: '🏅'
 }];
+
+// What happened this game, for the end-of-game achievements. Kept on the game object so a new deal starts clean.
+function gameLog() {
+  const g = store.game;
+  return g._ach || (g._ach = { picked: false, stung: false, burns: 0, bag: false, oppUp: false, oppDown: false, lastBlind: false, stingBy: -1 });
+}
 
 const toastQ = [];
 
@@ -145,10 +241,25 @@ function unlock(id) {
   save();
   toast(a);
   SFX.ach();
+  if (id !== 'collector' && Object.keys(p.ach).length >= 20) unlock('collector');
 }
 
 function trackEvent(ev) {
   if (!store.game || store.game.meta && store.game.meta.tour) return;
+  const L = gameLog();
+  if (ev.pi === 0) {
+    if (ev.burned) L.burns++;
+    L.lastBlind = ev.type === 'blind' && !!ev.success;
+    if (ev.type === 'pickup' || ev.type === 'blind' && !ev.success) L.picked = true;
+    if (ev.stung) L.stung = true;
+  } else {
+    if (ev.from === 'up') L.oppUp = true;
+    if (ev.type === 'blind') { L.oppUp = true; L.oppDown = true; }
+    if (ev.stung && L.stingBy === 0) unlock('gotyou');
+  }
+  if (ev.forced && ev.forced.pi === 0) L.picked = true;
+  if (isSting(ev)) L.stingBy = ev.pi;
+  if (L.burns >= 3) unlock('burn3');
   if (ev.pi === 0) {
     const last = ev.cards && ev.cards[ev.cards.length - 1],
       e = last && Shed.effect(store.game.rules, last);
@@ -163,7 +274,10 @@ function trackEvent(ev) {
     if (isSting(ev)) unlock('sting');
   }
   const bag = ev.type === 'pickup' && ev.pi === 0 ? ev.count : ev.type === 'blind' && !ev.success && ev.pi === 0 ? ev.picked : ev.forced && ev.forced.pi === 0 ? ev.forced.count : 0;
-  if (bag >= 10) unlock('bag');
+  if (bag >= 10) {
+    unlock('bag');
+    L.bag = true;
+  }
 }
 
 function recordGame(g, meIdx, youMouse) {
@@ -193,15 +307,30 @@ function recordGame(g, meIdx, youMouse) {
     turns: g.turns,
     left: lo ? lo.hand.length + lo.up.length + lo.down.length : 0
   };
+  p.ws = meIdx === 0 ? (p.ws || 0) + 1 : 0;
+  const L = g._ach || {};
+  const hasSting = Shed.RANK_LIST.some(k => g.rules.ranks[k].effect === 'stinger');
+  if (!youMouse && !L.picked) unlock('clean');
+  if (!youMouse && hasSting && !L.stung) unlock('nosting');
   if (meIdx === 0) {
     unlock('win1');
     if (p.w >= 10) unlock('win10');
+    if (p.w >= 50) unlock('win50');
     if (g.meta.keys.indexOf('cpu-hard') >= 0) unlock('hard');
+    if (L.lastBlind) unlock('lastcard');
+    if (!L.oppDown) unlock('shutout');
+    if (!L.oppUp) unlock('flawless');
+    if (L.bag) unlock('comeback');
+    if (p.ws >= 3) unlock('streak3');
+    if (g.turns <= 40) unlock('quick');
+    if (g.players.length === 5) unlock('full');
   }
   if (p.safe >= 5) unlock('safe5');
+  if (p.g >= 25) unlock('games25');
   if (g.meta.daily) {
     unlock('daily1');
     if (dailyStreak(p) >= 3) unlock('daily3');
+    if (dailyStreak(p) >= 7) unlock('daily7');
   }
   save();
   updateStats();

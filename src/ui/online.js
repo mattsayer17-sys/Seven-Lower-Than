@@ -8,12 +8,47 @@ import Meta from '../rules-meta.js';
 import CFG from '../online-config.js';
 import { $, esc } from './dom.js';
 import { FAST, later, store, who } from './state.js';
-import { prof } from './profile.js';
+import { prof, unlock } from './profile.js';
 import { hideModal, showModal } from './sheets.js';
 import { advance, afterAction, newGame } from './flow.js';
 import { hint, render, setMsg } from './render.js';
 import { adoptElements, rekeyCard } from './cards.js';
 import { fillChange, proposeHTML, readChange, voteCard } from './vote.js';
+import qrcode from 'qrcode-generator';
+
+// ---------- invites: a link that opens straight into the table, sent by WhatsApp, the share sheet, a copy or a QR code ----------
+const SITE = 'https://seven-lower-than.vercel.app/';
+function inviteLink(code) {
+  const web = /^https?:$/.test(location.protocol) && !/localhost|127\.0\.0\.1/.test(location.hostname);
+  return (web ? location.origin + location.pathname : SITE) + '?join=' + encodeURIComponent(code);
+}
+const inviteText = code => 'Join my Seven Lower Than table. Tap to sit down: ' + inviteLink(code) + ' (code ' + code + ')';
+function qrSvg(text) {
+  const q = qrcode(0, 'M');
+  q.addData(text);
+  q.make();
+  return q.createSvgTag({ cellSize: 5, margin: 2, scalable: true });
+}
+function inviteHTML(code) {
+  return '<div class="invite"><a class="btn wa" id="olWa" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(inviteText(code)) + '">WhatsApp</a>' +
+    (navigator.share ? '<button class="btn" id="olShare">Share</button>' : '') +
+    '<button class="btn" id="olCopy">Copy link</button><button class="btn" id="olQr" aria-expanded="false">QR code</button></div>' +
+    '<div id="olQrBox" class="qrbox hidden" aria-label="QR code for the invite link"></div>';
+}
+function wireInvite(code) {
+  const sh = $('#olShare');
+  if (sh) sh.onclick = () => navigator.share({ title: 'Seven Lower Than', text: 'Join my Seven Lower Than table (code ' + code + ')', url: inviteLink(code) }).catch(() => {});
+  $('#olCopy').onclick = async () => {
+    try { await navigator.clipboard.writeText(inviteLink(code)); $('#olCopy').textContent = 'Copied'; } catch (e) { $('#olCopy').textContent = 'Copy failed'; }
+    setTimeout(() => { if ($('#olCopy')) $('#olCopy').textContent = 'Copy link'; }, 1500);
+  };
+  $('#olQr').onclick = () => {
+    const box = $('#olQrBox'), open = box.classList.toggle('hidden') === false;
+    $('#olQr').setAttribute('aria-expanded', String(open));
+    if (open && !box.innerHTML) box.innerHTML = qrSvg(inviteLink(code)) + '<small>Scan with a phone camera to join</small>';
+  };
+}
+
 
 const POLL = FAST ? 40 : 1300;
 let transport = null;
@@ -142,7 +177,8 @@ let lobbyTimer = null;
 const stopLobby = () => { clearInterval(lobbyTimer); lobbyTimer = null; };
 const note = t => { const n = $('#olNote'); if (n) { n.textContent = t || ''; n.className = 'note' + (t ? ' err' : ''); } };
 
-function showOnline() {
+function showOnline(opts) {
+  const joinCode = opts && opts.join ? String(opts.join).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 5) : '';
   stopLobby();
   const p = prof();
   const nm = p && p.name && p.name !== 'You' && p.name !== 'Player 1' ? p.name : '';
@@ -162,9 +198,14 @@ function showOnline() {
   };
   const guard = fn => async () => { note(''); try { await fn(); } catch (e) { note(friendly(e)); } };
   $('#olClose').onclick = hideModal;
-  $('#olMake').onclick = guard(async () => { const c = await ident(); if (!c) return; await c.create(Table.optsFromSettings(store.settings), Math.min(5, Math.max(2, store.settings.players | 0 || 2))); showWaiting(c); });
+  $('#olMake').onclick = guard(async () => { const c = await ident(); if (!c) return; await c.create(Table.optsFromSettings(store.settings), Math.min(5, Math.max(2, store.settings.players | 0 || 2))); unlock('host'); showWaiting(c); });
   $('#olJoin').onclick = guard(async () => { const c = await ident(); if (!c) return; const code = $('#olCode').value.trim().toUpperCase(); if (code.length < 5) return note('Enter the 5 letter code'); await c.join(code); showWaiting(c); });
   // tables I am already in, so a game can be picked up again later
+  if (joinCode) {
+    $('#olCode').value = joinCode;
+    note(nm ? 'Joining table ' + joinCode + '…' : 'Pick a name, then tap Join to sit at table ' + joinCode);
+    if (nm) $('#olJoin').click(); else $('#olName').focus();
+  }
   const t = getTransport();
   if (t.mine) t.mine().then(list => {
     const box = $('#olMine');
@@ -177,11 +218,13 @@ function showOnline() {
 function showWaiting(c) {
   stopLobby();
   const code = c.code;
-  showModal('<h2>Table ' + esc(code) + '</h2><p>Share this code. The host starts the game when everyone is here.</p>' +
+  showModal('<h2>Table ' + esc(code) + '</h2><p>Send the invite. Friends tap the link and sit straight down. The host starts the game when everyone is here.</p>' +
     '<div class="codebig" style="font-size:34px;letter-spacing:.2em;text-align:center;margin:6px 0" aria-label="Table code ' + esc(code.split('').join(' ')) + '">' + esc(code) + '</div>' +
+    inviteHTML(code) +
     '<div id="olSeats"></div><div id="olRules"></div><div id="olVote"></div><div id="olLast" class="note"></div>' + proposeHTML() +
     '<p class="ex">Anyone can propose a change. Everyone votes, the majority wins, and the host settles a tie.</p><div id="olNote" class="note" role="status"></div>' +
     '<div class="btns"><button class="btn" id="olLeave">Leave</button><button class="btn primary" id="olStart" disabled>Start</button></div>');
+  wireInvite(code);
   let cur = null, ticked = null;
   const act = fn => async () => { note(''); try { await fn(); } catch (e) { note(friendly(e)); } tick(); };
   $('#tblChange').onchange = () => { if (cur) fillChange(cur.rules); };

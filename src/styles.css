@@ -286,3 +286,17 @@ html[data-fx=off] .card.stinging .inner{animation:none;filter:drop-shadow(0 0 2p
 #toast b{display:block;font-size:16px;color:var(--bone)}
 #toast small{display:block;font-size:12.5px;color:#c9c5b8;margin-top:1px}
 @media(prefers-reduced-motion:reduce){#toast{transition:opacity .2s}}
+/* invites */
+.invite{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 4px}
+.invite .btn{text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center}
+.btn.wa{background:#25d366;border-color:#25d366;color:#08240f;font-weight:700}
+.qrbox{background:#fff;border-radius:12px;padding:10px;width:200px;margin:8px auto 4px;text-align:center}
+.qrbox svg{width:180px;height:180px;display:block}
+.qrbox small{display:block;color:#333;font-size:11px;margin-top:4px}
+/* reactions: quick phrases row and seat bubbles */
+.crow.qp .q{flex:1;background:#17181c;border:1px solid #2c2d34;border-radius:9px;height:32px;color:var(--bone);font:inherit;font-size:12.5px;cursor:pointer;padding:0 4px;white-space:nowrap}
+.crow.qp .q:active{background:#24252b}
+.bubble{position:absolute;transform:translate(-50%,-100%);margin-top:-8px;background:#f6f1e4;color:#1a1814;border-radius:14px;padding:6px 11px;font-size:15px;font-weight:600;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.4);animation:bubble 2.8s ease-out forwards;z-index:5}
+.bubble::after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#f6f1e4}
+.bubble.me{background:var(--brass2)}.bubble.me::after{border-top-color:var(--brass2)}
+@keyframes bubble{0%{opacity:0;scale:.6}8%{opacity:1;scale:1.08}14%{scale:1}85%{opacity:1}100%{opacity:0;translate:0 -6px}}

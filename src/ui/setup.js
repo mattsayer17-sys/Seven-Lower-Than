@@ -5,7 +5,7 @@ import { $, esc } from './dom.js';
 import { BACKS, FELTS, applyBack, applyCB, applyFelt, applySkill, save, store } from './state.js';
 import { render } from './render.js';
 import { newGame } from './flow.js';
-import { prof } from './profile.js';
+import { prof, unlock } from './profile.js';
 import { copyText, dayKey, shareText, topPanel } from './daily.js';
 import { showOnline } from './online.js';
 import { showTable } from './vote.js';
@@ -232,6 +232,7 @@ function showSetup(tab) {
       box.classList.add('hidden');
       fillPresets();
       sn.textContent = 'Saved as ' + name + '.';
+      unlock('rules');
     };
     $('#saveGo').onclick = go;
     $('#saveName').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
