@@ -24,7 +24,7 @@ export function showWelcome() {
   const p = prof();
   const named = p.name && p.name !== 'You' && p.name !== 'Player 1' ? p.name : '';
   showModal('<h2>Welcome to Seven Lower Than</h2>' +
-    '<p>Get rid of all your cards. Whoever is left holding cards gets the Wooden Spoon.</p>' +
+    '<p>Get rid of all your cards. Whoever is left holding cards hits Rock Bottom.</p>' +
     '<div class="inp"><input id="wName" maxlength="16" placeholder="What should we call you?" aria-label="Your name" autocomplete="off" value="' + esc(named) + '"></div>' +
     '<div class="btns col"><button class="btn primary" id="wWatch">Watch a short walkthrough</button><button class="btn" id="wRead">Read how it works</button><button class="btn" id="wPlay">Just play</button></div>' +
     '<p class="ex">The walkthrough and the written version are in Setup any time, and so is the switch for table tips.</p>');
@@ -52,7 +52,7 @@ export function showPrimer() {
     '<li><b>Special cards at this table.</b><ul>' + specials + '</ul></li>' +
     '<li><b>Stuck?</b> Pick up the pile. While the draw pile lasts, your hand refills to three after you play.</li>' +
     '<li><b>Running low.</b> When your hand is gone, play your face-up cards. After those, flip face-down cards without looking. If one cannot be played, you pick up the pile.</li>' +
-    '<li><b>Winning.</b> Get rid of everything and you are out. The last player holding cards gets the Wooden Spoon.</li></ol>' +
+    '<li><b>Winning.</b> Get rid of everything and you are out. The last player holding cards hits Rock Bottom.</li></ol>' +
     '<div class="btns"><button class="btn" id="pmWatch">Watch the walkthrough</button><button class="btn primary" id="pmDone">Got it</button></div>');
   $('#pmWatch').onclick = () => { hideModal(); startDemo(); };
   $('#pmDone').onclick = hideModal;

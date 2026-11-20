@@ -215,7 +215,7 @@ async function startDemo() {
     $('#app').classList.add('walk');
     const T = store.tour,
       ids = T.ids;
-    capShow('Your cards', 'Last one holding cards gets the Wooden Spoon. You play from your hand first, then your face-up cards, then the face-down ones.');
+    capShow('Your cards', 'Last one holding cards hits Rock Bottom. You play from your hand first, then your face-up cards, then the face-down ones.');
     await sleep(600);
     await capWait();
     capShow('Equal or higher', 'The pile shows a 6. Play a card that is equal or higher. Here goes a 9.');
