@@ -1,0 +1,22 @@
+{
+  "name": "mouse-shed",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "lint": "eslint src/ui",
+    "build": "node tools/build.js",
+    "build:min": "node tools/build.js --minify",
+    "verify": "npm run lint && npm test && npm run build && node tools/build-fn.js && node tools/vote-drive.js dist/index.html && node tools/presets-drive.js dist/index.html && node tools/a11y-drive.js dist/index.html && node tools/setup-drive.js dist/index.html && node tools/onboarding-drive.js dist/index.html && node tools/online-drive.js dist/index.html && node tools/compare.js"
+  },
+  "devDependencies": {
+    "@babel/generator": "^8.1.2",
+    "@babel/parser": "^8.1.2",
+    "@babel/traverse": "^8.1.2",
+    "@babel/types": "^8.1.2",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.39.5",
+    "globals": "^17.14.0",
+    "puppeteer-core": "^25.18.1"
+  }
+}

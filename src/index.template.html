@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b0b0d">
+<title>The Mouse Shed</title>
+<style>
+/*{{CSS}}*/
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="s-H" viewBox="0 0 100 100"><path d="M50 90C22 68 5 50 5 32 5 18 16 8 30 8c9 0 16 5 20 13 4-8 11-13 20-13 14 0 25 10 25 24 0 18-17 36-45 58z"/></symbol>
+<symbol id="s-D" viewBox="0 0 100 100"><path d="M50 3C60 25 76 39 92 50 76 61 60 75 50 97 40 75 24 61 8 50 24 39 40 25 50 3z"/></symbol>
+<symbol id="s-S" viewBox="0 0 100 100"><path d="M50 4C50 4 8 36 8 61c0 15 11 24 24 24 7 0 12-3 15-8-1 9-5 15-12 19h30c-7-4-11-10-12-19 3 5 8 8 15 8 13 0 24-9 24-24C92 36 50 4 50 4z"/></symbol>
+<symbol id="s-C" viewBox="0 0 100 100"><circle cx="50" cy="28" r="22"/><circle cx="26" cy="62" r="22"/><circle cx="74" cy="62" r="22"/><path d="M50 52c0 22-5 36-15 44h30c-10-8-15-22-15-44z"/></symbol>
+<symbol id="crownK" viewBox="0 0 100 70"><path d="M6 60L6 14 28 36 50 6 72 36 94 14 94 60z"/><rect x="6" y="63" width="88" height="7" rx="2"/></symbol>
+<symbol id="crownQ" viewBox="0 0 100 70"><path d="M6 60L14 22 32 42 50 14 68 42 86 22 94 60z"/><circle cx="14" cy="16" r="6"/><circle cx="50" cy="8" r="6"/><circle cx="86" cy="16" r="6"/><rect x="6" y="63" width="88" height="7" rx="2"/></symbol>
+<symbol id="crownJ" viewBox="0 0 100 70"><path d="M50 4L74 36 50 66 26 36z"/></symbol>
+</defs></svg>
+<div id="app">
+  <header>
+    <div class="brand">THE MOUSE SHED</div>
+    <div class="hbtns"><span class="stats" id="stats" role="button"></span><button class="hbtn ic" id="bProf" aria-label="Profile"></button><button class="hbtn ic" id="bSnd" aria-label="Sound"></button><button class="hbtn" id="bRules">Rules</button><button class="hbtn" id="bNew">New</button></div>
+  </header>
+  <main id="table" class="blank hideui">
+    <div id="wm">THE MOUSE SHED<small>shuffling up</small></div>
+    <div id="rail"></div>
+    <div id="ring"></div>
+    <div id="cards"></div>
+    <div class="lbl" id="lblMe"><span class="dot"></span><span>You</span></div>
+    <div class="badge" id="drawCount"></div>
+    <div id="dir">&#8635;</div>
+    <div id="status"></div><div id="msg"></div>
+    <div id="actions">
+      <button class="btn primary hidden" id="bReady">Lock in</button>
+      <button class="btn primary hidden" id="bPlay">Play</button>
+      <button class="btn hidden" id="bPick">Pick up pile</button>
+      <button class="btn hidden" id="bSkip">Skip to result</button>
+    </div>
+    <div id="flash">BURN</div>
+    <div id="fx"></div>
+    <div id="lock"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M7 10V8a5 5 0 0110 0v2h1a1 1 0 011 1v9a1 1 0 01-1 1H6a1 1 0 01-1-1v-9a1 1 0 011-1h1zm2 0h6V8a3 3 0 00-6 0v2z"/></svg><span id="lockT"></span></div>
+    <button id="chatBtn" class="hidden" aria-label="Open chat">💬<i id="chatBadge" class="hidden"></i></button>
+    <div id="chatPeek" class="hidden"></div>
+    <div id="chatPanel" class="hidden"><div class="ch"><span>Chat</span><button id="chatMin" aria-label="Minimise chat">–</button></div><div id="chatlog"></div><div class="crow"><button class="e" data-e="👍" aria-label="Thumbs up">👍</button><button class="e" data-e="😂" aria-label="Laugh">😂</button><button class="e" data-e="😬" aria-label="Eek">😬</button><button class="e" data-e="🔥" aria-label="Fire">🔥</button><button class="e" data-e="🐭" aria-label="Mouse">🐭</button><input id="chatIn" maxlength="40" placeholder="Message" aria-label="Chat message" autocomplete="off"><button class="btn send" id="chatSend">Send</button></div></div>
+    <div id="offer" class="coachbox hidden"><div>New here? Watch a quick walkthrough.</div><div class="cb"><button class="lnk" id="offNo">Not now</button><button class="btn primary sm" id="offYes">Show me</button></div></div>
+  </main>
+  <div id="cap" class="coachbox hidden"><div id="capT"></div><div class="cb"><button class="lnk" id="capSkip">Skip</button><button class="btn primary sm hidden" id="capNext">Continue</button></div></div>
+  <div id="finger" class="hidden"></div>
+  <div id="toast"></div>
+  <div id="modal" class="hidden"></div>
+</div>
+<script>
+/*{{JS}}*/
+</script>
+</body>
+</html>
