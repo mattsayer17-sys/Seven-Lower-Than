@@ -80,10 +80,10 @@ function showOver() {
     youMouse = g.loser === 0;
   recordGame(g, meIdx, youMouse);
   (youMouse ? SFX.lose : SFX.win)();
-  const head = youMouse ? "Wooden Spoon for you" : meIdx === 0 ? "You're out first!" : "You're safe";
-  let sub = youMouse ? 'Last one holding cards. Shuffle up and get revenge.' : meIdx === 0 ? 'Every card gone before anyone else. ' + g.players[g.loser].name + ' gets the Wooden Spoon.' : g.players[g.loser].name + ' gets the Wooden Spoon this round.';
+  const head = youMouse ? "You hit Rock Bottom" : meIdx === 0 ? "You're out first!" : "You're safe";
+  let sub = youMouse ? 'Last one holding cards. Shuffle up and get revenge.' : meIdx === 0 ? 'Every card gone before anyone else. ' + g.players[g.loser].name + ' hits Rock Bottom.' : g.players[g.loser].name + ' hits Rock Bottom this round.';
   if (g.stalemate) sub = 'This one ran long, so the most cards left decided it. ' + sub;
-  const rows = g.finished.map((id, i) => '<div class="place' + (id === 0 ? ' me' : '') + '"><span>' + (i === g.finished.length - 1 ? '🥄 Spoon' : ordinal(i + 1)) + '</span><b>' + g.players[id].name + '</b></div>').join('');
+  const rows = g.finished.map((id, i) => '<div class="place' + (id === 0 ? ' me' : '') + '"><span>' + (i === g.finished.length - 1 ? '🪨 Last' : ordinal(i + 1)) + '</span><b>' + g.players[id].name + '</b></div>').join('');
   later(() => {
     const dh = g.meta && g.meta.daily ? dailyBlock(g.meta.daily) : '';
     showModal('<h2>' + head + '</h2><p>' + sub + '</p>' + rows + dh + '<div class="btns"><button class="btn" id="setup">Setup</button><button class="btn primary" id="again">' + (g.online ? 'Back to online' : 'Play again') + '</button></div>');

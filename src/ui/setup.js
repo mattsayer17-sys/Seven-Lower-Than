@@ -348,7 +348,7 @@ function showSetup(tab) {
     });
     $('#lv').classList.toggle('hidden', on);
     $('#segHead').textContent = on ? 'Players at the table' : 'Players and CPU level';
-    $('#modeBlurb').textContent = on ? 'Make a table with these rules and share the code, or join a friend\'s. Last one holding cards gets the Wooden Spoon.' : 'You against 1 to 4 CPUs. Last one holding cards gets the Wooden Spoon.';
+    $('#modeBlurb').textContent = on ? 'Make a table with these rules and share the code, or join a friend\'s. Last one holding cards hits Rock Bottom.' : 'You against 1 to 4 CPUs. Last one holding cards hits Rock Bottom.';
     $('#rNew').textContent = on ? 'Next: online table' : 'Start';
   };
   document.querySelectorAll('#mode button').forEach(b => b.onclick = () => {

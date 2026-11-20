@@ -15,14 +15,14 @@ const run = (file, seed) => {
 };
 // Deliberate wording changes since the reference build. Applied to the baseline only, so behaviour still has to match exactly.
 const REWORD = [
-  ["You're the Mouse", 'Wooden Spoon for you'],
+  ["You're the Mouse", 'You hit Rock Bottom'],
   ['Back to the shed.', 'Shuffle up and get revenge.'],
-  [/ is the Mouse this round\./g, ' gets the Wooden Spoon this round.'],
-  [/ is the Mouse\./g, ' gets the Wooden Spoon.'],
-  ['is the Mouse.', 'gets the Wooden Spoon.'],
-  [/· Mouse (\d+)/g, '· 🥄 $1'],
-  [/1ST (\d+) MOUSE/g, '1ST $1 SPOONS'],
-  ['🧀 Escape artist Avoid being the Mouse 5 games running', '😅 Escape artist Dodge the Wooden Spoon 5 games running'],
+  [/ is the Mouse this round\./g, ' hits Rock Bottom this round.'],
+  [/ is the Mouse\./g, ' hits Rock Bottom.'],
+  ['is the Mouse.', 'hits Rock Bottom.'],
+  [/· Mouse (\d+)/g, '· 🪨 $1'],
+  [/1ST (\d+) MOUSE/g, '1ST $1 🪨 LAST'],
+  ['🧀 Escape artist Avoid being the Mouse 5 games running', '😅 Escape artist Stay off Rock Bottom 5 games running'],
   [/Profile 🐭 /g, 'Profile 🦊 '],
   ['The Mouse Shed', 'Seven Lower Than'],
   ['🔥 Burn it down Burn the pile 🃏', '💧 Cold water Pour cold water on the pile 🃏'],
