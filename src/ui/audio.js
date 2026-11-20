@@ -76,10 +76,17 @@ const SFX = {
     tone(1400, .05, 'triangle', .05, 500);
   },
   burn(ev) {
-    noise(.55, .09, 0, 4000);
-    tone(220, .5, 'sawtooth', .06, 900);
-    tone(120, .5, 'sine', .1, 40, .05);
+    // cold water: a splash, then a hiss of steam
+    noise(.32, .16, .1, 2600);
+    tone(140, .18, 'sine', .08, 60, .1);
+    noise(.5, .035, .3, 9000);
     if (ev && ev.pi === 0) buzz([20, 30, 40]);
+  },
+  stung(me) {
+    // a flare of flame
+    noise(.45, .12, 0, 1800);
+    tone(330, .35, 'sawtooth', .05, 120, .02);
+    if (me) buzz([40, 30, 90]);
   },
   pick(me) {
     tone(260, .18, 'triangle', .12, 150);

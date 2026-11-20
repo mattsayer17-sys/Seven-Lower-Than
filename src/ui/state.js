@@ -13,6 +13,7 @@ export const store = {
   settings: {
     haptic: true,
     fast: false,
+    motion: 'normal',
     sevensLower: true,
     transparentOn: false,
     transparentRank: '4',
@@ -144,5 +145,6 @@ if (!FELTS[store.settings.felt]) store.settings.felt = 'green';
 if (!Array.isArray(store.settings.cpu) || store.settings.cpu.length < 4) store.settings.cpu = ['normal', 'normal', 'normal', 'normal'];
 store.settings.cpu = store.settings.cpu.map(k => k in SKILL ? k : 'normal');
 store.settings.custom = Shed.validateCustom(store.settings.custom).rules;
+if (!['normal', 'fast', 'off'].includes(store.settings.motion)) store.settings.motion = 'normal';
 
 export { BACKS, FAST, FELTS, SKILL, applyBack, applyCB, applyFelt, applySkill, label, later, ordinal, save, who };

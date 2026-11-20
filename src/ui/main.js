@@ -4,7 +4,7 @@ import { render } from './render.js';
 import { advance, newGame } from './flow.js';
 import { initInput } from './input.js';
 import { loadProfiles, prof, updateStats } from './profile.js';
-import { pickFx } from './fx.js';
+import { applyMotion, fxTest, pickFx } from './fx.js';
 import { startDemo } from './tour.js';
 import { maybeWelcome, showWelcome } from './welcome.js';
 import { chatIncoming, chatSync, initChat } from './chat.js';
@@ -17,6 +17,7 @@ import Online from '../online.js';
 
 
 
+applyMotion();
 initInput();
 hooks.tap = humanTap;
 initAccess();
@@ -28,6 +29,7 @@ window.Shed = Shed; // handy in the console, and used by the test driver
 window.__ms = {
   demo: () => startDemo(),
   pickFx: (i, n) => pickFx(i, n),
+  fx: fxTest,
   chatOnline: () => {
     if (store.game) {
       store.game.meta.online = true;

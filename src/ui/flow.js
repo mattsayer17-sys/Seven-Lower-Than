@@ -7,7 +7,7 @@ import { hint, render, setMsg } from './render.js';
 import { shake } from './input.js';
 import { trackEvent } from './profile.js';
 import { hashSeed } from './daily.js';
-import { fxForEvent } from './fx.js';
+import { fxForEvent, fxOn } from './fx.js';
 import { rigTour } from './tour.js';
 import { chatReset } from './chat.js';
 import { hideModal, showOver } from './sheets.js';
@@ -187,7 +187,7 @@ function outNote(r) {
 
 function flashLabel(ev) {
   if (ev.burned) return 'BURN';
-  if (ev.stung) return 'STUNG';
+  if (ev.stung) return fxOn() ? '' : 'STUNG'; // with effects on, STUNG bursts into flame over the pile instead
   if (ev.forced) return 'PICK UP!';
   if (ev.skipped != null) return 'SKIP';
   if (ev.reversed) return 'REVERSE';
