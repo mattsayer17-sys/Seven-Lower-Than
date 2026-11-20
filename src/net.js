@@ -63,6 +63,14 @@
         return tables.filter(t => t.status !== 'over').map(t => ({ code: t.code, status: t.status, myTurn: !!v[t.code] && v[t.code].phase === 'play' && v[t.code].turn === v[t.code].me, swapping: !!v[t.code] && v[t.code].phase === 'swap' }))
           .sort((a, b) => (b.myTurn - a.myTurn) || (a.code < b.code ? -1 : 1));
       },
+      // Reactions at my table newer than `after`. The read policy only returns them to seated players and hides anyone I blocked.
+      async chat(code, after) {
+        return rest('shed_chat?code=eq.' + encodeURIComponent(code) + '&id=gt.' + (after | 0) + '&select=id,user_id,body&order=id.asc&limit=20');
+      },
+      async chatHead(code) {
+        const rows = await rest('shed_chat?code=eq.' + encodeURIComponent(code) + '&select=id&order=id.desc&limit=1');
+        return rows[0] ? rows[0].id : 0;
+      },
       async lobby(code) {
         const t = (await rest('shed_tables?code=eq.' + encodeURIComponent(code) + '&select=status,host,rules,max_players,vote,note'))[0];
         if (!t) return null;

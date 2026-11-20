@@ -5,6 +5,8 @@ const Shed = require('../src/engine.js');
 const T = require('./table.js');
 const Room = require('../src/room.js');
 const Presets = require('../src/presets.js');
+const Names = require('../src/names.js');
+const Reactions = require('../src/reactions.js');
 
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const newCode = () => Array.from({ length: 5 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
@@ -45,9 +47,10 @@ async function roomAct(db, table, seats, uid, action) {
 async function handle(db, uid, b) {
   b = b || {};
   if (b.name !== undefined) {
-    const name = cleanName(b.name);
-    if (!name) return reply({ error: 'Pick a name' }, 400);
-    const { error } = await db.from('shed_profiles').upsert({ id: uid, name, avatar: String(b.avatar || '🐭').slice(0, 4) });
+    const nc = Names.check(cleanName(b.name));
+    if (!nc.ok) return reply({ error: nc.error }, 400);
+    const name = nc.name;
+    const { error } = await db.from('shed_profiles').upsert({ id: uid, name, avatar: String(b.avatar || '🦊').slice(0, 4) });
     if (error) return reply({ error: error.message }, 400);
   }
   const prof = await db.from('shed_profiles').select('id,name').eq('id', uid).maybeSingle();
@@ -98,6 +101,19 @@ async function handle(db, uid, b) {
     } else if (b.op === 'cancel') action = { type: 'cancel' };
     const r = await roomAct(db, table, seats, uid, action);
     return reply(r.body, r.status);
+  }
+
+  // A quick reaction at the table. Only the fixed list, one per player every GAP_MS, only by someone seated.
+  // Readers get them straight from shed_chat, where the read policy already hides anyone they have blocked.
+  if (b.op === 'react') {
+    if (!seats.some(x => x.user_id === uid)) return reply({ error: 'You are not at this table' }, 403);
+    if (!Reactions.allowed(b.text)) return reply({ error: 'Pick one of the reactions' }, 400);
+    const last = await db.from('shed_chat').select('created_at').eq('code', code).eq('user_id', uid).order('id', { ascending: false }).limit(1);
+    const at = last.data && last.data[0] && Date.parse(last.data[0].created_at);
+    if (at && Date.now() - at < Reactions.GAP_MS) return reply({ error: 'Slow down' }, 429);
+    const ins = await db.from('shed_chat').insert({ code, user_id: uid, body: b.text });
+    if (ins.error) return reply({ error: ins.error.message }, 400);
+    return reply({ ok: true });
   }
 
   if (b.op === 'leave') {

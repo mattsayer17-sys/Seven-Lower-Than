@@ -135,6 +135,7 @@
     vote(choice) { return this._do({ op: 'vote', code: this.code, choice }); }
     cancelVote() { return this._do({ op: 'cancel', code: this.code }); }
     tick() { return this._do({ op: 'tick', code: this.code }); }
+    react(text) { return this._do({ op: 'react', code: this.code, text }); }
     // Fetch my latest view. Returns the game if it changed since last time, else null.
     async refresh() {
       const r = await this.t.view(this.code);

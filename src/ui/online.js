@@ -6,6 +6,8 @@ import Net from '../net.js';
 import Table from '../table.js';
 import Meta from '../rules-meta.js';
 import CFG from '../online-config.js';
+import Reactions from '../reactions.js';
+import Names from '../names.js';
 import { $, esc } from './dom.js';
 import { FAST, later, store, who } from './state.js';
 import { prof, unlock } from './profile.js';
@@ -13,6 +15,7 @@ import { hideModal, showModal } from './sheets.js';
 import { advance, afterAction, newGame } from './flow.js';
 import { hint, render, setMsg } from './render.js';
 import { adoptElements, rekeyCard } from './cards.js';
+import { chatFrom, chatOn } from './chat.js';
 import { fillChange, proposeHTML, readChange, voteCard } from './vote.js';
 import qrcode from 'qrcode-generator';
 
@@ -156,8 +159,28 @@ function makeRemote(client, code) {
     if (was === 'swap' && fresh.phase === 'play') setMsg(who(fresh.turn) + (fresh.turn === 0 ? ' go' : ' goes') + ' first (lowest card)');
     advance();
   }
+  // ---- reactions from the others at the table ----
+  r.chatAfter = null;
+  r.react = text => client.react(text).catch(() => {}); // a refused or throttled reaction is simply dropped
+  async function chatPoll() {
+    if (store.remote !== r) return clearInterval(r.chatTimer);
+    const t = client.t;
+    if (!t.chat || !chatOn()) return;
+    try {
+      // start from now: reactions sent before I sat down (or before a reload) are not replayed
+      if (r.chatAfter == null) { r.chatAfter = await t.chatHead(code); return; }
+      const rows = await t.chat(code, r.chatAfter);
+      for (const m of rows) {
+        r.chatAfter = Math.max(r.chatAfter, m.id);
+        if (m.user_id === t.uid || !Reactions.allowed(m.body)) continue;
+        const game = g(), i = game && game.seats ? game.seats.indexOf(m.user_id) : -1;
+        if (i > 0) chatFrom(i, game.players[i].name, m.body);
+      }
+    } catch (e) { /* try again next time */ }
+  }
   r.over = () => { clearInterval(r.timer); };
   r.timer = setInterval(poll, POLL);
+  r.chatTimer = setInterval(chatPoll, FAST ? 60 : 1600);
   r.resync = resync;
   return r;
 }
@@ -183,15 +206,16 @@ function showOnline(opts) {
   const p = prof();
   const nm = p && p.name && p.name !== 'You' && p.name !== 'Player 1' ? p.name : '';
   showModal('<h2>Play online</h2><p>Make a table and share the code, or join a friend\'s. You can leave a game and come back to it later.</p>' +
-    '<div class="inp"><input id="olName" maxlength="16" placeholder="Your name" aria-label="Your name" autocomplete="off" value="' + esc(nm) + '"></div>' +
+    '<div class="inp"><input id="olName" maxlength="16" placeholder="Your name" aria-label="Your name" autocomplete="off" value="' + esc(nm || Names.suggest()) + '"></div>' +
     '<div class="btns col"><button class="btn primary" id="olMake">Make a table with my rules</button></div>' +
     '<h3>Join with a code</h3><div class="inp"><input id="olCode" maxlength="5" placeholder="5 letter code" aria-label="Table code" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase"></div>' +
     '<div class="btns col"><button class="btn" id="olJoin">Join</button></div>' +
     '<div id="olMine"></div><div id="olNote" class="note" role="status"></div><div class="btns"><button class="btn" id="olClose">Close</button></div>');
   const ident = async () => {
-    const name = $('#olName').value.trim();
-    if (!name) { note('Pick a name first'); $('#olName').focus(); return null; }
-    if (p && name !== p.name) { p.name = name.slice(0, 16); }
+    const nc = Names.check($('#olName').value);
+    if (!nc.ok) { note(nc.error === 'Pick a name' ? 'Pick a name first' : nc.error); $('#olName').focus(); return null; }
+    const name = nc.name;
+    if (p && name !== p.name) { p.name = name; }
     const c = new Online.Client(getTransport());
     await c.profile(name.slice(0, 16));
     return c;

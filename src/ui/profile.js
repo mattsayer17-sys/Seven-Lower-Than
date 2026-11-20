@@ -1,4 +1,5 @@
 import Shed from '../engine.js';
+import Names from '../names.js';
 import { $, esc } from './dom.js';
 import { save, store } from './state.js';
 import { SFX } from './audio.js';
@@ -348,7 +349,7 @@ function showProfile() {
   const ach = ACH.map(a => '<div class="ach' + (p.ach[a.id] ? ' on' : '') + '"><i>' + a.i + '</i><span><b>' + esc(a.n) + '</b><small>' + esc(a.d) + '</small></span></div>').join('');
   const profs = store.P.list.map(q => '<button class="chip pb' + (q.id === p.id ? ' on' : '') + '" data-id="' + q.id + '">' + q.av + ' ' + esc(q.name) + '</button>').join('');
   const avs = AVATARS.map(a => '<button class="av' + (a === p.av ? ' on' : '') + '" data-a="' + a + '">' + a + '</button>').join('');
-  showModal('<h2>Profile</h2><div class="chips">' + profs + '</div>' + '<div class="inp"><input id="pName" maxlength="16" value="' + esc(p.name) + '" aria-label="Name"><button class="btn" id="pSave">Rename</button></div>' + '<div class="avs">' + avs + '</div>' + '<h3>Record</h3><div class="stat3"><div><b>' + p.g + '</b><small>Games</small></div><div><b>' + p.w + '</b><small>1st</small></div><div><b>' + p.m + '</b><small>🪨 Last</small></div></div>' + '<h3>Head to head</h3>' + rows + (human ? '' : '<p class="note" style="margin-top:8px">Games against other people will show here once online tables open. Records are saved on this device.</p>') + '<h3>Achievements ' + Object.keys(p.ach).length + '/' + ACH.length + '</h3><div class="achs">' + ach + '</div>' + '<div class="inp" style="margin-top:14px"><input id="pNew" maxlength="16" placeholder="New profile name" aria-label="New profile name"><button class="btn" id="pAdd">Add profile</button></div>' + '<div class="btns"><button class="btn primary" id="pClose">Done</button></div>');
+  showModal('<h2>Profile</h2><div class="chips">' + profs + '</div>' + '<div class="inp"><input id="pName" maxlength="16" value="' + esc(p.name) + '" aria-label="Name"><button class="btn" id="pSave">Rename</button></div><div class="note err" id="pNote" role="status"></div>' + '<div class="avs">' + avs + '</div>' + '<h3>Record</h3><div class="stat3"><div><b>' + p.g + '</b><small>Games</small></div><div><b>' + p.w + '</b><small>1st</small></div><div><b>' + p.m + '</b><small>🪨 Last</small></div></div>' + '<h3>Head to head</h3>' + rows + (human ? '' : '<p class="note" style="margin-top:8px">Games against other people will show here once online tables open. Records are saved on this device.</p>') + '<h3>Achievements ' + Object.keys(p.ach).length + '/' + ACH.length + '</h3><div class="achs">' + ach + '</div>' + '<div class="inp" style="margin-top:14px"><input id="pNew" maxlength="16" placeholder="New profile name" aria-label="New profile name"><button class="btn" id="pAdd">Add profile</button></div>' + '<div class="btns"><button class="btn primary" id="pClose">Done</button></div>');
   document.querySelectorAll('.pb').forEach(b => b.onclick = () => {
     store.P.cur = b.dataset.id;
     save();
@@ -362,17 +363,17 @@ function showProfile() {
     showProfile();
   });
   $('#pSave').onclick = () => {
-    const v = $('#pName').value.trim();
-    if (v) {
-      p.name = v.slice(0, 16);
-      save();
-      updateStats();
-    }
+    const nc = Names.check($('#pName').value);
+    if (!nc.ok) { $('#pNote').textContent = nc.error; return; }
+    p.name = nc.name;
+    save();
+    updateStats();
     showProfile();
   };
   $('#pAdd').onclick = () => {
-    const v = $('#pNew').value.trim();
-    if (!v) return;
+    const nc = Names.check($('#pNew').value);
+    if (!nc.ok) { if ($('#pNew').value.trim()) $('#pNote').textContent = nc.error; return; }
+    const v = nc.name;
     const id = 'p' + Date.now();
     store.P.list.push(mkProfile(id, v.slice(0, 16)));
     store.P.cur = id;

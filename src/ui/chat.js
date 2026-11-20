@@ -80,9 +80,10 @@ function chatDraw() {
 
 function chatSync() {
   const on = chatOn();
-  $('#chatTextRow').classList.toggle('hidden', !online());
-  $('#chatTitle').textContent = online() ? 'Chat' : 'React';
-  $('#chatBtn').setAttribute('aria-label', online() ? 'Open chat' : 'React');
+  // reactions only, online too: a fixed list means nothing rude can be typed at the table
+  $('#chatTextRow').classList.add('hidden');
+  $('#chatTitle').textContent = 'React';
+  $('#chatBtn').setAttribute('aria-label', 'React');
   $('#chatBtn').classList.toggle('hidden', !on || chatOpen);
   $('#chatPanel').classList.toggle('hidden', !on || !chatOpen);
   if (!on) $('#chatPeek').classList.add('hidden');
@@ -139,7 +140,14 @@ function chatSend(t) {
   // a quick reaction closes the panel so it never sits over your cards
   chatMin();
   if (!online()) cpuReply(t);
-  // online: relaying to the other players needs a server message type (not built yet)
+  else if (store.remote && store.remote.react) store.remote.react(t);
+}
+
+// A reaction from another player at an online table: a bubble over their seat and a line in the log.
+function chatFrom(i, name, text) {
+  if (!chatOn()) return;
+  bubble(i, text);
+  chatIncoming(name, text);
 }
 
 function chatOpenIt() {
@@ -175,4 +183,4 @@ $('#chatIn').addEventListener('keydown', e => {
 }
 
 
-export { chatIncoming, chatReset, chatSync, reactTo };
+export { chatFrom, chatIncoming, chatOn, chatReset, chatSync, reactTo };

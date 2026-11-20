@@ -359,3 +359,39 @@ test('votes: nothing once the game is running', async () => {
   await handle(db, 'u1', { op: 'start', code });
   assert.equal((await handle(db, 'u1', { op: 'propose', code, change: flip })).status, 409);
 });
+
+test('names: rude ones refused by the server, clean ones saved', async () => {
+  const db = new FakeDb();
+  assert.equal((await handle(db, 'u1', { op: 'profile', name: 'f.u.c.k' })).status, 400);
+  assert.equal((await handle(db, 'u1', { op: 'profile', name: 'f.u.c.k' })).body.error, 'Try another name');
+  assert.equal(db.t.shed_profiles.length, 0);
+  assert.equal((await handle(db, 'u1', { op: 'profile', name: '  Lucky   Fox 42 ' })).status, 200);
+  assert.equal(db.t.shed_profiles[0].name, 'Lucky Fox 42');
+  assert.equal(db.t.shed_profiles[0].avatar, '🦊');
+  assert.equal((await handle(db, 'u1', { op: 'profile', name: 'Big4ss' })).status, 400);
+  assert.equal(db.t.shed_profiles[0].name, 'Lucky Fox 42');
+});
+
+test('reactions: seated players only, fixed list only, throttled, gone with the table', async () => {
+  const db = new FakeDb();
+  let now = 1e12;
+  const realNow = Date.now;
+  Date.now = () => now;
+  db.now = () => now;
+  try {
+    const code = await lobby(db, 2);
+    await handle(db, 'u5', { op: 'profile', name: 'Eve' });
+    assert.equal((await handle(db, 'u5', { op: 'react', code, text: '👍' })).status, 403);
+    assert.equal((await handle(db, 'u1', { op: 'react', code, text: 'you are rubbish' })).status, 400);
+    assert.equal((await handle(db, 'u1', { op: 'react', code, text: '' })).status, 400);
+    assert.equal((await handle(db, 'u1', { op: 'react', code, text: '😂' })).status, 200);
+    assert.equal((await handle(db, 'u1', { op: 'react', code, text: '🔥' })).status, 429);
+    assert.equal((await handle(db, 'u2', { op: 'react', code, text: 'Nice one' })).status, 200);
+    now += 1300;
+    assert.equal((await handle(db, 'u1', { op: 'react', code, text: '🔥' })).status, 200);
+    assert.deepEqual(db.t.shed_chat.map(c => [c.user_id, c.body]), [['u1', '😂'], ['u2', 'Nice one'], ['u1', '🔥']]);
+    assert.equal((await handle(db, 'u1', { op: 'react', code: 'ZZZZZ', text: '👍' })).status, 404);
+    await handle(db, 'u1', { op: 'leave', code });
+    assert.equal(db.t.shed_chat.length, 0);
+  } finally { Date.now = realNow; }
+});

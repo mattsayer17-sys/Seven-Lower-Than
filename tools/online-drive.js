@@ -8,7 +8,7 @@ const assert = require('node:assert/strict');
 const Shed = require('../src/engine.js');
 const Online = require('../src/online.js');
 const { handle } = require('../server/handler.js');
-const { FakeDb, lobbyOf, mineOf } = require('../server/fakedb.js');
+const { FakeDb, lobbyOf, mineOf, chatOf } = require('../server/fakedb.js');
 
 function decide(g) {
   const p = g.players[0];
@@ -33,11 +33,13 @@ function decide(g) {
     if (op === 'view') return view('ui', arg);
     if (op === 'lobby') return lobbyOf(db, arg);
     if (op === 'mine') return mineOf(db, 'ui');
+    if (op === 'chat') return chatOf(db, arg.code, arg.after);
+    if (op === 'chatHead') { const c = chatOf(db, arg, 0); return c.length ? c[c.length - 1].id : 0; }
   });
   await page.evaluateOnNewDocument(() => {
     window.__MS_FAST = true;
     if (!sessionStorage.getItem('kept')) { localStorage.clear(); sessionStorage.setItem('kept', '1'); }
-    window.__MS_TRANSPORT = { uid: 'ui', call: b => window.__bridge('call', b), view: c => window.__bridge('view', c), lobby: c => window.__bridge('lobby', c), mine: () => window.__bridge('mine') };
+    window.__MS_TRANSPORT = { uid: 'ui', call: b => window.__bridge('call', b), view: c => window.__bridge('view', c), lobby: c => window.__bridge('lobby', c), mine: () => window.__bridge('mine'), chat: (code, after) => window.__bridge('chat', { code, after }), chatHead: c => window.__bridge('chatHead', c) };
   });
   await page.goto('file://' + path.resolve(process.argv[2]));
   const ev = (fn, ...a) => page.evaluate(fn, ...a);
@@ -134,6 +136,21 @@ function decide(g) {
     assert.equal(await cardCount(), 52);
     ok(label + ': game started in the page, 52 card elements');
     if (nBots === 1) { assert.equal(await ev(() => window.__ms.game().rules.ranks['7'].effect), null); ok(label + ': the game was dealt with the voted rules'); }
+    // reactions: another player's shows over their seat, mine reaches the server, no free-text box
+    await until(() => window.__ms.remote().chatAfter != null, 'chat baseline');
+    const before = db.t.shed_chat.length;
+    assert.equal((await handle(db, bots[0].uid, { op: 'react', code, text: '😂' })).status, 200);
+    await until(() => [...document.querySelectorAll('#fx .bubble')].some(b => b.textContent === '😂' && !b.classList.contains('me')), 'bot reaction bubble');
+    assert.match(await text('#chatlog'), /Bot1/);
+    await click('#chatBtn');
+    assert.equal(await ev(() => document.querySelector('#chatTextRow').classList.contains('hidden')), true);
+    await click('#chatPanel .e[data-e="👍"]');
+    for (let i = 0; i < 200 && !db.t.shed_chat.some(c => c.user_id === 'ui' && c.body === '👍'); i++) await wait(20);
+    assert.ok(db.t.shed_chat.some(c => c.user_id === 'ui' && c.body === '👍'), 'my reaction reached the server');
+    assert.equal(db.t.shed_chat.length, before + 2);
+    await wait(200);
+    assert.equal((await text('#chatlog')).split('👍').length - 1, 1, 'my own reaction is not echoed back');
+    ok(label + ': reactions relayed both ways (bot 😂 bubble over its seat, my 👍 stored once), preset-only panel');
     await page.screenshot({ path: '/tmp/online-start-' + nBots + '.png' });
     // play it out
     let shot = false;

@@ -1,6 +1,7 @@
 // First launch: a welcome sheet, shown once per profile. Three ways in: watch the walkthrough, read how it works, or just play.
 // The written version also serves anyone who cannot follow the animated tour.
 import Meta from '../rules-meta.js';
+import Names from '../names.js';
 import { $, esc } from './dom.js';
 import { FAST, save, store } from './state.js';
 import { prof, updateStats } from './profile.js';
@@ -22,25 +23,37 @@ export function maybeWelcome() {
 
 export function showWelcome() {
   const p = prof();
-  const named = p.name && p.name !== 'You' && p.name !== 'Player 1' ? p.name : '';
+  // a ready-made name so anyone can tap straight through; 🎲 rolls another
+  const named = p.name && p.name !== 'You' && p.name !== 'Player 1' ? p.name : Names.suggest();
   showModal('<h2>Welcome to Seven Lower Than</h2>' +
     '<p>Get rid of all your cards. Whoever is left holding cards hits Rock Bottom.</p>' +
-    '<div class="inp"><input id="wName" maxlength="16" placeholder="What should we call you?" aria-label="Your name" autocomplete="off" value="' + esc(named) + '"></div>' +
+    '<div class="inp"><input id="wName" maxlength="16" placeholder="What should we call you?" aria-label="Your name" autocomplete="off" value="' + esc(named) + '"><button class="btn" id="wRoll" aria-label="Suggest another name">🎲</button></div><div class="note" id="wNote" role="status"></div>' +
     '<div class="btns col"><button class="btn primary" id="wWatch">Watch a short walkthrough</button><button class="btn" id="wRead">Read how it works</button><button class="btn" id="wPlay">Just play</button></div>' +
     '<p class="ex">The walkthrough and the written version are in Setup any time, and so is the switch for table tips.</p>');
+  // false (and a note) if the name cannot be used, so the sheet stays open
   const saveName = () => {
-    const v = $('#wName').value.trim();
-    if (v && v !== p.name) {
-      p.name = v.slice(0, 16);
+    const nc = Names.check($('#wName').value);
+    $('#wNote').textContent = '';
+    if (!nc.ok) {
+      if (!$('#wName').value.trim()) return true; // blank: keep whatever name the profile has
+      $('#wNote').textContent = nc.error;
+      $('#wNote').className = 'note err';
+      $('#wName').focus();
+      return false;
+    }
+    if (nc.name !== p.name) {
+      p.name = nc.name;
       save();
       updateStats();
     }
+    return true;
   };
+  $('#wRoll').onclick = () => { $('#wName').value = Names.suggest(); saveName(); };
   $('#wName').onchange = saveName;
-  $('#wName').addEventListener('keydown', e => { if (e.key === 'Enter') { saveName(); $('#wWatch').focus(); } });
-  $('#wWatch').onclick = () => { saveName(); hideModal(); startDemo(); };
-  $('#wRead').onclick = () => { saveName(); showPrimer(); };
-  $('#wPlay').onclick = () => { saveName(); hideModal(); };
+  $('#wName').addEventListener('keydown', e => { if (e.key === 'Enter' && saveName()) $('#wWatch').focus(); });
+  $('#wWatch').onclick = () => { if (!saveName()) return; hideModal(); startDemo(); };
+  $('#wRead').onclick = () => { if (saveName()) showPrimer(); };
+  $('#wPlay').onclick = () => { if (saveName()) hideModal(); };
 }
 
 // The same story as the walkthrough, in words, using this table's own special cards.

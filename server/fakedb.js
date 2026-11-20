@@ -1,13 +1,14 @@
 'use strict';
 // A tiny in-memory stand-in for the Supabase client: only the calls the handler makes. Used by tests and the local preview.
-const PK = { shed_profiles: ['id'], shed_tables: ['code'], shed_seats: ['code', 'user_id'], shed_games: ['code'], shed_views: ['code', 'user_id'], shed_results: ['code', 'user_id'] };
+const PK = { shed_profiles: ['id'], shed_tables: ['code'], shed_seats: ['code', 'user_id'], shed_games: ['code'], shed_views: ['code', 'user_id'], shed_results: ['code', 'user_id'], shed_chat: ['id'] };
 const clone = v => JSON.parse(JSON.stringify(v));
 class Q {
-  constructor(db, name) { this.db = db; this.name = name; this.f = []; this.op = 'select'; this.ret = false; this.one = false; this.ord = null; }
+  constructor(db, name) { this.db = db; this.name = name; this.f = []; this.op = 'select'; this.ret = false; this.one = false; this.ord = null; this.desc = false; this.lim = null; }
   select() { if (this.op === 'update') this.ret = true; return this; }
   eq(c, v) { this.f.push(r => r[c] === v); return this; }
   in(c, a) { this.f.push(r => a.includes(r[c])); return this; }
-  order(c) { this.ord = c; return this; }
+  order(c, o) { this.ord = c; this.desc = !!(o && o.ascending === false); return this; }
+  limit(n) { this.lim = n; return this; }
   maybeSingle() { this.one = true; return this; }
   insert(row) { this.op = 'insert'; this.row = row; return this; }
   upsert(rows) { this.op = 'upsert'; this.row = rows; return this; }
@@ -21,12 +22,14 @@ class Q {
     const same = (a, b) => pk.every(k => a[k] === b[k]);
     if (this.op === 'select') {
       let out = rows.filter(match).map(clone);
-      if (this.ord) out.sort((a, b) => a[this.ord] - b[this.ord]);
+      if (this.ord) out.sort((a, b) => (a[this.ord] - b[this.ord]) * (this.desc ? -1 : 1));
+      if (this.lim != null) out = out.slice(0, this.lim);
       return { data: this.one ? out[0] || null : out, error: null };
     }
     if (this.op === 'insert') {
       const r = clone(this.row);
       if (this.name === 'shed_tables') { if (r.status === undefined) r.status = 'lobby'; Object.assign(r, { vote: null, vote_seq: 0, note: '', rev: 0 }); }
+      if (this.name === 'shed_chat') { this.db.chatId = (this.db.chatId || 0) + 1; Object.assign(r, { id: this.db.chatId, created_at: new Date(this.db.now ? this.db.now() : Date.now()).toISOString() }); }
       if (rows.some(x => same(x, r))) return { data: null, error: { code: '23505', message: 'duplicate' } };
       rows.push(r);
       return { data: null, error: null };
@@ -43,12 +46,12 @@ class Q {
     if (this.op === 'delete') {
       const keep = rows.filter(r => !match(r));
       this.db.t[this.name] = keep;
-      if (this.name === 'shed_tables') for (const n of ['shed_seats', 'shed_games', 'shed_views']) this.db.t[n] = this.db.t[n].filter(r => this.db.t.shed_tables.some(t => t.code === r.code));
+      if (this.name === 'shed_tables') for (const n of ['shed_seats', 'shed_games', 'shed_views', 'shed_chat']) this.db.t[n] = this.db.t[n].filter(r => this.db.t.shed_tables.some(t => t.code === r.code));
       return { data: null, error: null };
     }
   }
 }
-class FakeDb { constructor() { this.t = { shed_profiles: [], shed_tables: [], shed_seats: [], shed_games: [], shed_views: [], shed_results: [] }; } from(n) { return new Q(this, n); } }
+class FakeDb { constructor() { this.t = { shed_profiles: [], shed_tables: [], shed_seats: [], shed_games: [], shed_views: [], shed_results: [], shed_chat: [] }; } from(n) { return new Q(this, n); } }
 // What a lobby screen needs to know about a table.
 function lobbyOf(db, code) {
   const t = db.t.shed_tables.find(x => x.code === code);
@@ -65,4 +68,8 @@ function mineOf(db, uid) {
     return t && t.status !== 'over' ? { code: s.code, status: t.status, myTurn: !!v && v.view.phase === 'play' && v.view.turn === v.view.me, swapping: !!v && v.view.phase === 'swap' } : null;
   }).filter(Boolean).sort((a, b) => (b.myTurn - a.myTurn) || (a.code < b.code ? -1 : 1));
 }
-module.exports = { FakeDb, lobbyOf, mineOf };
+// Reactions at a table after a given id, as the read policy would return them to `uid` (blocks are not modelled).
+function chatOf(db, code, after) {
+  return db.t.shed_chat.filter(c => c.code === code && c.id > (after || 0)).sort((a, b) => a.id - b.id).map(c => ({ id: c.id, user_id: c.user_id, body: c.body }));
+}
+module.exports = { FakeDb, lobbyOf, mineOf, chatOf };
