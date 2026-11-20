@@ -23,7 +23,7 @@ export function maybeWelcome() {
 export function showWelcome() {
   const p = prof();
   const named = p.name && p.name !== 'You' && p.name !== 'Player 1' ? p.name : '';
-  showModal('<h2>Welcome to The Mouse Shed</h2>' +
+  showModal('<h2>Welcome to Seven Lower Than</h2>' +
     '<p>Get rid of all your cards. Whoever is left holding cards is the Mouse.</p>' +
     '<div class="inp"><input id="wName" maxlength="16" placeholder="What should we call you?" aria-label="Your name" autocomplete="off" value="' + esc(named) + '"></div>' +
     '<div class="btns col"><button class="btn primary" id="wWatch">Watch a short walkthrough</button><button class="btn" id="wRead">Read how it works</button><button class="btn" id="wPlay">Just play</button></div>' +

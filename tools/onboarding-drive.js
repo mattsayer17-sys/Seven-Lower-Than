@@ -27,7 +27,7 @@ let steps0 = [];
   await page.goto(url);
   await until(() => window.__ms && !!document.querySelector('#wWatch'), 'welcome sheet', 400);
   const w = await ev(() => { const s = document.querySelector('.sheet'); return { role: s.getAttribute('role'), title: document.getElementById(s.getAttribute('aria-labelledby')).textContent, focus: document.activeElement === s, buttons: ['#wWatch', '#wRead', '#wPlay'].map(x => document.querySelector(x).textContent) }; });
-  assert.equal(w.role, 'dialog'); assert.equal(w.title, 'Welcome to The Mouse Shed'); assert.equal(w.focus, true);
+  assert.equal(w.role, 'dialog'); assert.equal(w.title, 'Welcome to Seven Lower Than'); assert.equal(w.focus, true);
   assert.deepEqual(w.buttons, ['Watch a short walkthrough', 'Read how it works', 'Just play']);
   assert.deepEqual(await nameless(), []);
   ok('welcome sheet: dialog, focus inside, three ways in, every control named');

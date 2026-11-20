@@ -1,6 +1,6 @@
-# The Mouse Shed
+# Seven Lower Than
 
-Source for the single-file game. `npm run build` bundles everything into `dist/index.html`, which is what gets published as the claude.ai artifact and wrapped for iOS.
+Source for the single-file game. `npm run build` bundles everything into `dist/index.html`. Vercel runs `npm run build:min` on every push to `main` and serves `dist/` at https://seven-lower-than.vercel.app. The same file gets wrapped for iOS.
 
 ## Layout
 

@@ -1,4 +1,4 @@
-// Drives a built Mouse Shed page in headless Chrome and prints a deterministic transcript.
+// Drives a built Seven Lower Than page in headless Chrome and prints a deterministic transcript.
 // Usage: node tools/drive.js path/to/index.html [games]
 'use strict';
 const puppeteer = require('puppeteer-core');
