@@ -4,7 +4,7 @@ import { showSetup } from './setup.js';
 import { render } from './render.js';
 import { advance, newGame } from './flow.js';
 import { initInput } from './input.js';
-import { loadProfiles, prof, updateStats } from './profile.js';
+import { loadProfiles, prof, toastTest, updateStats } from './profile.js';
 import { applyMotion, fxTest, pickFx } from './fx.js';
 import { startDemo } from './tour.js';
 import { maybeWelcome, showWelcome } from './welcome.js';
@@ -31,6 +31,7 @@ window.__ms = {
   demo: () => startDemo(),
   pickFx: (i, n) => pickFx(i, n),
   fx: fxTest,
+  toast: id => toastTest(id),
   chatOnline: () => {
     if (store.game) {
       store.game.meta.online = true;

@@ -107,6 +107,18 @@ function toast(a) {
   if (!toastBusy) nextToast();
 }
 
+// Sit the unlock just above your own hand, near the bottom of the screen, where your eyes already are.
+function placeToast(t) {
+  let top = window.innerHeight * .62;
+  try {
+    const g = store.game,
+      ids = g && g.players[0] ? g.players[0].hand.concat(g.players[0].up).map(c => c.id) : [];
+    const tops = ids.map(id => store.els[id]).filter(Boolean).map(el => el.getBoundingClientRect().top).filter(y => y > window.innerHeight * .4);
+    if (tops.length) top = Math.min(...tops);
+  } catch (e) {}
+  t.style.top = Math.max(60, top - 12) + 'px';
+}
+
 function nextToast() {
   const a = toastQ.shift();
   if (!a) {
@@ -115,12 +127,14 @@ function nextToast() {
   }
   toastBusy = true;
   const t = $('#toast');
-  t.innerHTML = '<span>' + a.i + '</span><div><b>' + esc(a.n) + '</b><small>' + esc(a.d) + '</small></div>';
+  t.innerHTML = '<span>' + a.i + '</span><div><em>Achievement unlocked</em><b>' + esc(a.n) + '</b><small>' + esc(a.d) + '</small></div>';
+  placeToast(t);
   t.classList.add('on');
+  // long enough to read and enjoy; it never blocks a tap, so play carries on underneath
   setTimeout(() => {
     t.classList.remove('on');
-    setTimeout(nextToast, 260);
-  }, 2300);
+    setTimeout(nextToast, 300);
+  }, 4500);
 }
 
 function unlock(id) {
@@ -263,4 +277,7 @@ export function loadProfiles() {
 }
 
 
-export { prof, recordGame, showProfile, trackEvent, unlock, updateStats };
+// for screenshots and the test driver: show an unlock pop-up without unlocking anything
+const toastTest = id => toast(ACH.find(x => x.id === id) || ACH[0]);
+
+export { prof, recordGame, showProfile, toastTest, trackEvent, unlock, updateStats };
