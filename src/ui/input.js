@@ -41,7 +41,7 @@ function humanTap(id) {
     hint(store.tour ? 'Tap the glowing card for this step' : "Can't play " + c.rank + ' on ' + (top ? top.rank : 'that'));
     return;
   }
-  buzz(6);
+  buzz('tick');
   if (store.ui.sel.includes(id)) {
     if (store.ui.sel.length > 1) {
       store.ui.sel = store.ui.sel.filter(x => x !== id);

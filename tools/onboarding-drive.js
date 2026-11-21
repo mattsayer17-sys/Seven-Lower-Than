@@ -29,7 +29,7 @@ let steps0 = [];
   const w = await ev(() => { const c = document.querySelector('#coach'); return { modal: !document.querySelector('#modal').classList.contains('hidden'), role: c.getAttribute('role'), label: c.getAttribute('aria-label'), name: !!document.querySelector('#wName'), buttons: ['#wWatch', '#wRead'].map(x => document.querySelector(x).textContent), x: document.querySelector('#wPlay').getAttribute('aria-label'), cards: document.querySelectorAll('#cards .card').length }; });
   assert.equal(w.modal, false, 'nothing modal on first launch');
   assert.equal(w.role, 'region'); assert.equal(w.label, 'Getting started'); assert.equal(w.name, false, 'no name field before playing');
-  assert.deepEqual(w.buttons, ['Show me · 30 s', 'Rules']); assert.equal(w.x, 'Just play');
+  assert.deepEqual(w.buttons, ['Show me (30 s)', 'Rules']); assert.equal(w.x, 'Just play');
   assert.equal(w.cards, 52);
   const nm = await ev(() => window.__ms.prof().name);
   assert.match(nm, /^[A-Z][a-z]+ [A-Z][a-z]+ \d\d$/, 'a name was suggested quietly: ' + nm);

@@ -24,19 +24,37 @@ function tone(f, d, type, vol, slide, delay) {
   } catch (e) {}
 }
 
-function buzz(ms) {
-  if (!store.settings.sound || store.settings.haptic === false) return;
+// Haptics: each moment has its own feel. Native (Capacitor Haptics, Core Haptics on iOS) plays the
+// step patterns; Android web falls back to vibrate timings; iPhone web has no vibration API, so nothing.
+// Haptics follow their own setting, not the sound switch.
+const HAPTIC = {
+  tick: { steps: [[0, 'tick']], web: 6 },
+  play: { steps: [[0, 'light']], web: 8 },
+  lock: { steps: [[0, 'medium']], web: 14 },
+  bad: { steps: [[0, 'error']], web: 25 },
+  burn: { steps: [[0, 'light'], [70, 'medium'], [150, 'heavy']], web: [20, 30, 40] },
+  stung: { steps: [[0, 'warning'], [180, 'heavy']], web: [40, 30, 90] },
+  pick: { steps: [[0, 'heavy'], [110, 'medium'], [210, 'light']], web: [70, 50, 120] },
+  boom: { steps: [[0, 'heavy'], [90, 'heavy'], [200, 'medium'], [320, 'light']], web: [60, 40, 220] },
+  heartbeat: { steps: [[0, 'medium'], [150, 'light']], web: [30, 120, 20] },
+  win: { steps: [[0, 'success']], web: [20, 60, 20] },
+  lose: { steps: [[0, 'heavy'], [180, 'heavy'], [360, 'warning']], web: [120, 60, 120, 60, 400] }
+};
+function hapticStep(H, k) {
+  if (k === 'tick') return H.selectionChanged ? H.selectionChanged() : H.impact({ style: 'LIGHT' });
+  if (k === 'success' || k === 'warning' || k === 'error') return H.notification({ type: k.toUpperCase() });
+  return H.impact({ style: k.toUpperCase() });
+}
+function buzz(name) {
+  if (store.settings.haptic === false || FAST) return;
+  const pat = HAPTIC[name] || HAPTIC.play;
   try {
     const H = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics;
     if (H) {
-      if (Array.isArray(ms)) H.vibrate({
-        duration: Math.min(400, ms.reduce((a, b) => a + b, 0))
-      });else H.impact({
-        style: ms > 15 ? 'MEDIUM' : 'LIGHT'
-      });
+      for (const [t, k] of pat.steps) t ? setTimeout(() => { try { hapticStep(H, k); } catch (e) {} }, t) : hapticStep(H, k);
       return;
     }
-    if (navigator.vibrate) navigator.vibrate(ms);
+    if (navigator.vibrate) navigator.vibrate(pat.web);
   } catch (e) {}
 }
 
@@ -65,12 +83,10 @@ function noise(d, vol, delay, lp) {
   } catch (e) {}
 }
 // Haptics only confirm your own decisions. Sound carries everything else.
-
-// Haptics only confirm your own decisions. Sound carries everything else.
 const SFX = {
   play(me) {
     tone(180, .09, 'triangle', .16, 90);
-    if (me) buzz(8);
+    if (me) buzz('play');
   },
   deal() {
     tone(1400, .05, 'triangle', .05, 500);
@@ -80,18 +96,18 @@ const SFX = {
     noise(.32, .16, .1, 2600);
     tone(140, .18, 'sine', .08, 60, .1);
     noise(.5, .035, .3, 9000);
-    if (ev && ev.pi === 0) buzz([20, 30, 40]);
+    if (ev && ev.pi === 0) buzz('burn');
   },
   stung(me) {
     // a flare of flame
     noise(.45, .12, 0, 1800);
     tone(330, .35, 'sawtooth', .05, 120, .02);
-    if (me) buzz([40, 30, 90]);
+    if (me) buzz('stung');
   },
   pick(me) {
     tone(260, .18, 'triangle', .12, 150);
     tone(200, .18, 'triangle', .1, 110, .1);
-    if (me) buzz([70, 50, 120]);
+    if (me) buzz('pick');
   },
   skip() {
     tone(760, .1, 'square', .05, 380);
@@ -115,18 +131,19 @@ const SFX = {
     noise(.8, .2, 0, 900);
     tone(80, .7, 'sine', .22, 28);
     tone(160, .4, 'sawtooth', .06, 50, .02);
-    if (me) buzz([60, 40, 220]);
+    if (me) buzz('boom');
   },
   bad() {
     tone(120, .14, 'square', .08, 90);
-    buzz(25);
+    buzz('bad');
   },
   win() {
     [523, 659, 784, 1047].forEach((f, i) => tone(f, .28, 'triangle', .12, 0, i * .11));
+    buzz('win');
   },
   lose() {
     [392, 330, 262].forEach((f, i) => tone(f, .35, 'sine', .12, 0, i * .18));
-    buzz([120, 60, 120, 60, 400]);
+    buzz('lose');
   },
   turn() {
     tone(660, .07, 'sine', .07);

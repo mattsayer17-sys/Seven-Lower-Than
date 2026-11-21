@@ -42,8 +42,8 @@ export function showWelcome() {
   c.setAttribute('role', 'region');
   c.setAttribute('aria-label', 'Getting started');
   c.innerHTML = '<button class="x" id="wPlay" aria-label="Just play">×</button>' +
-    '<b>Get rid of all your cards.</b><span>Play the same or higher. Whoever\'s left holding cards hits Rock Bottom 🪨</span>' +
-    '<div class="cbtns"><button class="btn sm primary" id="wWatch">Show me · 30 s</button><button class="btn sm" id="wRead">Rules</button></div>';
+    '<b>Get rid of all your cards</b><span>Play the same or higher. Whoever\'s left holding cards hits Rock Bottom.</span>' +
+    '<div class="cbtns"><button class="btn sm primary" id="wWatch">Show me (30 s)</button><button class="btn sm" id="wRead">Rules</button></div>';
   $('#table').appendChild(c);
   void c.offsetWidth;
   c.classList.add('on');

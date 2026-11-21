@@ -7,9 +7,11 @@ import { startDemo } from './tour.js';
 import { hideModal, showLegend, showModal } from './sheets.js';
 import { showSetup } from './setup.js';
 
+const SND_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
+const SND_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/></svg>';
 const sndIcon = () => {
   const b = $('#bSnd');
-  b.textContent = store.settings.sound ? '\u{1F50A}' : '\u{1F507}';
+  b.innerHTML = store.settings.sound ? SND_ON : SND_OFF;
   b.setAttribute('aria-label', 'Sound');
   b.setAttribute('aria-pressed', String(!!store.settings.sound));
 };
