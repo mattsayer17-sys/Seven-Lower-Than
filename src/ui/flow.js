@@ -197,7 +197,7 @@ function describe(ev) {
 }
 
 function outNote(r) {
-  return r.out ? ' (' + who(r.event.pi) + ' is out, ' + ordinal(store.game.finished.indexOf(r.event.pi) + 1) + ')' : '';
+  return r.out ? ' (' + who(r.event.pi) + (r.event.pi === 0 ? ' are out, ' : ' is out, ') + ordinal(store.game.finished.indexOf(r.event.pi) + 1) + ')' : '';
 }
 
 function flashLabel(ev) {
