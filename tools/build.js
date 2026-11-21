@@ -17,4 +17,6 @@ let html = fs.readFileSync(path.join(root, 'src/index.template.html'), 'utf8');
 html = html.replace('/*{{CSS}}*/', () => css).replace('/*{{JS}}*/', () => js.replace(/<\/script>/gi, '<\\/script>'));
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist/index.html'), html);
+// static files next to the page: icons, share image, web app manifest
+for (const f of fs.readdirSync(path.join(root, 'public'))) fs.copyFileSync(path.join(root, 'public', f), path.join(root, 'dist', f));
 console.log('dist/index.html', (html.length / 1024).toFixed(1) + ' KB');

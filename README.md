@@ -1,6 +1,6 @@
-# Seven Lower Than
+# Shiphead
 
-Source for the single-file game. `npm run build` bundles everything into `dist/index.html`. Vercel runs `npm run build:min` on every push to `main` and serves `dist/` at https://seven-lower-than.vercel.app. The same file gets wrapped for iOS.
+Source for the single-file game. `npm run build` bundles everything into `dist/index.html`. Vercel runs `npm run build:min` on every push to `main` and serves `dist/` at https://shiphead.vercel.app (the old https://seven-lower-than.vercel.app still works; playshiphead.com to follow). The same file gets wrapped for iOS.
 
 ## Layout
 
@@ -57,3 +57,9 @@ The Vercel project is `seven-lower-than` (team mattsayer17-5269s-projects). It b
 `vercel.json` sets the security headers: a content security policy that only lets the page talk to its own origin and the Supabase project, no framing, no sniffing, HSTS, and a locked-down permissions policy.
 To go live from git: push this folder to a GitHub repo, then in Vercel open the project, Settings, Git, Connect, and pick the repo. Every push to `main` then deploys to production and every other branch gets a preview URL.
 The edge function in `server/` is deployed to Supabase separately (`node tools/build-fn.js` makes `dist/fn/index.ts`).
+
+## Brand
+
+Name: Shiphead. Mark: a boat whose sail is a playing card (one idea, reads at 29 px). Sources in `brand/` (icon.svg full-bleed for app stores, favicon.svg simplified for tiny sizes, icon-1024.png for the App Store). `public/` is copied into `dist/` by the build: apple-touch-icon, manifest icons, og.png share image.
+Colours: navy #16395a to #0a1c2e (icon background, stands out from the green that dominates the Card category), bone #f6efe0, heart red #d8413a, brass #c9a56a / #e3c58e (UI accent, unchanged). The in-game felt stays green.
+Internal keys (`__ms`, daily seed `mouse-shed-`, the `shed` function and tables) keep their old names on purpose so saved data and links keep working.

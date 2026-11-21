@@ -1,4 +1,4 @@
-// Seven Lower Than engine. Pure logic, no DOM. All rank behaviour comes from the ruleset schema.
+// Shiphead engine. Pure logic, no DOM. All rank behaviour comes from the ruleset schema.
 (function (root) {
   const SUITS = ['S', 'H', 'D', 'C'];
   const RED = { H: true, D: true };

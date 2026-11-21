@@ -21,12 +21,12 @@ import { fillChange, proposeHTML, readChange, voteCard } from './vote.js';
 import qrcode from 'qrcode-generator';
 
 // ---------- invites: a link that opens straight into the table, sent by WhatsApp, the share sheet, a copy or a QR code ----------
-const SITE = 'https://seven-lower-than.vercel.app/';
+const SITE = 'https://shiphead.vercel.app/';
 function inviteLink(code) {
   const web = /^https?:$/.test(location.protocol) && !/localhost|127\.0\.0\.1/.test(location.hostname);
   return (web ? location.origin + location.pathname : SITE) + '?join=' + encodeURIComponent(code);
 }
-const inviteText = code => 'Join my Seven Lower Than table. Tap to sit down: ' + inviteLink(code) + ' (code ' + code + ')';
+const inviteText = code => 'Join my Shiphead table. Tap to sit down: ' + inviteLink(code) + ' (code ' + code + ')';
 function qrSvg(text) {
   const q = qrcode(0, 'M');
   q.addData(text);
@@ -41,7 +41,7 @@ function inviteHTML(code) {
 }
 function wireInvite(code) {
   const sh = $('#olShare');
-  if (sh) sh.onclick = () => navigator.share({ title: 'Seven Lower Than', text: 'Join my Seven Lower Than table (code ' + code + ')', url: inviteLink(code) }).catch(() => {});
+  if (sh) sh.onclick = () => navigator.share({ title: 'Shiphead', text: 'Join my Shiphead table (code ' + code + ')', url: inviteLink(code) }).catch(() => {});
   $('#olCopy').onclick = async () => {
     try { await navigator.clipboard.writeText(inviteLink(code)); $('#olCopy').textContent = 'Copied'; } catch (e) { $('#olCopy').textContent = 'Copy failed'; }
     setTimeout(() => { if ($('#olCopy')) $('#olCopy').textContent = 'Copy link'; }, 1500);
@@ -308,7 +308,7 @@ function showOnline(opts) {
 function showInvite(code) {
   stopLobby();
   const p = prof();
-  showModal('<h2><span id="olInvTitle">You\'re invited</span></h2><p class="lead" id="olInvSub">Table ' + esc(code) + ' · Seven Lower Than</p><div id="olInvRules" class="invrules"></div>' +
+  showModal('<h2><span id="olInvTitle">You\'re invited</span></h2><p class="lead" id="olInvSub">Table ' + esc(code) + ' · Shiphead</p><div id="olInvRules" class="invrules"></div>' +
     identHTML(defaultName(p), (p && p.av) || '🦊') +
     '<div class="btns col"><button class="btn primary big" id="olSit">Sit down</button></div><div id="olNote" class="note" role="status"></div>' +
     '<div class="btns"><button class="btn quiet" id="olNotNow">Not now</button></div>');

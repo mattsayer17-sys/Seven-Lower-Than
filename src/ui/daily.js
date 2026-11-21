@@ -30,7 +30,7 @@ const dailyLine = d => (d.res === 'win' ? 'Out first' : d.res === 'mouse' ? 'Roc
 
 function shareText(day, d) {
   if (!d) return '';
-  return 'Seven Lower Than daily ' + day + '\n' + (d.res === 'win' ? '🏆 Out first' : d.res === 'mouse' ? '🪨 I hit Rock Bottom' : '😅 Safe, stayed off Rock Bottom') + ' in ' + d.turns + ' turns\n' + (d.res === 'mouse' ? 'Left holding ' + d.left + ' cards' : 'CPU left holding ' + d.left + ' cards') + '\nSame deal for everyone.';
+  return 'Shiphead daily ' + day + '\n' + (d.res === 'win' ? '🏆 Out first' : d.res === 'mouse' ? '🪨 I hit Rock Bottom' : '😅 Safe, stayed off Rock Bottom') + ' in ' + d.turns + ' turns\n' + (d.res === 'mouse' ? 'Left holding ' + d.left + ' cards' : 'CPU left holding ' + d.left + ' cards') + '\nSame deal for everyone.';
 }
 
 function copyText(t, btn) {

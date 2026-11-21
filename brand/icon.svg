@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16395a"/><stop offset="1" stop-color="#0a1c2e"/></linearGradient>
+    <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9cd96"/><stop offset="1" stop-color="#b98f4f"/></linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#sky)"/>
+  <g transform="translate(-61 -36) scale(1.12)">
+  <!-- mast and pennant -->
+  <rect x="500" y="118" width="24" height="560" rx="12" fill="#c9a56a"/>
+  <path d="M524 128 L640 160 L524 194 Z" fill="#d8413a"/>
+  <!-- the sail is a playing card -->
+  <g transform="rotate(-7 512 420)">
+    <rect x="322" y="200" width="380" height="470" rx="46" fill="#000" opacity=".28" transform="translate(14 18)"/>
+    <rect x="322" y="200" width="380" height="470" rx="46" fill="#f6efe0"/>
+    <rect x="344" y="222" width="336" height="426" rx="30" fill="none" stroke="#e2d6bd" stroke-width="6"/>
+    <path transform="translate(512 432) scale(2.3) translate(-50 -50)" d="M50 90C22 68 5 50 5 32 5 18 16 8 30 8c9 0 16 5 20 13 4-8 11-13 20-13 14 0 25 10 25 24 0 18-17 36-45 58z" fill="#d8413a"/>
+    <text x="372" y="306" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="78" fill="#d8413a">A</text>
+  </g>
+  <!-- hull -->
+  <path d="M168 676 H856 Q842 742 772 800 H252 Q182 742 168 676 Z" fill="url(#hull)"/>
+  <path d="M190 700 H834" stroke="#8a6633" stroke-width="10" stroke-linecap="round" opacity=".55"/>
+  </g>
+  <!-- sea -->
+  <path d="M0 818 C90 778 170 778 256 818 S422 858 512 818 S682 778 768 818 S934 858 1024 818 V1024 H0 Z" fill="#1f5f86"/>
+  <path d="M0 880 C90 840 170 840 256 880 S422 920 512 880 S682 840 768 880 S934 920 1024 880 V1024 H0 Z" fill="#14476a"/>
+</svg>
