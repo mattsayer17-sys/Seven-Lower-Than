@@ -23,7 +23,11 @@ function decide(g) {
     const players = 2 + (k % 4);
     const cs = [];
     for (let i = 0; i < players; i++) { const t = Net.supabaseTransport(cfg); const c = new Online.Client(t); await c.profile('Test' + i); made.push(t.uid); cs.push(c); }
-    const code = await cs[0].create(k % 2 ? { transparentOn: true, skipOn: true } : {}, 5); codes.push(code);
+    const code = await cs[0].create(k % 2 ? { transparentOn: true, skipOn: true, blindFollow: true } : { blindFollow: true }, 5); codes.push(code);
+    // v5: the invite peek, before sitting down
+    const pk = await cs[1].t.call({ op: 'peek', code });
+    if (pk.status !== 200 || pk.body.host !== 'Test0' || !pk.body.rules.blindFollow) throw new Error('peek: ' + JSON.stringify(pk));
+    if (k === 0) { const bad = await cs[1].t.call({ op: 'profile', name: 'b1tch' }); if (bad.status !== 400) throw new Error('rude name was accepted'); console.log('  peek ok, rude name refused'); }
     for (let i = 1; i < players; i++) await cs[i].join(code);
     const lob = await cs[0].t.lobby(code);
     if (lob.seats.length !== players) throw new Error('lobby shows ' + lob.seats.length);
@@ -42,9 +46,10 @@ function decide(g) {
       console.log('  vote passed on the live server: ' + after.note);
     }
     await cs[0].start();
+    if (k === 0) { const rx = await cs[1].react('\u{1F602}'); const bad = await cs[1].t.call({ op: 'react', code, text: 'hello' }); if (!rx.ok || bad.status !== 400) throw new Error('react: ' + JSON.stringify(bad)); console.log('  reaction relayed, free text refused'); }
     const G = [];
     for (let i = 0; i < players; i++) { const r = await cs[i].t.view(code); G[i] = Online.fromView(r.view); G[i].version = r.version; }
-    let steps = 0, resyncs = 0;
+    let steps = 0, resyncs = 0, follows = 0;
     for (let guard = 0; guard < 3000; guard++) {
       let moved = false;
       for (let i = 0; i < players; i++) {
@@ -53,7 +58,7 @@ function decide(g) {
         if (a.type === 'ready') await cs[i].act(a);
         else if (a.type === 'blind') {
           g.pending = true; await cs[i].act(a);
-          const r = await cs[i].t.view(code); Online.revealMine(g, r.view.lastEvent.cards[0]); Shed.playBlind(g, 0, a.id);
+          const r = await cs[i].t.view(code); const cards = r.view.lastEvent.cards; for (const c of cards) Online.revealMine(g, c); if (cards.length > 1) follows++; Shed.playBlind(g, 0, a.id, { extra: cards.slice(1).map(c => c.id) });
         } else { g.pending = true; if (a.type === 'play') Shed.play(g, 0, a.ids); else Shed.pickUp(g, 0); await cs[i].act(a); }
         for (let j = 0; j < players; j++) {
           const r = await cs[j].t.view(code); const was = G[j].phase;
@@ -66,7 +71,7 @@ function decide(g) {
       if (G[0].phase === 'over') break;
     }
     const lob2 = await cs[0].t.lobby(code);
-    console.log('game ' + (k + 1) + ': ' + players + ' players, code ' + code + ', status ' + lob2.status + ', loser seat ' + G[0].loser + ', replayed ' + steps + ' moves, resyncs in play ' + resyncs);
+    console.log('game ' + (k + 1) + ': ' + players + ' players, code ' + code + ', status ' + lob2.status + ', loser seat ' + G[0].loser + ', replayed ' + steps + ' moves, resyncs in play ' + resyncs + ', face-down follow-ups ' + follows);
     if (lob2.status !== 'over' || resyncs) process.exitCode = 1;
   }
   console.log('USERS ' + made.join(','));
