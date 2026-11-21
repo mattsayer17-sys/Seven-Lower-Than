@@ -16,7 +16,7 @@ import { hideWelcome } from './welcome.js';
 import { advance, afterAction, newGame } from './flow.js';
 import { hint, refreshStatus, render, setMsg } from './render.js';
 import { adoptElements, rekeyCard } from './cards.js';
-import { chatFrom, chatOn } from './chat.js';
+import { chatFrom, chatOn, reactHint } from './chat.js';
 import { fillChange, proposeHTML, readChange, voteCard } from './vote.js';
 import qrcode from 'qrcode-generator';
 
@@ -218,6 +218,7 @@ function startGame(client, code, res) {
   hideModal();
   hideWelcome(); // the getting-started card is for solo play; online it would cover the other player's cards
   newGame({ remote: { game } });
+  later(() => reactHint(), FAST ? 10 : 6000);
 }
 
 // ---------- the lobby ----------

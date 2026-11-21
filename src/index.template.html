@@ -37,6 +37,7 @@
     <div id="actions">
       <button class="btn primary hidden" id="bReady">Lock in</button>
       <button class="btn primary hidden" id="bPlay">Play</button>
+      <button class="btn primary hidden" id="bAll">Play both</button>
       <button class="btn hidden" id="bPick">Pick up pile</button>
       <button class="btn hidden" id="bSkip">Skip to result</button>
     </div>
@@ -45,7 +46,7 @@
     <div id="lock"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M7 10V8a5 5 0 0110 0v2h1a1 1 0 011 1v9a1 1 0 01-1 1H6a1 1 0 01-1-1v-9a1 1 0 011-1h1zm2 0h6V8a3 3 0 00-6 0v2z"/></svg><span id="lockT"></span></div>
     <button id="chatBtn" class="hidden" aria-label="Open chat">💬<i id="chatBadge" class="hidden"></i></button>
     <div id="chatPeek" class="hidden"></div>
-    <div id="chatPanel" class="hidden"><div class="ch"><span id="chatTitle">Chat</span><button id="chatMin" aria-label="Minimise chat">–</button></div><div id="chatlog"></div><div class="crow"><button class="e" data-e="👍" aria-label="Thumbs up">👍</button><button class="e" data-e="😂" aria-label="Laugh">😂</button><button class="e" data-e="😬" aria-label="Eek">😬</button><button class="e" data-e="🔥" aria-label="Fire">🔥</button><button class="e" data-e="🪨" aria-label="Rock Bottom">🪨</button></div><div class="crow qp"><button class="q" data-e="Nice one">Nice one</button><button class="q" data-e="Unlucky!">Unlucky!</button><button class="q" data-e="Ouch">Ouch</button><button class="q" data-e="Too slow">Too slow</button></div><div class="crow" id="chatTextRow"><input id="chatIn" maxlength="40" placeholder="Message" aria-label="Chat message" autocomplete="off"><button class="btn send" id="chatSend">Send</button></div></div>
+    <div id="chatPanel" class="hidden"><div class="ch"><span id="chatTitle">Chat</span><button id="chatMin" aria-label="Minimise chat">–</button></div><div id="chatlog"></div><div class="crow"><button class="e" data-e="👍" aria-label="Thumbs up">👍</button><button class="e" data-e="😂" aria-label="Laugh">😂</button><button class="e" data-e="😬" aria-label="Eek">😬</button><button class="e" data-e="🔥" aria-label="Fire">🔥</button><button class="e" data-e="🪨" aria-label="Rock Bottom">🪨</button></div><div class="crow qp"><button class="q" data-e="Nice one">Nice one</button><button class="q" data-e="Unlucky!">Unlucky!</button><button class="q" data-e="Ouch">Ouch</button><button class="q" data-e="Too slow">Too slow</button><button class="q" data-e="Your go!">Your go!</button></div><div class="crow" id="chatTextRow"><input id="chatIn" maxlength="40" placeholder="Message" aria-label="Chat message" autocomplete="off"><button class="btn send" id="chatSend">Send</button></div></div>
     <div id="offer" class="coachbox hidden"><div>New here? Watch a quick walkthrough.</div><div class="cb"><button class="lnk" id="offNo">Not now</button><button class="btn primary sm" id="offYes">Show me</button></div></div>
   </main>
   <div id="cap" class="coachbox hidden"><div id="capT"></div><div class="cb"><button class="lnk" id="capSkip">Skip</button><button class="btn primary sm hidden" id="capNext">Continue</button></div></div>

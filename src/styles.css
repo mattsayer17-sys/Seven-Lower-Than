@@ -340,3 +340,11 @@ details.fold>summary::after{content:" ▸"}
 details.fold[open]>summary::after{content:" ▾"}
 #olLeave.wide{flex:1}
 .btn:disabled{opacity:.45;cursor:default}
+
+/* a pair or more you can play together */
+.card.multi::after{content:attr(data-n);position:absolute;top:-8px;right:-6px;z-index:5;min-width:22px;height:20px;padding:0 5px;border-radius:10px;background:var(--brass2);color:#17150f;font:800 12px/20px system-ui,sans-serif;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.45)}
+/* reactions: easier to spot, and offered at the moments worth reacting to */
+#chatBtn{border:1.5px solid var(--brass);box-shadow:0 0 10px rgba(227,197,142,.25)}
+#chips{position:absolute;right:58px;z-index:701;display:flex;gap:6px;animation:fade .2s}
+#chips button{border:1px solid var(--brass);background:rgba(14,14,16,.92);color:var(--bone);border-radius:16px;padding:6px 10px;font-size:14px;line-height:1;cursor:pointer}
+#chips button.e{font-size:18px;padding:4px 8px}

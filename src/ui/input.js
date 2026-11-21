@@ -62,7 +62,7 @@ function humanTap(id) {
     return humanPlay([id]);
   }
   store.ui.sel = [id];
-  if (twins) hint('You have ' + (twins + 1) + ' ' + c.rank + 's. Tap the glowing ones to add them, then Play');
+  if (twins) hint('You have ' + (twins + 1) + ' ' + c.rank + 's. Play one, or ' + (twins === 1 ? 'both' : 'all ' + (twins + 1)) + ' at once');
   render();
 }
 
@@ -194,6 +194,12 @@ window.addEventListener('pointermove', e => {
 window.addEventListener('pointerup', e => endDrag(e, false));
 window.addEventListener('pointercancel', e => endDrag(e, true));
 $('#bPlay').onclick = () => humanPlay();
+$('#bAll').onclick = () => {
+  const g = store.game, me = g.players[0], c = findCard(store.ui.sel[0]);
+  if (!c) return;
+  const pool = me.hand.includes(c) ? me.hand : me.up;
+  humanPlay(pool.filter(o => o.rank === c.rank).map(o => o.id));
+};
 $('#bPick').onclick = () => {
   if (store.ui.busy) return;
   store.ui.busy = true;
