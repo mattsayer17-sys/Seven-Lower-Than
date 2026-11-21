@@ -30,7 +30,7 @@ export const store = {
     tips: true,
     sound: true,
     chat: true,
-    back: 'red',
+    back: 'shiphead',
     cb: false,
     cpu: ['normal', 'normal', 'normal', 'normal']
   },
@@ -64,19 +64,23 @@ const FELTS = {
 const FAST = !!window.__MS_FAST;
 
 const BACKS = {
+  shiphead: ['#1b3d8f', '#1b3d8f'],
   red: ['#b5252d', '#8a1820'],
   blue: ['#1f4f9e', '#143570'],
   midnight: ['#22222b', '#101015']
 };
 
+// the house back: court blue, white and gold frame, a tiny double-ended S/H card in the middle
+const SHIP_BACK = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140'><defs><pattern id='d' width='6' height='6' patternUnits='userSpaceOnUse' patternTransform='rotate(45)'><path d='M0 0H6M0 0V6' stroke='#fff' stroke-width='.45' opacity='.22'/></pattern><pattern id='e' width='6' height='6' patternUnits='userSpaceOnUse' patternTransform='rotate(45)'><circle cx='3' cy='3' r='.55' fill='#fff' opacity='.28'/></pattern></defs><rect width='100' height='140' rx='9' fill='#fff'/><rect x='5' y='5' width='90' height='130' rx='6' fill='#1b3d8f'/><rect x='5' y='5' width='90' height='130' rx='6' fill='url(#d)'/><rect x='5' y='5' width='90' height='130' rx='6' fill='url(#e)'/><rect x='10' y='10' width='80' height='120' rx='3.5' fill='none' stroke='#fff' stroke-width='1.3'/><rect x='12.6' y='12.6' width='74.8' height='114.8' rx='2.2' fill='none' stroke='#f0b323' stroke-width='.8'/><g fill='#f0b323'><path d='M12.6 9.2l3.4 3.4-3.4 3.4-3.4-3.4z'/><path d='M87.4 9.2l3.4 3.4-3.4 3.4-3.4-3.4z'/><path d='M12.6 124l3.4 3.4-3.4 3.4-3.4-3.4z'/><path d='M87.4 124l3.4 3.4-3.4 3.4-3.4-3.4z'/></g><g transform='translate(50 70) scale(1.22) translate(-50 -70)'><rect x='34.5' y='47' width='31' height='46' rx='4' fill='#1b3d8f'/><g transform='rotate(-6 50 70)'><rect x='37' y='50' width='26' height='40' rx='3' fill='#fff'/><rect x='38.8' y='51.8' width='22.4' height='36.4' rx='1.6' fill='none' stroke='#000' stroke-width='1'/><path d='M38.8 70H61.2' stroke='#000' stroke-width='1'/><g transform='translate(40 54.3)'><path fill='#d4231b' transform='translate(6.04 12.84) scale(0.1585)' d='M23.75 1Q12.75 1 8.08-3.65Q3.40-8.30 2.95-19.10Q2.90-20.70 2.90-22.62Q2.90-24.55 3-26.48Q3.10-28.40 3.35-30L17.45-30Q17.25-26.35 17.20-22.80Q17.15-19.25 17.45-16.30Q17.70-13.85 19.23-12.53Q20.75-11.20 23.75-11.20Q26.70-11.20 28.08-12.53Q29.45-13.85 29.75-16.30Q29.95-18 30.03-19.68Q30.10-21.35 30.03-23.03Q29.95-24.70 29.75-26.40Q29.55-28.50 28.45-30.20Q27.35-31.90 24.95-32.50L16.75-34.60Q11.55-35.95 8.50-38.48Q5.45-41 4.08-44.75Q2.70-48.50 2.55-53.50Q2.50-55.70 2.50-57.43Q2.50-59.15 2.55-61Q2.85-68.15 4.98-72.55Q7.10-76.95 11.65-78.98Q16.20-81 23.75-81Q34.40-81 39.20-76.37Q44-71.75 44.45-61Q44.55-58.85 44.48-55.75Q44.40-52.65 44.25-50L29.85-50Q30-53.45 30.05-56.90Q30.10-60.35 29.95-63.80Q29.90-66.20 28.23-67.50Q26.55-68.80 23.75-68.80Q20.75-68.80 19.30-67.50Q17.85-66.20 17.55-63.80Q17.25-61.25 17.25-58.65Q17.25-56.05 17.55-53.50Q17.80-51.50 18.95-49.85Q20.10-48.20 22.65-47.60L29.75-45.90Q35.35-44.55 38.58-41.93Q41.80-39.30 43.23-35.43Q44.65-31.55 44.85-26.40Q44.90-25.25 44.90-24Q44.90-22.75 44.85-21.50Q44.80-20.25 44.75-19.10Q44.30-8.30 39.58-3.65Q34.85 1 23.75 1'/></g><g transform='rotate(180 50 70) translate(40 54.3)'><path fill='#1b3d8f' transform='translate(5.84 12.84) scale(0.1585)' d='M19 0L4 0L4-80L19-80L19-47.30L29.50-47.30L29.50-80L44.50-80L44.50 0L29.50 0L29.50-34.10L19-34.10'/></g></g></g></svg>";
 function backURI(k) {
-  const c = BACKS[k] || BACKS.red;
+  if (k === 'shiphead' || !BACKS[k]) return 'url("data:image/svg+xml,' + encodeURIComponent(SHIP_BACK) + '")';
+  const c = BACKS[k];
   const svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140'><defs><pattern id='d' width='9' height='9' patternUnits='userSpaceOnUse' patternTransform='rotate(45)'><path d='M0 0H9M0 0V9' stroke='#fff' stroke-width='.7' opacity='.4'/></pattern></defs><rect width='100' height='140' rx='9' fill='#fff'/><rect x='6' y='6' width='88' height='128' rx='5' fill='" + c[0] + "'/><rect x='6' y='6' width='88' height='128' rx='5' fill='url(#d)'/><rect x='11' y='11' width='78' height='118' rx='3' fill='none' stroke='#fff' stroke-width='1.4'/><ellipse cx='50' cy='70' rx='21' ry='29' fill='" + c[1] + "' stroke='#fff' stroke-width='1.6'/><ellipse cx='50' cy='70' rx='13' ry='20' fill='none' stroke='#fff' stroke-width='1' opacity='.8'/><path d='M50 55l7 15-7 15-7-15z' fill='#fff' opacity='.9'/></svg>";
   return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
 }
 
 function applyBack() {
-  if (!BACKS[store.settings.back]) store.settings.back = 'red';
+  if (!BACKS[store.settings.back]) store.settings.back = 'shiphead';
   table.style.setProperty('--backimg', backURI(store.settings.back));
 }
 
@@ -134,6 +138,8 @@ try {
   const s = JSON.parse(localStorage.getItem('ms.settings') || 'null');
   if (s) {
     store.settings = Object.assign(store.settings, s);
+    // 21 Nov 2026: the house card back replaces the old red default once (a back someone picked stays)
+    if (!s.backV) { if (!s.back || s.back === 'red') store.settings.back = 'shiphead'; store.settings.backV = 1; }
     if (s.eightsTransparent && s.transparentOn === undefined) {
       store.settings.transparentOn = true;
       store.settings.transparentRank = '8';
