@@ -46,7 +46,7 @@ function decide(g) {
       console.log('  vote passed on the live server: ' + after.note);
     }
     await cs[0].start();
-    if (k === 0) { const rx = await cs[1].react('\u{1F602}'); const bad = await cs[1].t.call({ op: 'react', code, text: 'hello' }); if (!rx.ok || bad.status !== 400) throw new Error('react: ' + JSON.stringify(bad)); console.log('  reaction relayed, free text refused'); }
+    if (k === 0) { const rx = await cs[1].react('\u{1F602}'); await new Promise(r => setTimeout(r, 1400)); const go = await cs[1].t.call({ op: 'react', code, text: 'Your go!' }); if (go.status !== 200) throw new Error('Your go! refused: ' + JSON.stringify(go)); await new Promise(r => setTimeout(r, 1400)); const bad = await cs[1].t.call({ op: 'react', code, text: 'hello' }); if (!rx.ok || bad.status !== 400) throw new Error('react: ' + JSON.stringify(bad)); console.log('  reaction relayed, free text refused'); }
     const G = [];
     for (let i = 0; i < players; i++) { const r = await cs[i].t.view(code); G[i] = Online.fromView(r.view); G[i].version = r.version; }
     let steps = 0, resyncs = 0, follows = 0;
