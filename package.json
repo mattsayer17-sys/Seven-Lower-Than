@@ -7,7 +7,8 @@
     "lint": "eslint src/ui",
     "build": "node tools/build.js",
     "build:min": "node tools/build.js --minify && node tools/build-fn.js",
-    "verify": "npm run lint && npm test && npm run build && node tools/build-fn.js && node tools/vote-drive.js dist/index.html && node tools/presets-drive.js dist/index.html && node tools/a11y-drive.js dist/index.html && node tools/setup-drive.js dist/index.html && node tools/onboarding-drive.js dist/index.html && node tools/online-drive.js dist/index.html && node tools/compare.js"
+    "verify": "npm run lint && npm test && npm run build && node tools/build-fn.js && node tools/vote-drive.js dist/index.html && node tools/presets-drive.js dist/index.html && node tools/a11y-drive.js dist/index.html && node tools/setup-drive.js dist/index.html && node tools/onboarding-drive.js dist/index.html && node tools/online-drive.js dist/index.html && node tools/compare.js",
+    "status": "node tools/status.js"
   },
   "devDependencies": {
     "@babel/generator": "^8.1.2",
