@@ -292,8 +292,9 @@ function showInvite(code) {
   $('#olNotNow').onclick = hideModal;
   const t = getTransport();
   t.call({ op: 'peek', code }).then(r => {
+    // only a real "no such table" says closed; any other failure keeps the plain invite and Sit down still works
+    if (!$('#olInvTitle') || (r.status !== 200 && r.status !== 404)) return;
     const info = r.status === 200 ? r.body : null;
-    if (!$('#olInvTitle')) return;
     if (!info) { $('#olInvTitle').textContent = 'That table has closed'; $('#olInvSub').textContent = 'Ask your friend for a new link, or play the computer for now.'; $('#olSit').textContent = 'Play the computer'; $('#olSit').onclick = hideModal; return; }
     $('#olInvTitle').textContent = info.host + ' invited you';
     $('#olInvSub').textContent = 'Table ' + code + ' · ' + info.seated + ' of ' + info.max + ' seats taken';
