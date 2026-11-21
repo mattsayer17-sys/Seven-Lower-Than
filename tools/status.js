@@ -14,7 +14,9 @@ let open = 0;
 for (const b of heads.filter(h => h !== 'main')) {
   sh('git fetch -q --depth=200 origin +refs/heads/' + b + ':refs/remotes/origin/' + b);
   const ahead = sh('git rev-list --count origin/main..origin/' + b);
-  if (ahead && ahead !== '0') {
+  // a squash-merged branch still has its own commits, but git cherry sees their changes already in main
+  const unmerged = sh('git cherry origin/main origin/' + b).split('\n').filter(l => l.startsWith('+')).length;
+  if (ahead && ahead !== '0' && unmerged) {
     open++;
     console.log('  ' + b + ': ' + ahead + ' commit(s) ahead, last ' + sh('git log -1 --format="%ad %s" --date=format:"%d %b %H:%M" origin/' + b));
   } else console.log('  ' + b + ': already in main (safe to delete)');
