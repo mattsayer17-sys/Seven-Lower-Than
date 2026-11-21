@@ -196,6 +196,11 @@ function decide(g) {
     await until(() => /Back to online/.test(document.querySelector('#modal').textContent) && /Rematch/.test((document.querySelector('#again') || {}).textContent || ''), 'over sheet');
     assert.equal(await cardCount(), 52);
     ok(label + ': played to the end in ' + moves + ' moves, over sheet offers Rematch and Back to online');
+    if (nBots === 1) {
+      const tally = await text('#modal .rival');
+      assert.match(tally, /^You \d+ – \d+ Bot1/);
+      ok(label + ': game-over sheet shows the running tally: ' + tally.replace(/\s+/g, ' '));
+    }
     if (nBots === 1 && !label.includes('follow')) {
       // the other player asks first: my button says so, one tap seats me at the new table
       const r = await handle(db, bots[0].uid, { op: 'rematch', code });

@@ -3,7 +3,7 @@
 // Shared by the server (which refuses anything else) and the client (which only shows what is on this list).
 (function (root) {
   const EMOJI = ['👍', '😂', '😬', '🔥', '🪨'];
-  const PHRASES = ['Nice one', 'Unlucky!', 'Ouch', 'Too slow'];
+  const PHRASES = ['Nice one', 'Unlucky!', 'Ouch', 'Too slow', 'Your go!'];
   const LIST = EMOJI.concat(PHRASES);
   const GAP_MS = 1200; // one reaction per player per this long
   const allowed = t => typeof t === 'string' && LIST.includes(t);

@@ -36,7 +36,12 @@ const HAPTIC = {
   stung: { steps: [[0, 'warning'], [180, 'heavy']], web: [40, 30, 90] },
   pick: { steps: [[0, 'heavy'], [110, 'medium'], [210, 'light']], web: [70, 50, 120] },
   boom: { steps: [[0, 'heavy'], [90, 'heavy'], [200, 'medium'], [320, 'light']], web: [60, 40, 220] },
-  heartbeat: { steps: [[0, 'medium'], [150, 'light']], web: [30, 120, 20] },
+  heartbeat: { steps: [[0, 'heavy'], [160, 'medium']], web: [35, 140, 25] },
+  // the final face-down flip: a light lift, a tick as it turns, then the verdict
+  lift: { steps: [[0, 'light']], web: 12 },
+  turn: { steps: [[0, 'tick']], web: 6 },
+  flipok: { steps: [[0, 'success'], [140, 'medium']], web: [25, 60, 25, 60, 60] },
+  flipno: { steps: [[0, 'heavy'], [130, 'error']], web: [160, 60, 60] },
   win: { steps: [[0, 'success']], web: [20, 60, 20] },
   lose: { steps: [[0, 'heavy'], [180, 'heavy'], [360, 'warning']], web: [120, 60, 120, 60, 400] }
 };
@@ -147,6 +152,20 @@ const SFX = {
   },
   turn() {
     tone(660, .07, 'sine', .07);
+  },
+  // the final flip: a long rising breath while it hovers, then the verdict
+  rise() {
+    tone(180, 1.45, 'sine', .05, 620);
+    tone(90, 1.45, 'triangle', .04, 310);
+  },
+  verdict(ok) {
+    if (ok) { tone(523, .5, 'triangle', .12); tone(659, .5, 'triangle', .1, 0, .06); tone(784, .7, 'triangle', .1, 0, .12); }
+    else { tone(110, .45, 'sawtooth', .1, 70); tone(82, .6, 'sine', .18, 60, .05); }
+  },
+  // lub-dub: two low thumps you feel more than hear
+  heart() {
+    tone(58, .14, 'sine', .32, 44);
+    tone(52, .16, 'sine', .26, 40, .2);
   }
 };
 

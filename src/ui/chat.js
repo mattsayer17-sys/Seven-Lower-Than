@@ -1,5 +1,5 @@
 import { $, esc } from './dom.js';
-import { store } from './state.js';
+import { save, store } from './state.js';
 import { SFX } from './audio.js';
 import { prof, unlock } from './profile.js';
 
@@ -53,8 +53,33 @@ function cpuSay(i, lines, chance) {
 }
 const cpus = () => store.game.players.filter(p => p.id > 0 && !p.out).map(p => p.id);
 
+// Online, the big moments offer two or three reactions right by the button for a few seconds: one tap to send.
+let chipT = null;
+function chips(list) {
+  if (!chatOn() || chatOpen) return;
+  let el = $('#chips');
+  if (!el) { el = document.createElement('div'); el.id = 'chips'; $('#table').appendChild(el); }
+  const b = $('#chatBtn');
+  el.style.top = (parseFloat(b.style.top) || 0) + 4 + 'px';
+  el.innerHTML = list.map(t => '<button class="' + (/^\p{Extended_Pictographic}/u.test(t) ? 'e' : 'q') + '" data-e="' + esc(t) + '">' + esc(t) + '</button>').join('');
+  el.querySelectorAll('button').forEach(x => x.onclick = () => { el.remove(); chatSend(x.dataset.e); });
+  clearTimeout(chipT);
+  chipT = setTimeout(() => { if (el.parentNode) el.remove(); }, 4500);
+}
+function moment(ev) {
+  const big = ev.type === 'pickup' ? ev.count : ev.type === 'blind' && !ev.success ? ev.picked : ev.forced ? ev.forced.count : 0;
+  const them = ev.forced ? ev.forced.pi !== 0 : ev.pi !== 0;
+  if (ev.stung && them) return chips(['😂', 'Unlucky!', '🔥']);
+  if (ev.stung) return chips(['😬', 'Ouch', 'Nice one']);
+  if (big >= 5 && them) return chips(['😂', 'Unlucky!', 'Ouch']);
+  if (big >= 5) return chips(['😬', 'Ouch']);
+  if (ev.burned && ev.pi !== 0) return chips(['Nice one', '😬']);
+  if (ev.burned) return chips(['🔥', 'Too slow']);
+}
+
 // CPUs react to the big moments, not every card.
 function reactTo(ev) {
+  if (store.game && online() && chatOn()) return moment(ev);
   if (!store.game || online() || !chatOn()) return;
   const others = cpus();
   if (!others.length) return;
@@ -90,6 +115,7 @@ function chatSync() {
 }
 
 function chatReset() {
+  if ($('#chips')) $('#chips').remove();
   chatMsgs = [];
   chatOpen = false;
   chatUnread = 0;
@@ -151,6 +177,7 @@ function chatFrom(i, name, text) {
 }
 
 function chatOpenIt() {
+  if ($('#chips')) $('#chips').remove();
   chatOpen = true;
   chatUnread = 0;
   $('#chatBadge').classList.add('hidden');
@@ -183,4 +210,18 @@ $('#chatIn').addEventListener('keydown', e => {
 }
 
 
-export { chatFrom, chatIncoming, chatOn, chatReset, chatSync, reactTo };
+// First online game: point at the reactions once, after the deal has settled.
+function reactHint() {
+  const p = prof();
+  if (!p || (p.flags && p.flags.reactHint)) return;
+  p.flags = p.flags || {};
+  p.flags.reactHint = true;
+  save();
+  const pk = $('#chatPeek');
+  pk.innerHTML = 'Tap the chat button to send a reaction';
+  pk.classList.remove('hidden');
+  clearTimeout(peekT);
+  peekT = setTimeout(() => pk.classList.add('hidden'), 5000);
+}
+
+export { chatFrom, chatIncoming, chatOn, chatReset, chatSync, reactHint, reactTo };

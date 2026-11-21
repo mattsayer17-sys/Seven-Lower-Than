@@ -14,9 +14,10 @@ import { AVATARS, prof, unlock, updateStats } from './profile.js';
 import { hideModal, showModal } from './sheets.js';
 import { hideWelcome } from './welcome.js';
 import { advance, afterAction, newGame } from './flow.js';
-import { hint, render, setMsg } from './render.js';
+import { hint, refreshStatus, render, setMsg } from './render.js';
 import { adoptElements, rekeyCard } from './cards.js';
-import { chatFrom, chatOn } from './chat.js';
+import { chatFrom, chatOn, reactHint } from './chat.js';
+import { finalFlip, isFinalFlip } from './reveal.js';
 import { fillChange, proposeHTML, readChange, voteCard } from './vote.js';
 import qrcode from 'qrcode-generator';
 
@@ -110,6 +111,13 @@ function makeRemote(client, code) {
       rekeyCard(rk.from, rk.to);
       // face-down follow-up: more of my face-down cards went on with it
       for (const c of cards.slice(1)) { const k = Online.revealMine(game, c); if (!k) throw new Error('Out of step'); rekeyCard(k.from, k.to); }
+      const finish = () => {
+        afterAction(Shed.playBlind(game, 0, id, { extra: cards.slice(1).map(c => c.id) }));
+        r.inflight--;
+        const out = Online.reconcile(game, res.view, res.version);
+        if (out.mode === 'resync') resync(out.game, res.version);
+      };
+      if (isFinalFlip(game, 0, id)) return finalFlip(id, Shed.canPlayCard(game.rules, game.players[0].down[0], game.pile), render, finish);
       store.ui.reveal = id;
       render();
       later(() => {
@@ -118,7 +126,7 @@ function makeRemote(client, code) {
         r.inflight--;
         const out = Online.reconcile(game, res.view, res.version);
         if (out.mode === 'resync') resync(out.game, res.version);
-      }, 950);
+      }, store.ui.beat === 0 ? 1700 : 950);
     }, fail);
   };
 
@@ -139,6 +147,20 @@ function makeRemote(client, code) {
     if (store.remote !== r || r.busy || r.inflight || !res) return;
     const game = g();
     if (res.version <= (game.version || 0)) return;
+    // someone else turned over their last face-down card: show everyone the card turning before anything moves
+    const lev = res.view.lastEvent, me = res.view.me, n = res.view.players.length;
+    if (lev && lev.type === 'blind' && res.version === (game.version || 0) + 1 && !r.flipping) {
+      const pi = (lev.pi - me + n) % n, p = game.players[pi], slot = p && p.down.length === 1 ? p.down[0] : null;
+      if (pi !== 0 && slot && slot.hidden && isFinalFlip(game, pi, slot.id)) {
+        const card = lev.cards[0];
+        const from = Object.assign({}, slot);
+        Object.assign(slot, { id: card.id, rank: card.rank, suit: card.suit, hidden: false });
+        rekeyCard(from, slot);
+        r.flipping = true;
+        r.busy = true;
+        return finalFlip(card.id, Shed.canPlayCard(game.rules, slot, game.pile), render, () => { r.flipping = false; r.busy = false; poll(); });
+      }
+    }
     const out = Online.reconcile(game, res.view, res.version);
     if (out.mode === 'resync') return resync(out.game, res.version);
     if (out.mode === 'step') {
@@ -194,6 +216,7 @@ function makeRemote(client, code) {
     if (store.remote !== r || r.stopped) return;
     r.polling = true;
     try { await poll(); } finally { r.polling = false; }
+    refreshStatus();
     if (store.remote !== r || r.stopped) return;
     const soon = r.soon;
     r.soon = false;
@@ -217,6 +240,7 @@ function startGame(client, code, res) {
   hideModal();
   hideWelcome(); // the getting-started card is for solo play; online it would cover the other player's cards
   newGame({ remote: { game } });
+  later(() => reactHint(), FAST ? 10 : 6000);
 }
 
 // ---------- the lobby ----------

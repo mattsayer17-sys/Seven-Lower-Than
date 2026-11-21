@@ -12,6 +12,7 @@ import { rigTour } from './tour.js';
 import { chatReset, chatSync, reactTo } from './chat.js';
 import { hideWelcome } from './welcome.js';
 import { hideModal, showOver } from './sheets.js';
+import { finalFlip, isFinalFlip } from './reveal.js';
 
 // ---------- new game: blank felt, then the deck, then the deal ----------
 function newGame(o) {
@@ -111,9 +112,12 @@ function newGame(o) {
   const ids = Object.keys(store.els);
   later(() => {
     // 1. the deck drops onto the felt
+    // online, a card element can be handed to another card mid-deal (a resync), so skip any that moved
     ids.forEach((id, i) => {
-      store.els[id].classList.remove('nt');
-      store.els[id].style.transitionDelay = i * 9 + 'ms';
+      const e = store.els[id];
+      if (!e) return;
+      e.classList.remove('nt');
+      e.style.transitionDelay = i * 9 + 'ms';
     });
     store.ui.intro = 'deck';
     render();
@@ -122,12 +126,15 @@ function newGame(o) {
     // 2. deal, one card at a time round the table
     const stag = n > 2 ? 62 : 90;
     ids.forEach(id => {
-      store.els[id].style.transitionDelay = '';
-      store.els[id].firstChild.style.transitionDelay = '';
+      const e = store.els[id];
+      if (!e) return;
+      e.style.transitionDelay = '';
+      e.firstChild.style.transitionDelay = '';
     });
     store.game.dealOrder.forEach((id, i) => {
       setTimeout(SFX.deal, i * stag + 150);
       const e = store.els[id];
+      if (!e) return;
       e.style.transitionDelay = i * stag + 'ms';
       e.firstChild.style.transitionDelay = i * stag + 330 + 'ms';
       e.style.animationDelay = i * stag + 'ms';
@@ -137,11 +144,12 @@ function newGame(o) {
     render();
     later(() => {
       // 3. table furniture fades in
-      ids.forEach(id => {
-        store.els[id].style.transitionDelay = '';
-        store.els[id].style.animationDelay = '';
-        store.els[id].classList.remove('fly');
-        store.els[id].firstChild.style.transitionDelay = '';
+      Object.keys(store.els).forEach(id => {
+        const e = store.els[id];
+        e.style.transitionDelay = '';
+        e.style.animationDelay = '';
+        e.classList.remove('fly');
+        e.firstChild.style.transitionDelay = '';
       });
       store.ui.hideui = false;
       store.ui.busy = false;
@@ -221,6 +229,12 @@ function afterAction(r) {
   if (store.remote) store.remote.busy = true;
   const ev = r.event,
     mine = ev.pi === 0;
+  // the last card of the last two players: this play runs in slow motion, then a breath before anything else
+  const slow = store.ui.beat === ev.pi && fxOn();
+  if (slow) {
+    table.classList.add('slowmo');
+    later(() => table.classList.remove('slowmo'), 1800);
+  }
   if (mine) hideWelcome(); // your first move puts the getting-started card away
   const _t = describe(ev) + outNote(r);
   setMsg(_t);
@@ -268,6 +282,7 @@ function afterAction(r) {
       render();
     }, 700);
   } else render();
+  if (slow) delay += 1100;
   // a CPU's move: shorter pause at busy tables, and a tap on the table can hurry it along
   if (!mine && !store.remote) {
     if (g.players.length > 2) delay = Math.round(delay * .7);
@@ -296,6 +311,15 @@ function hurry() {
   return true;
 }
 
+// In another tab or app switcher, the page title shows it's your go until you look again.
+const BASE_TITLE = document.title;
+function flagTurn() {
+  if (!document.hidden) return;
+  document.title = '● Your go · ' + BASE_TITLE;
+  const back = () => { if (!document.hidden) { document.title = BASE_TITLE; document.removeEventListener('visibilitychange', back); } };
+  document.addEventListener('visibilitychange', back);
+}
+
 function advance() {
   const g = store.game;
   store.ui.sel = [];
@@ -312,7 +336,7 @@ function advance() {
     store.ui.busy = g.phase === 'swap' ? !!g.players[0].ready : g.turn !== 0 || g.players[0].out;
     render();
     if (store.ui.busy && store.remote.pollNow) store.remote.pollNow(); // their go: look for their move straight away
-    if (g.phase === 'play' && g.turn === 0 && !g.players[0].out) SFX.turn();
+    if (g.phase === 'play' && g.turn === 0 && !g.players[0].out) { SFX.turn(); flagTurn(); }
     return;
   }
   if (store.tour && store.tour.manual && g.phase === 'play') {
@@ -338,7 +362,8 @@ function advance() {
     render();
     // three or more players means more CPUs to wait for, so each one thinks a little quicker
     const busy = g.players.length > 2;
-    schedule(cpuStep, (g.players[0].out ? 350 : busy ? 450 : 750) + Math.random() * (busy ? 250 : 350));
+    // its last card on the line: let the heartbeat run a little before it plays
+    schedule(cpuStep, (g.players[0].out ? 350 : busy ? 450 : 750) + Math.random() * (busy ? 250 : 350) + (store.ui.beat === g.turn && fxOn() ? 1600 : 0));
   } else {
     store.ui.busy = false;
     render();
@@ -356,12 +381,13 @@ function cpuStep() {
   }
   const d = Shed.cpuChoose(g, pi);
   if (d.kind === 'blind') {
+    if (isFinalFlip(g, pi, d.id)) return finalFlip(d.id, Shed.canPlayCard(g.rules, g.players[pi].down[0], g.pile), render, () => afterAction(Shed.playBlind(g, pi, d.id)));
     store.ui.reveal = d.id;
     render();
     later(() => {
       store.ui.reveal = null;
       afterAction(Shed.playBlind(g, pi, d.id));
-    }, g.players[0].out ? 500 : 950);
+    }, g.players[0].out ? 500 : store.ui.beat === pi && fxOn() ? 1700 : 950);
     return;
   }
   afterAction(d.kind === 'pickup' ? Shed.pickUp(g, pi) : Shed.play(g, pi, d.ids));

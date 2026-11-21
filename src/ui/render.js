@@ -2,6 +2,7 @@ import Shed from '../engine.js';
 import { $, table } from './dom.js';
 import { ordinal, store } from './state.js';
 import { allCards, findCard } from './cards.js';
+import { beatCheck } from './beat.js';
 import { syncMirror } from './access.js';
 
 // ---------- layout ----------
@@ -196,6 +197,8 @@ function computeLayout() {
   };
   cpus.forEach((p, k) => { const S = L.seats[k]; fan(p.hand, S.cx, S.handCy, S.hs, true, false, S.w); });
   fan(me.hand, W / 2, L.meHandCy, 1, false, true, W - 6);
+  // the final face-down card, lifted to the middle of the felt for everyone to watch it turn
+  if (store.ui.big) pos[store.ui.big.id] = { cx: W / 2, cy: (L.centerCy + L.meTableCy) / 2, rot: 0, s: store.ui.big.stage === 'lift' ? 1.7 : 1.9, z: 3000, down: !store.ui.big.face };
   if (store.ui.drag && store.ui.drag.active && pos[store.ui.drag.id]) pos[store.ui.drag.id] = {
     cx: store.ui.drag.x,
     cy: store.ui.drag.y - store.ch * .2,
@@ -232,6 +235,8 @@ function render() {
   table.classList.toggle('blank', store.ui.intro === 'blank');
   table.classList.toggle('hideui', !!store.ui.hideui);
   table.classList.toggle('wide', L.m >= 3);
+  table.classList.toggle('flipping', !!store.ui.big);
+  if (store.ui.big && !$('#dim')) $('#cards').insertAdjacentHTML('afterbegin', '<div id="dim"></div>');
   const tapIds = new Set(), dimIds = new Set();
   Object.keys(store.els).forEach(id => {
     const el = store.els[id],
@@ -247,6 +252,11 @@ function render() {
     el.classList.toggle('ghosting', !!p.ghost);
     el.classList.toggle('stinging', !!p.sting);
     el.classList.toggle('peek', !!p.peek);
+    const bg = store.ui.big && store.ui.big.id === +id ? store.ui.big : null;
+    el.classList.toggle('big', !!bg);
+    el.classList.toggle('tease', !!bg && bg.stage === 'tease');
+    el.classList.toggle('ok', !!bg && bg.stage === 'verdict' && bg.ok);
+    el.classList.toggle('no', !!bg && bg.stage === 'verdict' && !bg.ok);
     const c = findCard(+id);
     let tap = false,
       dim = false;
@@ -333,6 +343,7 @@ function render() {
   lk.style.top = L.centerCy - store.ch * .5 - 10 + 'px';
   lk.classList.toggle('on', isSt && !store.ui.hold);
   if (isSt) $('#lockT').textContent = 'only ' + topc.rank;
+  if (g.turn !== store.ui.turnOf || g.phase !== 'play') { store.ui.turnOf = g.phase === 'play' ? g.turn : null; store.ui.turnSince = Date.now(); }
   const stT = statusText();
   if (st.textContent !== stT) st.textContent = stT;
   $('#bReady').classList.toggle('hidden', !(g.phase === 'swap' && !store.ui.busy && !store.ui.intro));
@@ -345,6 +356,7 @@ function render() {
   $('#bPick').classList.toggle('hidden', !mustPick);
   $('#bSkip').classList.toggle('hidden', !(g.phase === 'play' && me.out) || !!g.online);
   syncMirror(g, { tap: tapIds, dim: dimIds, picking: myTurn && z === 'down' });
+  beatCheck();
 }
 
 function statusText() {
@@ -354,7 +366,16 @@ function statusText() {
   if (g.phase === 'swap') return store.ui.busy ? '' : 'Rearrange your cards. One chance';
   if (g.phase === 'over') return '';
   if (g.players[0].out) return 'You are out (' + ordinal(g.finished.indexOf(0) + 1) + '). Watching the rest';
-  if (g.turn !== 0) return g.players[g.turn].name + ' is thinking…';
+  if (g.turn !== 0) {
+    // online, say how long it has been, so a long wait reads as "they've put the phone down", not as a broken game
+    const n = g.players[g.turn].name;
+    if (g.online && store.ui.turnSince) {
+      const s = Math.floor((Date.now() - store.ui.turnSince) / 1000);
+      if (s >= 60) return n + ' hasn\'t played for ' + Math.floor(s / 60) + ' min. They may have left the app';
+      if (s >= 15) return n + ' is thinking… ' + s + ' s';
+    }
+    return n + ' is thinking…';
+  }
   if (store.ui.busy) return '';
   const me = g.players[0],
     z = Shed.zone(g, me);
@@ -379,4 +400,13 @@ function hint(t) {
 
 // ---------- flow ----------
 
-export { hint, humanLegal, render, setMsg };
+// Just the status line, for the online wait timer (no card moves).
+function refreshStatus() {
+  const st = $('#status');
+  if (!st || !store.game) return;
+  const t = statusText();
+  if (st.textContent !== t) st.textContent = t;
+}
+
+export { hint, humanLegal, refreshStatus, render, setMsg };
+

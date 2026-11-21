@@ -5,6 +5,7 @@ import { SFX, buzz } from './audio.js';
 import { findCard } from './cards.js';
 import { hint, humanLegal, render, setMsg } from './render.js';
 import { advance, afterAction, hurry } from './flow.js';
+import { finalFlip, isFinalFlip } from './reveal.js';
 
 // ---------- input: tap and drag ----------
 function humanTap(id) {
@@ -26,12 +27,13 @@ function humanTap(id) {
   if (z === 'down' && me.down.includes(c)) {
     if (store.remote) return store.remote.blind(id);
     store.ui.busy = true;
+    if (isFinalFlip(g, 0, id)) return finalFlip(id, Shed.canPlayCard(g.rules, c, g.pile), render, () => afterAction(Shed.playBlind(g, 0, id)));
     store.ui.reveal = id;
     render();
     return later(() => {
       store.ui.reveal = null;
       afterAction(Shed.playBlind(g, 0, id));
-    }, 950);
+    }, store.ui.beat === 0 ? 1700 : 950);
   }
   if (!(z === 'hand' && me.hand.includes(c) || z === 'up' && me.up.includes(c))) return;
   if (!humanLegal(c)) {
@@ -62,7 +64,7 @@ function humanTap(id) {
     return humanPlay([id]);
   }
   store.ui.sel = [id];
-  if (twins) hint('You have ' + (twins + 1) + ' ' + c.rank + 's. Tap the glowing ones to add them, then Play');
+  if (twins) hint(twins === 1 ? 'Tap the other ' + c.rank + ' to play both, or Play for one' : 'Tap the other ' + c.rank + 's to play them together, or Play for one');
   render();
 }
 

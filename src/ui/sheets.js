@@ -3,10 +3,11 @@ import { $, esc } from './dom.js';
 import { later, ordinal, store } from './state.js';
 import { SFX } from './audio.js';
 import { newGame } from './flow.js';
-import { recordGame } from './profile.js';
+import { recordGame, rivalryHTML } from './profile.js';
 import { dailyBlock, wireShare } from './daily.js';
 import { showSetup } from './setup.js';
 import { showOnline, wireRematch } from './online.js';
+import { showWelcome } from './welcome.js';
 
 // ---------- sheets ----------
 // A sheet may set m.onchange / m.onclick. They are cleared whenever a sheet opens or closes,
@@ -68,7 +69,7 @@ function initDialogs() {
   });
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape' || !seen() || walking()) return;
-    const b = ['#tblLeave', '#rClose', '#lClose', '#lgClose', '#pClose', '#olClose'].map(s => m.querySelector(s)).find(Boolean);
+    const b = ['#tblLeave', '#rClose', '#lClose', '#lgClose', '#pClose', '#olClose', '#lvStay'].map(s => m.querySelector(s)).find(Boolean);
     e.preventDefault();
     if (b) b.click(); else hideModal();
   });
@@ -86,7 +87,7 @@ function showOver() {
   const rows = g.finished.map((id, i) => '<div class="place' + (id === 0 ? ' me' : '') + '"><span>' + (i === g.finished.length - 1 ? '🪨 Last' : ordinal(i + 1)) + '</span><b>' + g.players[id].name + '</b></div>').join('');
   later(() => {
     const dh = g.meta && g.meta.daily ? dailyBlock(g.meta.daily) : '';
-    showModal('<h2>' + head + '</h2><p>' + sub + '</p>' + rows + dh + '<div class="btns"><button class="btn" id="setup">Setup</button><button class="btn primary" id="again">' + (g.online ? 'Back to online' : 'Play again') + '</button></div>');
+    showModal('<h2>' + head + '</h2><p>' + sub + '</p>' + rows + rivalryHTML(g) + dh + '<div class="btns"><button class="btn" id="setup">Setup</button><button class="btn primary" id="again">' + (g.online ? 'Back to online' : 'Play again') + '</button></div>');
     $('#again').onclick = g.online ? showOnline : () => newGame();
     $('#setup').onclick = showSetup;
     if (g.online) wireRematch();
@@ -101,7 +102,8 @@ function showLegend() {
   const rows = sp.map(k => '<div class="row"><span><b style="color:var(--brass2)">' + k + '</b> &nbsp;' + esc(Shed.EFFECT_INFO[r.ranks[k].effect]) + '</span></div>').join('') || '<div class="row"><span>No special cards</span></div>';
   showModal('<h2>This table</h2><p>Lowest card starts. Play equal or higher than the pile.' + (r.fourOfAKindBurns ? ' Four of a kind in a row burns the pile.' : '') + '</p>' + '<h3>Special cards</h3>' + rows + '<h3>Order, low to high</h3><p>' + order.join(' › ') + '</p>' + '<div class="btns"><button class="btn" id="lClose">Close</button><button class="btn primary" id="lSetup">Change rules</button></div>');
   $('#lClose').onclick = hideModal;
-  $('#lSetup').onclick = () => showSetup('rules');
+  // solo: the quick house-rules card on the felt; online the table's rules change by vote, in Setup
+  $('#lSetup').onclick = () => { hideModal(); if (store.game && store.game.online) showSetup('rules'); else showWelcome(); };
 }
 
 export { hideModal, initDialogs, showLegend, showModal, showOver };

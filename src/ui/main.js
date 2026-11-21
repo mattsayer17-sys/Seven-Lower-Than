@@ -9,7 +9,7 @@ import { loadProfiles, prof, toastTest, updateStats } from './profile.js';
 import { applyMotion, fxTest, pickFx } from './fx.js';
 import { startDemo } from './tour.js';
 import { maybeWelcome, showWelcome } from './welcome.js';
-import { chatIncoming, chatSync, initChat } from './chat.js';
+import { chatIncoming, chatSync, initChat, reactTo } from './chat.js';
 import { initHeader } from './header.js';
 import { initAccess, hooks } from './access.js';
 import { humanTap } from './input.js';
@@ -40,6 +40,7 @@ window.__ms = {
     }
   },
   chatIncoming: (n, t) => chatIncoming(n, t),
+  react: ev => reactTo(ev),
   game: () => store.game,
   ui: () => store.ui,
   layout: () => store.lastL,

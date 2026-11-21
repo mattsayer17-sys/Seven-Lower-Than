@@ -50,7 +50,15 @@ sndIcon();
 $('#bRules').onclick = () => {
   if (store.game) showLegend();
 };
-$('#bNew').onclick = showSetup;
+// Mid online game, New would quietly walk out on the others. Ask first, and say how to get back.
+$('#bNew').onclick = () => {
+  const g = store.game;
+  if (!(store.remote && g && g.online && g.phase !== 'over')) return showSetup();
+  showModal('<h2>Leave this game?</h2><p>The others will be left waiting for you. You can come back to it from Play online, under Your tables.</p>' +
+    '<div class="btns"><button class="btn" id="lvGo">Leave for now</button><button class="btn primary" id="lvStay">Keep playing</button></div>');
+  $('#lvStay').onclick = hideModal;
+  $('#lvGo').onclick = showSetup;
+};
 window.addEventListener('resize', () => render());
 }
 
