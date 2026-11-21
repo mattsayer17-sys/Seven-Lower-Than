@@ -23,25 +23,26 @@ let steps0 = [];
   const steps = steps0 = []; const ok = n => steps.push('ok  ' + n);
   const fresh = async () => { await ev(() => { sessionStorage.clear(); localStorage.clear(); }); await page.goto(url); };
 
-  // 1. a new player gets the welcome sheet once the deal has settled
+  // 1. a new player lands straight in a dealt game: no pop-up, no name, just a small card on the felt
   await page.goto(url);
-  await until(() => window.__ms && !!document.querySelector('#wWatch'), 'welcome sheet', 400);
-  const w = await ev(() => { const s = document.querySelector('.sheet'); return { role: s.getAttribute('role'), title: document.getElementById(s.getAttribute('aria-labelledby')).textContent, focus: document.activeElement === s, buttons: ['#wWatch', '#wRead', '#wPlay'].map(x => document.querySelector(x).textContent) }; });
-  assert.equal(w.role, 'dialog'); assert.equal(w.title, 'Welcome to Seven Lower Than'); assert.equal(w.focus, true);
-  assert.deepEqual(w.buttons, ['Watch a short walkthrough', 'Read how it works', 'Just play']);
-  assert.deepEqual(await nameless(), []);
-  ok('welcome sheet: dialog, focus inside, three ways in, every control named');
+  await until(() => window.__ms && !!document.querySelector('#coach.on'), 'getting-started card', 400);
+  const w = await ev(() => { const c = document.querySelector('#coach'); return { modal: !document.querySelector('#modal').classList.contains('hidden'), role: c.getAttribute('role'), label: c.getAttribute('aria-label'), name: !!document.querySelector('#wName'), buttons: ['#wWatch', '#wRead'].map(x => document.querySelector(x).textContent), x: document.querySelector('#wPlay').getAttribute('aria-label'), cards: document.querySelectorAll('#cards .card').length }; });
+  assert.equal(w.modal, false, 'nothing modal on first launch');
+  assert.equal(w.role, 'region'); assert.equal(w.label, 'Getting started'); assert.equal(w.name, false, 'no name field before playing');
+  assert.deepEqual(w.buttons, ['Show me · 30 s', 'Rules']); assert.equal(w.x, 'Just play');
+  assert.equal(w.cards, 52);
+  const nm = await ev(() => window.__ms.prof().name);
+  assert.match(nm, /^[A-Z][a-z]+ [A-Z][a-z]+ \d\d$/, 'a name was suggested quietly: ' + nm);
+  ok('first launch: cards dealt, no pop-up, no form, a small card offers the rules; name "' + nm + '" suggested quietly');
 
-  // 2. name + read how it works
-  await ev(() => { const i = document.querySelector('#wName'); i.value = 'Matt'; i.dispatchEvent(new Event('change', { bubbles: true })); });
+  // 2. Rules opens the written version
   await click('#wRead');
   await until(() => !!document.querySelector('.primer'), 'primer');
   assert.equal(await ev(() => document.querySelectorAll('.primer > li').length), 6);
   const spec = await text('.primer ul');
   assert.match(spec, /2: /); assert.match(spec, /10: /); assert.match(spec, /7: /); assert.match(spec, /Four of a kind/);
-  assert.equal(await ev(() => window.__ms.prof().name), 'Matt');
-  assert.match(await text('#stats'), /Matt/);
-  ok('written walkthrough lists this table\'s special cards, and the name was saved');
+  assert.equal(await ev(() => !!document.querySelector('#coach')), false);
+  ok('Rules: written walkthrough lists this table\'s special cards, the card goes away');
   await click('#pmDone');
   assert.equal(await modalOpen(), false);
 
@@ -50,14 +51,15 @@ let steps0 = [];
   await until(() => window.__ms && !window.__ms.ui().busy, 'ready again');
   await wait(2500);
   assert.equal(await modalOpen(), false);
-  ok('after a reload the welcome does not come back');
+  assert.equal(await ev(() => !!document.querySelector('#coach')), false);
+  ok('after a reload the card does not come back');
 
   // 4. someone who has already played is not welcomed
   await ev(() => { const P = JSON.parse(localStorage.getItem('ms.profiles')); P.list[0].flags = {}; P.list[0].g = 3; localStorage.setItem('ms.profiles', JSON.stringify(P)); });
   await page.goto(url);
   await until(() => window.__ms && !window.__ms.ui().busy, 'ready played');
   await wait(2500);
-  assert.equal(await modalOpen(), false);
+  assert.equal(await ev(() => !!document.querySelector('#coach')), false);
   ok('an existing player (games played) skips it');
 
   // 5. Setup has the read button too
@@ -85,16 +87,28 @@ let steps0 = [];
   await fresh();
   await until(() => window.__ms && !!document.querySelector('#wPlay'), 'welcome 3', 400);
   await click('#wPlay');
-  assert.equal(await modalOpen(), false);
+  await until(() => !document.querySelector('#coach'), 'card closed');
   assert.equal(await ev(() => window.__ms.prof().flags.welcomed), true);
-  ok('Just play closes it and remembers');
+  ok('× closes it and remembers');
+
+  // 7b. or just play a card: your first move puts it away
+  await fresh();
+  await until(() => window.__ms && !!document.querySelector('#coach.on'), 'welcome 3b', 400);
+  await until(() => { const g = window.__ms.game(), ui = window.__ms.ui(); return g.phase === 'swap' && !ui.busy && !ui.intro; }, 'swap ready', 400);
+  await click('#bReady');
+  await until(() => { const g = window.__ms.game(), ui = window.__ms.ui(); return g.phase === 'play' && (g.turn !== 0 || !ui.busy); }, 'play', 600);
+  for (let i = 0; i < 300 && await ev(() => !!document.querySelector('#coach')); i++) {
+    await ev(() => { const g = window.__ms.game(), ui = window.__ms.ui(); if (g.turn !== 0 || ui.busy || ui.intro) return; const gr = window.Shed.legalGroups(g, 0); if (!gr.length) return document.querySelector('#bPick').click(); gr[0].forEach(c => document.querySelector('#cards .card[data-id="' + c.id + '"]').click()); const b = document.querySelector('#bPlay'); if (b && !b.disabled) b.click(); });
+    await wait(30);
+  }
+  assert.equal(await ev(() => !!document.querySelector('#coach')), false);
+  ok('playing your first card puts it away, no tap on the card needed');
 
   // 8. Escape also dismisses and the sheet is not shown again
   await fresh();
   await until(() => window.__ms && !!document.querySelector('#wPlay'), 'welcome 4', 400);
   await page.keyboard.press('Escape');
-  await wait(50);
-  assert.equal(await modalOpen(), false);
+  await until(() => !document.querySelector('#coach'), 'escape closed');
   assert.equal(await ev(() => window.__ms.prof().flags.welcomed), true);
   ok('Escape dismisses it too');
 

@@ -53,6 +53,15 @@ async function handle(db, uid, b) {
     const { error } = await db.from('shed_profiles').upsert({ id: uid, name, avatar: String(b.avatar || '🦊').slice(0, 4) });
     if (error) return reply({ error: error.message }, 400);
   }
+  // What an invite link shows before you sit down: whose table, how full, the rules. Needs no name yet.
+  if (b.op === 'peek') {
+    const code = String(b.code || '').toUpperCase().trim();
+    const t = (await db.from('shed_tables').select('host,status,rules,max_players').eq('code', code).maybeSingle()).data;
+    if (!t) return reply({ error: 'No table with that code' }, 404);
+    const seats = (await db.from('shed_seats').select('user_id').eq('code', code)).data || [];
+    const host = (await db.from('shed_profiles').select('name').eq('id', t.host).maybeSingle()).data;
+    return reply({ host: host ? host.name : 'A friend', seated: seats.length, max: t.max_players, status: t.status, rules: t.rules, mine: seats.some(x => x.user_id === uid) });
+  }
   const prof = await db.from('shed_profiles').select('id,name').eq('id', uid).maybeSingle();
   if (!prof.data) return reply({ error: 'Pick a name first' }, 400);
   if (b.op === 'profile') return reply({ ok: true });

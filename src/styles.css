@@ -300,3 +300,23 @@ html[data-fx=off] .card.stinging .inner{animation:none;filter:drop-shadow(0 0 2p
 .bubble::after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#f6f1e4}
 .bubble.me{background:var(--brass2)}.bubble.me::after{border-top-color:var(--brass2)}
 @keyframes bubble{0%{opacity:0;scale:.6}8%{opacity:1;scale:1.08}14%{scale:1}85%{opacity:1}100%{opacity:0;translate:0 -6px}}
+
+/* first launch: a small card on the felt offering the rules, never a pop-up in the way */
+#coach{position:absolute;left:50%;top:8px;transform:translate(-50%,-8px);opacity:0;z-index:40;width:min(360px,92%);background:linear-gradient(180deg,#26221a,#17150f);border:1.5px solid var(--brass2);border-radius:16px;padding:12px 40px 12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.5);transition:opacity .25s,transform .3s;color:var(--bone)}
+#coach.on{opacity:1;transform:translate(-50%,0)}
+#coach b{display:block;font-size:15px}
+#coach span{display:block;font-size:13px;color:#c9c5b8;margin-top:2px;line-height:1.35}
+#coach .cbtns{display:flex;gap:8px;margin-top:10px}
+#coach .x{position:absolute;right:6px;top:6px;width:32px;height:32px;border-radius:50%;border:0;background:transparent;color:var(--bone);font-size:22px;line-height:1;cursor:pointer}
+@media(prefers-reduced-motion:reduce){#coach{transition:opacity .2s;transform:translate(-50%,0)}}
+/* online: who you'll be, in one line */
+.me-card{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(227,197,142,.25);border-radius:14px;padding:10px 12px;margin:10px 0}
+.me-av{font-size:30px;line-height:1}
+.me-txt{flex:1;min-width:0}.me-txt small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}.me-txt b{display:block;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.me-edit{margin:-2px 0 8px}.me-edit .avs{margin-top:8px}
+.btn.big{padding:14px 18px;font-size:17px;display:flex;flex-direction:column;align-items:center;gap:2px}.btn.big small{font-size:12px;font-weight:500;opacity:.8}
+.joinrow{margin-top:12px}.joinrow>span{display:block;font-size:13px;opacity:.8;margin-bottom:4px}
+.invrules{background:rgba(255,255,255,.04);border-radius:12px;padding:8px 12px;font-size:13px;line-height:1.5;margin:8px 0}.invrules:empty{display:none}.invrules small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
+.sheet p.lead{margin-top:-4px;opacity:.85}
+#olNameNote:empty,.sheet #olNote:empty{display:none}
+.btn.quiet{border-color:transparent;background:none;opacity:.8}

@@ -395,3 +395,15 @@ test('reactions: seated players only, fixed list only, throttled, gone with the 
     assert.equal(db.t.shed_chat.length, 0);
   } finally { Date.now = realNow; }
 });
+
+test('peek: an invite shows whose table, how full and the rules, before you pick a name', async () => {
+  const db = new FakeDb();
+  const code = await lobby(db, 2);
+  const r = await handle(db, 'stranger', { op: 'peek', code });
+  assert.equal(r.status, 200);
+  assert.deepEqual([r.body.host, r.body.seated, r.body.max, r.body.status, r.body.mine], ['Ann', 2, 5, 'lobby', false]);
+  assert.ok(r.body.rules && typeof r.body.rules === 'object');
+  assert.equal((await handle(db, 'u2', { op: 'peek', code })).body.mine, true);
+  assert.equal((await handle(db, 'stranger', { op: 'peek', code: 'NOPE1' })).status, 404);
+  assert.equal(db.t.shed_profiles.some(p => p.id === 'stranger'), false);
+});

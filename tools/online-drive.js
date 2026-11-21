@@ -96,6 +96,9 @@ function decide(g) {
     await click('#mode button[data-m="online"]');
     await click('#rNew');
     await until(() => !!document.querySelector('#olMake'), 'online sheet');
+    const me = await ev(() => ({ name: document.querySelector('#olMeName').textContent, editHidden: document.querySelector('#olEditBox').classList.contains('hidden'), make: !document.querySelector('#olMake').disabled }));
+    assert.ok(me.name.length > 1 && me.editHidden && me.make, JSON.stringify(me));
+    ok(label + ': online sheet opens ready to go as "' + me.name + '", name editor folded away');
     await ev(() => { document.querySelector('#olName').value = 'Matt'; });
     await click('#olMake');
     await until(() => /Table [A-Z2-9]{5}/.test(document.querySelector('.sheet h2').textContent), 'waiting room');
@@ -200,6 +203,39 @@ function decide(g) {
 
   await scenario('2 players', 1, { players: 2 });
   await scenario('4 players, house rules, reload', 3, { players: 4, transparentOn: true, skipOn: true }, 25);
+
+  // a friend taps the invite link: whose table, how full, the rules, one tap to sit down
+  {
+    const host = 'host9';
+    await handle(db, host, { op: 'profile', name: 'Tali' });
+    const code = (await handle(db, host, { op: 'create', rules: {}, max: 4 })).body.code;
+    await page.goto('file://' + path.resolve(process.argv[2]) + '?join=' + code);
+    await until(() => /Tali invited you/.test((document.querySelector('#olInvTitle') || {}).textContent || ''), 'invite title');
+    assert.match(await text('#olInvSub'), /1 of 4 seats taken/);
+    assert.match(await text('#olInvRules'), /House rules/);
+    const pn = await ev(() => window.__ms.prof().name), shown = await text('#olMeName');
+    if (pn === 'Player 1' || pn === 'You') assert.match(shown, /^[A-Z][a-z]+ [A-Z][a-z]+ \d\d$/); else assert.equal(shown, pn);
+    assert.equal(await ev(() => document.querySelector('#olSit').disabled), false);
+    ok('invite link: "Tali invited you", 1 of 4 seats, house rules, ready to sit as ' + shown);
+    await click('#olEdit');
+    await ev(() => { const i = document.querySelector('#olName'); i.value = 'b1tch'; i.dispatchEvent(new Event('input')); });
+    assert.equal(await ev(() => document.querySelector('#olSit').disabled), true);
+    assert.equal(await text('#olNameNote'), 'Try another name');
+    await click('#olRoll');
+    const rolled = await text('#olMeName');
+    assert.equal(await ev(() => document.querySelector('#olSit').disabled), false);
+    ok('a rude name blocks Sit down with "Try another name"; 🎲 gives a clean one (' + rolled + ')');
+    await ev(() => { const i = document.querySelector('#olName'); i.value = 'Matt'; i.dispatchEvent(new Event('input')); });
+    await click('#olSit');
+    await until(() => /Table [A-Z2-9]{5}/.test((document.querySelector('.sheet h2') || {}).textContent || ''), 'waiting room after invite');
+    await until(() => /Matt/.test(document.querySelector('#olSeats').textContent) && /Tali/.test(document.querySelector('#olSeats').textContent), 'seated');
+    assert.ok(db.t.shed_seats.some(x => x.code === code && x.user_id === 'ui'));
+    ok('one tap on Sit down: seated at Tali\'s table');
+    await page.goto('file://' + path.resolve(process.argv[2]) + '?join=ZZZZ9');
+    await until(() => /closed/.test((document.querySelector('#olInvTitle') || {}).textContent || ''), 'closed table');
+    assert.equal(await text('#olSit'), 'Play the computer');
+    ok('a dead link says the table has closed and offers the computer');
+  }
 
   console.log(steps.join('\n'));
   assert.deepEqual(errors, []);

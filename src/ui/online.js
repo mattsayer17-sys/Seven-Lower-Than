@@ -9,8 +9,8 @@ import CFG from '../online-config.js';
 import Reactions from '../reactions.js';
 import Names from '../names.js';
 import { $, esc } from './dom.js';
-import { FAST, later, store, who } from './state.js';
-import { prof, unlock } from './profile.js';
+import { FAST, later, save, store, who } from './state.js';
+import { AVATARS, prof, unlock, updateStats } from './profile.js';
 import { hideModal, showModal } from './sheets.js';
 import { advance, afterAction, newGame } from './flow.js';
 import { hint, render, setMsg } from './render.js';
@@ -200,36 +200,77 @@ let lobbyTimer = null;
 const stopLobby = () => { clearInterval(lobbyTimer); lobbyTimer = null; };
 const note = t => { const n = $('#olNote'); if (n) { n.textContent = t || ''; n.className = 'note' + (t ? ' err' : ''); } };
 
-function showOnline(opts) {
-  const joinCode = opts && opts.join ? String(opts.join).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 5) : '';
-  stopLobby();
+// Who I will be at the table: one line with my avatar and name, and Change to edit them in place.
+// Never a form in the way: a name is suggested, so a first-timer can just tap the big button.
+function identHTML(nm, av) {
+  return '<div class="me-card" id="olMe"><span class="me-av" id="olMeAv">' + esc(av) + '</span><span class="me-txt"><small>You\'ll play as</small><b id="olMeName">' + esc(nm) + '</b></span>' +
+    '<button class="btn sm" id="olEdit" aria-expanded="false" aria-controls="olEditBox">Change</button></div>' +
+    '<div id="olEditBox" class="me-edit hidden"><div class="inp"><input id="olName" maxlength="16" aria-label="Your name" autocomplete="off" autocapitalize="words" spellcheck="false" value="' + esc(nm) + '">' +
+    '<button class="btn" id="olRoll" aria-label="Suggest another name">🎲</button></div>' +
+    '<div class="avs" role="radiogroup" aria-label="Avatar">' + AVATARS.map(a => '<button class="av' + (a === av ? ' on' : '') + '" role="radio" aria-checked="' + (a === av) + '" data-a="' + a + '">' + a + '</button>').join('') + '</div></div>' +
+    '<div id="olNameNote" class="note" role="status"></div>';
+}
+// Wire the identity line. onValid(ok) lets the sheet enable or disable its main button as you type.
+function wireIdent(onValid) {
   const p = prof();
-  const nm = p && p.name && p.name !== 'You' && p.name !== 'Player 1' ? p.name : '';
-  showModal('<h2>Play online</h2><p>Make a table and share the code, or join a friend\'s. You can leave a game and come back to it later.</p>' +
-    '<div class="inp"><input id="olName" maxlength="16" placeholder="Your name" aria-label="Your name" autocomplete="off" value="' + esc(nm || Names.suggest()) + '"></div>' +
-    '<div class="btns col"><button class="btn primary" id="olMake">Make a table with my rules</button></div>' +
-    '<h3>Join with a code</h3><div class="inp"><input id="olCode" maxlength="5" placeholder="5 letter code" aria-label="Table code" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase"></div>' +
-    '<div class="btns col"><button class="btn" id="olJoin">Join</button></div>' +
-    '<div id="olMine"></div><div id="olNote" class="note" role="status"></div><div class="btns"><button class="btn" id="olClose">Close</button></div>');
-  const ident = async () => {
+  let av = (p && p.av) || '🦊';
+  const check = () => {
     const nc = Names.check($('#olName').value);
-    if (!nc.ok) { note(nc.error === 'Pick a name' ? 'Pick a name first' : nc.error); $('#olName').focus(); return null; }
-    const name = nc.name;
-    if (p && name !== p.name) { p.name = name; }
+    const n = $('#olNameNote');
+    n.textContent = nc.ok || !$('#olName').value.trim() ? '' : nc.error;
+    n.className = 'note' + (nc.ok ? '' : ' err');
+    $('#olMeName').textContent = nc.ok ? nc.name : $('#olName').value.trim() || '…';
+    if (onValid) onValid(nc.ok);
+    return nc;
+  };
+  $('#olEdit').onclick = () => {
+    const box = $('#olEditBox'), open = box.classList.toggle('hidden') === false;
+    $('#olEdit').setAttribute('aria-expanded', String(open));
+    $('#olEdit').textContent = open ? 'Done' : 'Change';
+    if (open) { $('#olName').focus(); $('#olName').select(); }
+  };
+  $('#olName').addEventListener('input', check);
+  $('#olRoll').onclick = () => { $('#olName').value = Names.suggest(); check(); };
+  document.querySelectorAll('#olEditBox .av').forEach(b => b.onclick = () => {
+    av = b.dataset.a;
+    document.querySelectorAll('#olEditBox .av').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', String(x === b)); });
+    $('#olMeAv').textContent = av;
+  });
+  check();
+  // Sign in (silently, anonymous) and register the name. Returns a client, or null with the reason shown.
+  return async () => {
+    const nc = check();
+    if (!nc.ok) {
+      if ($('#olEditBox').classList.contains('hidden')) $('#olEdit').click();
+      $('#olNameNote').textContent = nc.error === 'Pick a name' ? 'Pick a name first' : nc.error;
+      $('#olNameNote').className = 'note err';
+      $('#olName').focus();
+      return null;
+    }
+    if (p && (nc.name !== p.name || av !== p.av)) { p.name = nc.name; p.av = av; save(); updateStats(); }
     const c = new Online.Client(getTransport());
-    await c.profile(name.slice(0, 16));
+    await c.profile(nc.name, av);
     return c;
   };
+}
+const defaultName = p => (p && p.name && p.name !== 'You' && p.name !== 'Player 1' && Names.check(p.name).ok ? p.name : Names.suggest());
+
+function showOnline(opts) {
+  const joinCode = opts && opts.join ? String(opts.join).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5) : '';
+  if (joinCode) return showInvite(joinCode);
+  stopLobby();
+  const p = prof();
+  showModal('<h2>Play with friends</h2>' + identHTML(defaultName(p), (p && p.av) || '🦊') +
+    '<div class="btns col"><button class="btn primary big" id="olMake">Make a table<small>Your house rules. Send friends a link</small></button></div>' +
+    '<div class="joinrow"><span>Got a code?</span><div class="inp"><input id="olCode" maxlength="5" placeholder="ABCDE" aria-label="Table code" autocomplete="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase"><button class="btn" id="olJoin">Join</button></div></div>' +
+    '<div id="olMine"></div><div id="olNote" class="note" role="status"></div><div class="btns"><button class="btn" id="olClose">Close</button></div>');
+  const ident = wireIdent(ok => { $('#olMake').disabled = !ok; $('#olJoin').disabled = !ok; });
   const guard = fn => async () => { note(''); try { await fn(); } catch (e) { note(friendly(e)); } };
   $('#olClose').onclick = hideModal;
   $('#olMake').onclick = guard(async () => { const c = await ident(); if (!c) return; await c.create(Table.optsFromSettings(store.settings), Math.min(5, Math.max(2, store.settings.players | 0 || 2))); unlock('host'); showWaiting(c); });
-  $('#olJoin').onclick = guard(async () => { const c = await ident(); if (!c) return; const code = $('#olCode').value.trim().toUpperCase(); if (code.length < 5) return note('Enter the 5 letter code'); await c.join(code); showWaiting(c); });
+  $('#olJoin').onclick = guard(async () => { const code = $('#olCode').value.trim().toUpperCase(); if (code.length < 5) { $('#olCode').focus(); return note('Enter the 5 letter code'); } const c = await ident(); if (!c) return; await c.join(code); showWaiting(c); });
+  $('#olCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('#olJoin').click(); });
   // tables I am already in, so a game can be picked up again later
-  if (joinCode) {
-    $('#olCode').value = joinCode;
-    note(nm ? 'Joining table ' + joinCode + '…' : 'Pick a name, then tap Join to sit at table ' + joinCode);
-    if (nm) $('#olJoin').click(); else $('#olName').focus();
-  }
   const t = getTransport();
   if (t.mine) t.mine().then(list => {
     const box = $('#olMine');
@@ -237,6 +278,34 @@ function showOnline(opts) {
     box.innerHTML = '<h3>Your tables</h3>' + list.map(x => '<div class="row"><span><b>' + esc(x.code) + '</b><small>' + (x.status === 'lobby' ? 'Waiting to start' : x.swapping ? 'Choose your cards' : x.myTurn ? 'Your turn' : 'Their turn') + '</small></span><span class="ctl"><button class="btn sm' + (x.myTurn ? ' primary' : '') + ' olRes" data-code="' + esc(x.code) + '">' + (x.status === 'lobby' ? 'Open' : 'Resume') + '</button></span></div>').join('');
     box.querySelectorAll('.olRes').forEach(b => { b.onclick = () => { const c = new Online.Client(t); c.code = b.dataset.code; showWaiting(c); }; });
   }, () => {});
+}
+
+// Someone tapped an invite link. One screen: whose table, the rules in brief, who I'll be, and one big Sit down.
+function showInvite(code) {
+  stopLobby();
+  const p = prof();
+  showModal('<h2><span id="olInvTitle">You\'re invited</span></h2><p class="lead" id="olInvSub">Table ' + esc(code) + ' · Seven Lower Than</p><div id="olInvRules" class="invrules"></div>' +
+    identHTML(defaultName(p), (p && p.av) || '🦊') +
+    '<div class="btns col"><button class="btn primary big" id="olSit">Sit down</button></div><div id="olNote" class="note" role="status"></div>' +
+    '<div class="btns"><button class="btn quiet" id="olNotNow">Not now</button></div>');
+  const ident = wireIdent(ok => { $('#olSit').disabled = !ok; });
+  $('#olNotNow').onclick = hideModal;
+  const t = getTransport();
+  t.call({ op: 'peek', code }).then(r => {
+    const info = r.status === 200 ? r.body : null;
+    if (!$('#olInvTitle')) return;
+    if (!info) { $('#olInvTitle').textContent = 'That table has closed'; $('#olInvSub').textContent = 'Ask your friend for a new link, or play the computer for now.'; $('#olSit').textContent = 'Play the computer'; $('#olSit').onclick = hideModal; return; }
+    $('#olInvTitle').textContent = info.host + ' invited you';
+    $('#olInvSub').textContent = 'Table ' + code + ' · ' + info.seated + ' of ' + info.max + ' seats taken';
+    $('#olInvRules').innerHTML = '<small>House rules</small>' + Meta.summarise(info.rules).slice(0, 4).map(l => '<div>' + esc(l) + '</div>').join('');
+    if (info.status !== 'lobby' && !info.mine) { $('#olInvSub').textContent = 'That game has already started. Ask for a link to the next one.'; $('#olSit').textContent = 'Play the computer'; $('#olSit').onclick = hideModal; }
+  }, () => {});
+  $('#olSit').onclick = async () => {
+    note('');
+    $('#olSit').disabled = true;
+    try { const c = await ident(); if (c) { await c.join(code); showWaiting(c); return; } } catch (e) { note(friendly(e)); }
+    if ($('#olSit')) $('#olSit').disabled = false;
+  };
 }
 
 function showWaiting(c) {

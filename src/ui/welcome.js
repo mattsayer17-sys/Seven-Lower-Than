@@ -8,7 +8,9 @@ import { prof, updateStats } from './profile.js';
 import { hideModal, showModal } from './sheets.js';
 import { startDemo } from './tour.js';
 
-// Called on a timer after launch. True once it has shown the sheet, so the timer can stop.
+// First launch: nothing stands between opening the app and playing. The cards are already dealt.
+// Once the deal settles, a small card on the felt (not a pop-up) offers the rules. Ignoring it is fine:
+// your first move puts it away. No name is asked here; one is suggested and only shown when going online.
 export function maybeWelcome() {
   const p = prof();
   if (!p || (FAST && !window.__MS_WELCOME)) return false;
@@ -16,44 +18,40 @@ export function maybeWelcome() {
   if (p.flags.welcomed || p.flags.offer || p.g > 0) return false;
   if (store.tour || store.demo || store.ui.intro || store.ui.busy || !$('#modal').classList.contains('hidden')) return false;
   p.flags.welcomed = true;
+  if (!p.name || p.name === 'Player 1' || p.name === 'You') p.name = Names.suggest();
   save();
+  updateStats();
   showWelcome();
   return true;
 }
 
+let coachKeys = null;
+export function hideWelcome() {
+  const c = $('#coach');
+  if (!c) return;
+  c.classList.remove('on');
+  setTimeout(() => c.remove(), FAST ? 0 : 250);
+  if (coachKeys) document.removeEventListener('keydown', coachKeys);
+  coachKeys = null;
+}
+
 export function showWelcome() {
-  const p = prof();
-  // a ready-made name so anyone can tap straight through; 🎲 rolls another
-  const named = p.name && p.name !== 'You' && p.name !== 'Player 1' ? p.name : Names.suggest();
-  showModal('<h2>Welcome to Seven Lower Than</h2>' +
-    '<p>Get rid of all your cards. Whoever is left holding cards hits Rock Bottom.</p>' +
-    '<div class="inp"><input id="wName" maxlength="16" placeholder="What should we call you?" aria-label="Your name" autocomplete="off" value="' + esc(named) + '"><button class="btn" id="wRoll" aria-label="Suggest another name">🎲</button></div><div class="note" id="wNote" role="status"></div>' +
-    '<div class="btns col"><button class="btn primary" id="wWatch">Watch a short walkthrough</button><button class="btn" id="wRead">Read how it works</button><button class="btn" id="wPlay">Just play</button></div>' +
-    '<p class="ex">The walkthrough and the written version are in Setup any time, and so is the switch for table tips.</p>');
-  // false (and a note) if the name cannot be used, so the sheet stays open
-  const saveName = () => {
-    const nc = Names.check($('#wName').value);
-    $('#wNote').textContent = '';
-    if (!nc.ok) {
-      if (!$('#wName').value.trim()) return true; // blank: keep whatever name the profile has
-      $('#wNote').textContent = nc.error;
-      $('#wNote').className = 'note err';
-      $('#wName').focus();
-      return false;
-    }
-    if (nc.name !== p.name) {
-      p.name = nc.name;
-      save();
-      updateStats();
-    }
-    return true;
-  };
-  $('#wRoll').onclick = () => { $('#wName').value = Names.suggest(); saveName(); };
-  $('#wName').onchange = saveName;
-  $('#wName').addEventListener('keydown', e => { if (e.key === 'Enter' && saveName()) $('#wWatch').focus(); });
-  $('#wWatch').onclick = () => { if (!saveName()) return; hideModal(); startDemo(); };
-  $('#wRead').onclick = () => { if (saveName()) showPrimer(); };
-  $('#wPlay').onclick = () => { if (saveName()) hideModal(); };
+  hideWelcome();
+  const c = document.createElement('section');
+  c.id = 'coach';
+  c.setAttribute('role', 'region');
+  c.setAttribute('aria-label', 'Getting started');
+  c.innerHTML = '<button class="x" id="wPlay" aria-label="Just play">×</button>' +
+    '<b>Get rid of all your cards.</b><span>Play the same or higher. Whoever\'s left holding cards hits Rock Bottom 🪨</span>' +
+    '<div class="cbtns"><button class="btn sm primary" id="wWatch">Show me · 30 s</button><button class="btn sm" id="wRead">Rules</button></div>';
+  $('#table').appendChild(c);
+  void c.offsetWidth;
+  c.classList.add('on');
+  $('#wWatch').onclick = () => { hideWelcome(); startDemo(); };
+  $('#wRead').onclick = () => { hideWelcome(); showPrimer(); };
+  $('#wPlay').onclick = hideWelcome;
+  coachKeys = e => { if (e.key === 'Escape' && $('#modal').classList.contains('hidden')) hideWelcome(); };
+  document.addEventListener('keydown', coachKeys);
 }
 
 // The same story as the walkthrough, in words, using this table's own special cards.

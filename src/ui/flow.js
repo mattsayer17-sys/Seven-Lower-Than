@@ -10,6 +10,7 @@ import { hashSeed } from './daily.js';
 import { fxForEvent, fxOn } from './fx.js';
 import { rigTour } from './tour.js';
 import { chatReset, chatSync, reactTo } from './chat.js';
+import { hideWelcome } from './welcome.js';
 import { hideModal, showOver } from './sheets.js';
 
 // ---------- new game: blank felt, then the deck, then the deal ----------
@@ -219,6 +220,7 @@ function afterAction(r) {
   if (store.remote) store.remote.busy = true;
   const ev = r.event,
     mine = ev.pi === 0;
+  if (mine) hideWelcome(); // your first move puts the getting-started card away
   const _t = describe(ev) + outNote(r);
   setMsg(_t);
   (store.ui.log = store.ui.log || []).push(_t);

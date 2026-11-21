@@ -410,4 +410,4 @@ export function loadProfiles() {
 // for screenshots and the test driver: show an unlock pop-up without unlocking anything
 const toastTest = id => toast(ACH.find(x => x.id === id) || ACH[0]);
 
-export { prof, recordGame, showProfile, toastTest, trackEvent, unlock, updateStats };
+export { AVATARS, prof, recordGame, showProfile, toastTest, trackEvent, unlock, updateStats };
