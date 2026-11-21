@@ -5,7 +5,7 @@ body{user-select:none;-webkit-user-select:none;touch-action:manipulation}
 #app{height:100vh;height:100dvh;max-width:640px;margin:0 auto;display:flex;flex-direction:column;position:relative;background:#0b0b0d}
 header{height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 10px;background:#0b0b0d;border-bottom:1px solid #2a2a30;position:relative;z-index:5}
 .brand{display:flex;align-items:center;gap:7px;white-space:nowrap;font-family:"Archivo Narrow","Archivo Condensed","Arial Narrow",Impact,sans-serif;font-weight:700;letter-spacing:.1em;font-size:13px;color:var(--brass2)}
-.brand .mark{height:30px;width:auto;flex:none}.brand .word{height:13px;width:auto;color:var(--bone)}#wm .wmword{display:block;height:30px;width:auto;margin:0 auto;color:currentColor}
+.brand .mark{height:30px;width:auto;flex:none}.brand .word{height:18px;width:auto;color:#fff}#wm .wmword{display:block;height:44px;width:auto;margin:0 auto;color:currentColor}
 @media(max-width:440px){.brand{font-size:12px;letter-spacing:.06em}.stats{display:none}}
 .hbtns{display:flex;gap:8px;align-items:center}
 .stats{white-space:nowrap;font-size:11px;color:#8d8a80;margin-right:4px}

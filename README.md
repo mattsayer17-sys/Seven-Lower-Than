@@ -61,7 +61,7 @@ The edge function in `server/` is deployed to Supabase separately (`node tools/b
 ## Brand
 
 Name: Shiphead. Design system (source of truth): https://claude.ai/artifact/YZWDb14MRo5yqHdeEVfY13
-Mark: a playing-card corner index, slab S over an anchor in mark red on a bone card tilted -8 degrees. Wordmark SHIPHEAD in Alfa Slab One, outlined (no font loaded at runtime). Flat colour only.
-Files in `brand/`: icon.svg (store icon, full bleed), mark.svg (card mark), favicon.svg, wordmark-bone.svg, wordmark-navy.svg, icon-1024.png. `public/` is copied into `dist/` by the build: apple-touch-icon, manifest icons, og.png share card.
-Colours: navy #14263a (brand ground), bone #f3ecdc, mark red #c62f2a, brass #c9a56a / #e3c58e (UI accent). The in-game felt stays green.
+Mark: a double-ended court card. SHIP in court red the right way up, HEAD in court blue upside down, ink frame and divider, white card. Wordmark "Shiphead" in Big Shoulders Display Black, sentence case, outlined (no font loaded at runtime). Flat court-card inks only.
+Files in `brand/`: icon.svg (store icon, full bleed), mark.svg (card), favicon.svg, wordmark-white.svg, wordmark-black.svg, icon-1024.png. `public/` is copied into `dist/` by the build: apple-touch-icon, manifest icons, og.png share card.
+Colours: court blue #1b3d8f (brand ground), card white #ffffff, court red #d4231b, court yellow #f0b323, ink #000000. Game UI keeps its green felt and brass buttons for now.
 Internal keys (`__ms`, daily seed `mouse-shed-`, the `shed` function and tables) keep their old names on purpose so saved data and links keep working.
