@@ -355,14 +355,16 @@ details.fold[open]>summary::after{content:" ▾"}
 html[data-fx=off] #table.beating.beat::after{animation:none}
 @media(prefers-reduced-motion:reduce){#table.beating.beat::after{animation:none}#table.slowmo .card{transition-duration:.34s,.4s,.32s,.25s}}
 
-/* the final face-down card: rises and grows, then turns over slowly for everyone */
-.card.big{transition-duration:.9s,.9s,.9s,.3s;filter:drop-shadow(0 18px 28px rgba(0,0,0,.6))}
-.card.big .inner{transition:transform 1.2s cubic-bezier(.35,.05,.2,1)}
-@media(prefers-reduced-motion:reduce){.card.big,.card.big .inner{transition-duration:.2s}}
-
-/* running tally against the people at the table, on the game-over sheet */
-.rivals{margin:12px 0 4px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px}
-.rival{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:4px 0;font-size:15px}
-.rival b{color:var(--brass2);font-size:18px;margin:0 4px}
-.rival small{color:#c9c5b8;font-size:12px}
-#table.flipping #status,#table.flipping #msg,#table.flipping #actions{opacity:0;transition:opacity .3s}
+/* the final face-down card: rises and grows, hovers and rocks, turns slowly, then glows with the verdict */
+#dim{position:absolute;inset:0;z-index:2900;pointer-events:none;opacity:0;transition:opacity .7s;background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,.15) 0,rgba(0,0,0,.72) 75%)}
+#table.flipping #dim{opacity:1}
+.card.big{transition-duration:.9s,.9s,.9s,.3s;filter:drop-shadow(0 22px 30px rgba(0,0,0,.65))}
+.card.big .inner{transition:transform 1.3s cubic-bezier(.4,0,.15,1)}
+.card.big.tease{animation:tease .75s ease-in-out infinite alternate}
+/* position uses the translate/rotate/scale properties, so the rocking goes on transform, which adds to them */
+@keyframes tease{0%{transform:rotate(-2.5deg) translateY(0)}100%{transform:rotate(2.5deg) translateY(-6px)}}
+.card.big .front{transition:box-shadow .35s}
+.card.big.ok .front{box-shadow:0 0 0 3px #f1d9a6,0 0 38px 12px rgba(241,217,166,.75)}
+.card.big.no .front{box-shadow:0 0 0 3px #d9473a,0 0 38px 12px rgba(217,71,58,.7)}
+@media(prefers-reduced-motion:reduce){.card.big,.card.big .inner{transition-duration:.2s}.card.big.tease{animation:none}}
+#table.flipping #status,#table.flipping #msg,#table.flipping #actions,#table.flipping .lbl,#table.flipping #chatBtn{opacity:0;transition:opacity .4s}

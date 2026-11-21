@@ -23,6 +23,8 @@ function iosTick() {
   } catch (e) {}
 }
 
+let period = 1150;
+
 function beat() {
   SFX.heart();
   buzz([35, 160, 45]);
@@ -34,21 +36,40 @@ function beat() {
   t.classList.add('beat');
 }
 
-// Whose last card is on the line, or -1.
+// The final face-down card: two players left and this player has nothing else. Nobody knows what it is.
+// (A last card from the hand or face up is known to its owner, so it doesn't get this.)
 function onTheLine(g) {
   if (!g || g.phase !== 'play' || store.ui.intro || store.tour || store.demo) return -1;
   if (g.players.filter(p => !p.out).length !== 2 || g.draw.length) return -1;
   const p = g.players[g.turn];
-  return p && !p.out && p.hand.length + p.up.length + p.down.length === 1 ? g.turn : -1;
+  return p && !p.out && !p.hand.length && !p.up.length && p.down.length === 1 ? g.turn : -1;
+}
+
+function run() {
+  clearInterval(timer);
+  timer = null;
+  if (who >= 0 && period > 0 && !FAST) timer = setInterval(beat, period);
+}
+
+// The reveal speeds the heart up as the card lifts and teases, and stops it dead as the card turns (0 = silence).
+export function setTempo(ms) {
+  if (ms === period) return;
+  const wasStopped = period === 0;
+  period = ms;
+  if (who < 0) return;
+  if (ms > 0 && wasStopped && !FAST) beat();
+  run();
 }
 
 export function beatCheck() {
+  // while the card is in the air, the reveal owns the heartbeat
+  if (store.ui.big) return;
   const pi = onTheLine(store.game);
   if (pi === who) return;
   who = pi;
+  period = 1150;
   store.ui.beat = pi >= 0 ? pi : null;
-  clearInterval(timer);
-  timer = null;
   $('#table').classList.toggle('beating', pi >= 0);
-  if (pi >= 0 && !FAST) { beat(); timer = setInterval(beat, 1150); }
+  if (pi >= 0 && !FAST) beat();
+  run();
 }

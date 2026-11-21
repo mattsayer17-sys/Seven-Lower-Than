@@ -117,7 +117,7 @@ function makeRemote(client, code) {
         const out = Online.reconcile(game, res.view, res.version);
         if (out.mode === 'resync') resync(out.game, res.version);
       };
-      if (isFinalFlip(game, 0, id)) return finalFlip(id, render, finish);
+      if (isFinalFlip(game, 0, id)) return finalFlip(id, Shed.canPlayCard(game.rules, game.players[0].down[0], game.pile), render, finish);
       store.ui.reveal = id;
       render();
       later(() => {
@@ -158,7 +158,7 @@ function makeRemote(client, code) {
         rekeyCard(from, slot);
         r.flipping = true;
         r.busy = true;
-        return finalFlip(card.id, render, () => { r.flipping = false; r.busy = false; poll(); });
+        return finalFlip(card.id, Shed.canPlayCard(game.rules, slot, game.pile), render, () => { r.flipping = false; r.busy = false; poll(); });
       }
     }
     const out = Online.reconcile(game, res.view, res.version);

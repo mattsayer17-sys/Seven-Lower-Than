@@ -27,7 +27,7 @@ function humanTap(id) {
   if (z === 'down' && me.down.includes(c)) {
     if (store.remote) return store.remote.blind(id);
     store.ui.busy = true;
-    if (isFinalFlip(g, 0, id)) return finalFlip(id, render, () => afterAction(Shed.playBlind(g, 0, id)));
+    if (isFinalFlip(g, 0, id)) return finalFlip(id, Shed.canPlayCard(g.rules, c, g.pile), render, () => afterAction(Shed.playBlind(g, 0, id)));
     store.ui.reveal = id;
     render();
     return later(() => {

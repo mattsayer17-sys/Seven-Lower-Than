@@ -363,7 +363,7 @@ function advance() {
     // three or more players means more CPUs to wait for, so each one thinks a little quicker
     const busy = g.players.length > 2;
     // its last card on the line: let the heartbeat run a little before it plays
-    schedule(cpuStep, (g.players[0].out ? 350 : busy ? 450 : 750) + Math.random() * (busy ? 250 : 350) + (store.ui.beat === g.turn && fxOn() ? 2300 : 0));
+    schedule(cpuStep, (g.players[0].out ? 350 : busy ? 450 : 750) + Math.random() * (busy ? 250 : 350) + (store.ui.beat === g.turn && fxOn() ? 1600 : 0));
   } else {
     store.ui.busy = false;
     render();
@@ -381,7 +381,7 @@ function cpuStep() {
   }
   const d = Shed.cpuChoose(g, pi);
   if (d.kind === 'blind') {
-    if (isFinalFlip(g, pi, d.id)) return finalFlip(d.id, render, () => afterAction(Shed.playBlind(g, pi, d.id)));
+    if (isFinalFlip(g, pi, d.id)) return finalFlip(d.id, Shed.canPlayCard(g.rules, g.players[pi].down[0], g.pile), render, () => afterAction(Shed.playBlind(g, pi, d.id)));
     store.ui.reveal = d.id;
     render();
     later(() => {

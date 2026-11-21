@@ -131,10 +131,14 @@ const SFX = {
   turn() {
     tone(660, .07, 'sine', .07);
   },
-  // the last card turning over: a rising breath, then a soft knock as it lands face up
-  reveal() {
-    tone(220, .9, 'sine', .06, 520);
-    tone(140, .12, 'triangle', .14, 0, .95);
+  // the final flip: a long rising breath while it hovers, then the verdict
+  rise() {
+    tone(180, 1.45, 'sine', .05, 620);
+    tone(90, 1.45, 'triangle', .04, 310);
+  },
+  verdict(ok) {
+    if (ok) { tone(523, .5, 'triangle', .12); tone(659, .5, 'triangle', .1, 0, .06); tone(784, .7, 'triangle', .1, 0, .12); }
+    else { tone(110, .45, 'sawtooth', .1, 70); tone(82, .6, 'sine', .18, 60, .05); }
   },
   // lub-dub: two low thumps you feel more than hear
   heart() {
