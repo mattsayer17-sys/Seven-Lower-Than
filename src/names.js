@@ -21,10 +21,10 @@
     'sussex', 'essex', 'middlesex', 'japan', 'pakistan', 'fagin', 'fagan', 'scraper', 'parisis', 'torpedo', 'petit', 'analis', 'analia', 'analy', 'sexton', 'nazir', 'penistone', 'clitheroe', 'shitake', 'shiitake',
     'cumulus', 'acumen', 'sextant', 'sextet', 'homer', 'homework', 'homely'];
   const LEET = { 0: 'o', 1: 'i', 2: 'z', 3: 'e', 4: 'a', 5: 's', 6: 'g', 7: 't', 8: 'b', 9: 'g', '@': 'a', $: 's', '!': 'i', '|': 'i', '€': 'e', '£': 'l', '+': 't' };
-  const BAD_EMOJI = /\u{1F595}|\u{1F346}|\u{1F351}|\u{1F4A6}|卐|卍/u; // middle finger, aubergine, peach, droplets, swastikas
+  const BAD_EMOJI = /\u{1F595}|\u{1F346}|\u{1F351}|\u{1F4A6}|\u5350|\u534D/u; // middle finger, aubergine, peach, droplets, swastikas
 
-  const fold = s => String(s || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/ph/g, 'f')
-    .replace(/[0-9@$!|€£+]/g, c => LEET[c] || c);
+  const fold = s => String(s || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/ph/g, 'f')
+    .replace(/[0-9@$!|\u20AC\u00A3+]/g, c => LEET[c] || c);
   const squeeze = s => s.replace(/(.)\1+/g, '$1');      // fuuuuck -> fuck
   const cap2 = s => s.replace(/(.)\1{2,}/g, '$1$1');   // asssss -> ass (but "ass" stays "ass")
   const strip = (s, words) => words.reduce((t, w) => t.split(w).join('|'), s);
