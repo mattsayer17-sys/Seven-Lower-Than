@@ -12,6 +12,7 @@ import { $, esc } from './dom.js';
 import { FAST, later, save, store, who } from './state.js';
 import { AVATARS, prof, unlock, updateStats } from './profile.js';
 import { hideModal, showModal } from './sheets.js';
+import { hideWelcome } from './welcome.js';
 import { advance, afterAction, newGame } from './flow.js';
 import { hint, render, setMsg } from './render.js';
 import { adoptElements, rekeyCard } from './cards.js';
@@ -68,6 +69,12 @@ function getTransport() {
 
 const friendly = e => (/fetch|network|Failed|reach|sign in/i.test(e.message || '') ? "Can't reach the online service from here. Check your connection, or open the web version" : e.message || 'Something went wrong');
 
+// who we are still waiting on to lock in, by name
+function waitingFor() {
+  const g = store.game, left = g ? g.players.filter((p, i) => i > 0 && !p.ready).map(p => p.name) : [];
+  return 'Locked in. Waiting for ' + (left.length ? left.join(' and ') : 'the others');
+}
+
 // ---------- the game, once it is running ----------
 function makeRemote(client, code) {
   const r = { client, code, busy: false, inflight: 0, chain: Promise.resolve(), timer: null, playResyncs: 0 };
@@ -82,7 +89,7 @@ function makeRemote(client, code) {
 
   r.ready = () => {
     g().players[0].ready = true;
-    setMsg('Locked in. Waiting for the others');
+    setMsg(waitingFor());
     render();
     r.send({ type: 'ready' });
   };
@@ -119,7 +126,7 @@ function makeRemote(client, code) {
     const game = g();
     if (game.phase === 'swap') {
       store.ui.busy = !!game.players[0].ready;
-      hint(store.ui.busy ? 'Locked in. Waiting for the others' : 'Swap a hand card with a face-up one, then lock in');
+      hint(store.ui.busy ? waitingFor() : 'Swap a hand card with a face-up one, then lock in');
       render();
     } else advance();
   };
@@ -208,6 +215,7 @@ function startGame(client, code, res) {
   const r = makeRemote(client, code);
   store.remote = r;
   hideModal();
+  hideWelcome(); // the getting-started card is for solo play; online it would cover the other player's cards
   newGame({ remote: { game } });
 }
 
@@ -305,6 +313,15 @@ function showInvite(code) {
     '<div class="btns col"><button class="btn primary big" id="olSit">Sit down</button></div><div id="olNote" class="note" role="status"></div>' +
     '<div class="btns"><button class="btn quiet" id="olNotNow">Not now</button></div>');
   const ident = wireIdent(ok => { $('#olSit').disabled = !ok; });
+  // a first-timer has only a made-up name: show the name box straight away so they can put their own in.
+  // Tapping it selects the suggestion, so typing replaces it.
+  if (!(p && p.name && p.name !== 'You' && p.name !== 'Player 1' && Names.check(p.name).ok)) {
+    $('#olEditBox').classList.remove('hidden');
+    $('#olEdit').setAttribute('aria-expanded', 'true');
+    $('#olEdit').textContent = 'Done';
+    $('#olMe').querySelector('small').textContent = 'Your name at the table';
+  }
+  $('#olName').addEventListener('focus', () => $('#olName').select());
   $('#olNotNow').onclick = hideModal;
   const t = getTransport();
   t.call({ op: 'peek', code }).then(r => {
@@ -328,12 +345,15 @@ function showInvite(code) {
 function showWaiting(c) {
   stopLobby();
   const code = c.code;
-  showModal('<h2>Table ' + esc(code) + '</h2><p>Send the invite. Friends tap the link and sit straight down. The host starts the game when everyone is here.</p>' +
-    '<div class="codebig" style="font-size:34px;letter-spacing:.2em;text-align:center;margin:6px 0" aria-label="Table code ' + esc(code.split('').join(' ')) + '">' + esc(code) + '</div>' +
-    inviteHTML(code) +
-    '<div id="olSeats"></div><div id="olRules"></div><div id="olVote"></div><div id="olLast" class="note"></div>' + proposeHTML() +
-    '<p class="ex">Anyone can propose a change. Everyone votes, the majority wins, and the host settles a tie.</p><div id="olNote" class="note" role="status"></div>' +
-    '<div class="btns"><button class="btn" id="olLeave">Leave</button><button class="btn primary" id="olStart" disabled>Start</button></div>');
+  // One job per screen: the status line says what happens next, Start stays in reach at the bottom,
+  // and the rules and the vote form are folded away until someone wants them.
+  showModal('<h2>Table ' + esc(code) + '</h2><p class="olstatus" id="olStatus" role="status">Getting the table…</p>' +
+    '<div id="olInv">' + inviteHTML(code) + '</div>' +
+    '<h3>Players</h3><div id="olSeats"></div><div id="olVote"></div><div id="olLast" class="note"></div>' +
+    '<details class="fold" id="olRulesBox"><summary id="olRulesSum">House rules</summary><div id="olRules"></div></details>' +
+    '<details class="fold" id="olPropBox"><summary>Suggest a rule change</summary>' + proposeHTML() +
+    '<p class="ex">Everyone votes, the majority wins, and the host settles a tie.</p></details><div id="olNote" class="note" role="status"></div>' +
+    '<div class="btns stick"><button class="btn" id="olLeave">Leave</button><button class="btn primary" id="olStart" disabled>Start game</button></div>');
   wireInvite(code);
   let cur = null, ticked = null;
   const act = fn => async () => { note(''); try { await fn(); } catch (e) { note(friendly(e)); } tick(); };
@@ -346,9 +366,16 @@ function showWaiting(c) {
     if (!$('#olSeats')) return;
     if (!lob) { stopLobby(); return showOnline(), note('That table has closed'); }
     $('#olSeats').innerHTML = lob.seats.map((s, i) => '<div class="row"><span><b>' + esc(s.name) + '</b>' + (s.id === lob.host ? ' · host' : '') + '</span><span class="ctl"><small>Seat ' + (i + 1) + '</small></span></div>').join('');
-    $('#olRules').innerHTML = '<h3>Rules</h3>' + Meta.summarise(lob.rules).map(l => '<div class="row"><span>' + esc(l) + '</span></div>').join('');
+    const lines = Meta.summarise(lob.rules);
+    $('#olRules').innerHTML = lines.map(l => '<div class="row"><span>' + esc(l) + '</span></div>').join('');
+    $('#olRulesSum').textContent = 'House rules · ' + lines.length;
     cur = lob;
     const mine = c.t.uid === lob.host;
+    const hostName = (lob.seats.find(s => s.id === lob.host) || {}).name || 'the host';
+    const others = lob.seats.filter(s => s.id !== c.t.uid).map(s => s.name);
+    $('#olStatus').textContent = lob.vote ? 'A rule change is being voted on' : mine ? (others.length ? others.join(' and ') + (others.length > 1 ? ' are' : ' is') + ' here. Start when you\'re ready' : 'Send the invite. Your friend taps it and sits straight down') : 'You\'re in. Waiting for ' + hostName + ' to start';
+    // the invite stays up until the table is full; a guest can still bring someone else
+    $('#olInv').classList.toggle('hidden', lob.seats.length >= (lob.max || 5));
     const room = { players: lob.seats, hostId: lob.host, opts: lob.rules, vote: lob.vote };
     $('#olVote').innerHTML = lob.vote ? voteCard(room, c.t.uid) : '';
     if (lob.vote) {
@@ -363,6 +390,7 @@ function showWaiting(c) {
     $('#tblPropose').textContent = lob.vote ? 'Vote open' : 'Propose';
     fillChange(lob.rules);
     $('#olStart').style.display = mine ? '' : 'none';
+    $('#olLeave').classList.toggle('wide', !mine);
     $('#olStart').disabled = lob.seats.length < 2 || !!lob.vote;
     if (lob.status === 'playing' || lob.status === 'over') {
       stopLobby();

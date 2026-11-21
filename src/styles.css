@@ -330,3 +330,13 @@ html[data-fx=off] .card.stinging .inner{animation:none;filter:drop-shadow(0 0 2p
 /* face-down follow-up: a face-down card you have turned over for yourself. Only you see the face */
 .card.peek .front{box-shadow:0 0 0 2px var(--brass2),0 0 12px rgba(227,197,142,.55)}
 .card.peek::after{content:"only you";position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);font:600 10px/1 system-ui,sans-serif;letter-spacing:.06em;color:var(--brass2);white-space:nowrap;text-transform:uppercase;opacity:.85}
+
+/* online waiting room */
+.olstatus{font-size:17px;color:var(--bone);margin:4px 0 12px;line-height:1.35}
+details.fold{border-top:1px solid rgba(255,255,255,.08);margin-top:10px}
+details.fold>summary{cursor:pointer;list-style:none;padding:12px 0;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--brass2)}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::after{content:" ▸"}
+details.fold[open]>summary::after{content:" ▾"}
+#olLeave.wide{flex:1}
+.btn:disabled{opacity:.45;cursor:default}

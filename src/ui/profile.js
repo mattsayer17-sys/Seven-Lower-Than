@@ -209,10 +209,12 @@ function toast(a) {
 function placeToast(t) {
   let mid = window.innerHeight * .62;
   try {
-    const L = store.lastL, tb = $('#table');
-    if (L && L.meTableCy && tb) mid = tb.getBoundingClientRect().top + L.meTableCy + store.ch * .1;
+    const L = store.lastL, tb = $('#table'), md = $('#modal');
+    // a sheet is open: keep clear of it, along the top
+    if (md && !md.classList.contains('hidden')) mid = 6 + t.offsetHeight / 2;
+    else if (L && L.meTableCy && tb) mid = tb.getBoundingClientRect().top + L.meTableCy + store.ch * .1;
   } catch (e) {}
-  t.style.top = Math.max(60, mid + t.offsetHeight / 2) + 'px';
+  t.style.top = Math.max(6 + t.offsetHeight, mid + t.offsetHeight / 2) + 'px';
 }
 
 function nextToast() {
