@@ -284,7 +284,7 @@ function trackEvent(ev) {
 
 function recordGame(g, meIdx, youMouse) {
   const p = prof();
-  if (!g.meta || g.meta.tour || g.meta.online) {
+  if (!g.meta || g.meta.tour) {
     updateStats();
     return;
   }
@@ -294,14 +294,23 @@ function recordGame(g, meIdx, youMouse) {
   if (meIdx === 0) p.w++;
   if (youMouse) p.m++;
   p.safe = youMouse ? 0 : p.safe + 1;
+  // Head to head: against each CPU level, and online against each person by their account, so it survives a rename.
+  // For people it also keeps the Rock Bottom tally both ways, because that is the bit friends rib each other about.
   g.players.forEach((q, i) => {
     if (i === 0) return;
-    const k = g.meta.keys[i - 1] || 'cpu-normal',
+    const human = g.meta.online && g.seats && g.seats[i];
+    const k = human ? 'h:' + g.seats[i] : g.meta.keys[i - 1] || 'cpu-normal',
       h = p.h2h[k] = p.h2h[k] || {
         w: 0,
         l: 0
       };
     if (g.finished.indexOf(0) < g.finished.indexOf(i)) h.w++;else h.l++;
+    if (human) {
+      h.n = q.name;
+      if (g.loser === i) h.theyRb = (h.theyRb || 0) + 1;
+      if (g.loser === 0) h.meRb = (h.meRb || 0) + 1;
+      h.at = Date.now();
+    }
   });
   const lo = g.players[g.loser];
   if (g.meta.daily && !p.daily[g.meta.daily]) p.daily[g.meta.daily] = {
@@ -341,16 +350,21 @@ function recordGame(g, meIdx, youMouse) {
 function showProfile() {
   const p = prof(),
     ks = Object.keys(p.h2h);
+  // people first, most played first, then the CPU levels
+  const tot = k => p.h2h[k].w + p.h2h[k].l;
+  ks.sort((a, b) => (b.indexOf('h:') === 0) - (a.indexOf('h:') === 0) || tot(b) - tot(a));
   const rows = ks.length ? ks.map(k => {
     const h = p.h2h[k],
-      t = h.w + h.l;
-    return '<div class="row"><span>' + esc(keyName(k)) + '<small>' + t + ' game' + (t === 1 ? '' : 's') + '</small></span><b>' + h.w + ' – ' + h.l + '</b></div>';
+      t = h.w + h.l,
+      nm = h.n || keyName(k),
+      rb = k.indexOf('h:') === 0 && (h.theyRb || h.meRb) ? ' · 🪨 ' + nm + ' ' + (h.theyRb || 0) + ', you ' + (h.meRb || 0) : '';
+    return '<div class="row"><span>' + esc(nm) + '<small>' + t + ' game' + (t === 1 ? '' : 's') + esc(rb) + '</small></span><b>' + h.w + ' – ' + h.l + '</b></div>';
   }).join('') : '<div class="row"><span>No games yet<small>Your record against each opponent builds here</small></span></div>';
   const human = ks.some(k => k.indexOf('h:') === 0);
   const ach = ACH.map(a => '<div class="ach' + (p.ach[a.id] ? ' on' : '') + '"><i>' + a.i + '</i><span><b>' + esc(a.n) + '</b><small>' + esc(a.d) + '</small></span></div>').join('');
   const profs = store.P.list.map(q => '<button class="chip pb' + (q.id === p.id ? ' on' : '') + '" data-id="' + q.id + '">' + q.av + ' ' + esc(q.name) + '</button>').join('');
   const avs = AVATARS.map(a => '<button class="av' + (a === p.av ? ' on' : '') + '" data-a="' + a + '">' + a + '</button>').join('');
-  showModal('<h2>Profile</h2><div class="chips">' + profs + '</div>' + '<div class="inp"><input id="pName" maxlength="16" value="' + esc(p.name) + '" aria-label="Name"><button class="btn" id="pSave">Rename</button></div><div class="note err" id="pNote" role="status"></div>' + '<div class="avs">' + avs + '</div>' + '<h3>Record</h3><div class="stat3"><div><b>' + p.g + '</b><small>Games</small></div><div><b>' + p.w + '</b><small>1st</small></div><div><b>' + p.m + '</b><small>🪨 Last</small></div></div>' + '<h3>Head to head</h3>' + rows + (human ? '' : '<p class="note" style="margin-top:8px">Games against other people will show here once online tables open. Records are saved on this device.</p>') + '<h3>Achievements ' + Object.keys(p.ach).length + '/' + ACH.length + '</h3><div class="achs">' + ach + '</div>' + '<div class="inp" style="margin-top:14px"><input id="pNew" maxlength="16" placeholder="New profile name" aria-label="New profile name"><button class="btn" id="pAdd">Add profile</button></div>' + '<div class="btns"><button class="btn primary" id="pClose">Done</button></div>');
+  showModal('<h2>Profile</h2><div class="chips">' + profs + '</div>' + '<div class="inp"><input id="pName" maxlength="16" value="' + esc(p.name) + '" aria-label="Name"><button class="btn" id="pSave">Rename</button></div><div class="note err" id="pNote" role="status"></div>' + '<div class="avs">' + avs + '</div>' + '<h3>Record</h3><div class="stat3"><div><b>' + p.g + '</b><small>Games</small></div><div><b>' + p.w + '</b><small>1st</small></div><div><b>' + p.m + '</b><small>🪨 Last</small></div></div>' + '<h3>Head to head</h3>' + rows + (human ? '' : '<p class="note" style="margin-top:8px">Play friends online and your record against each of them builds here. Records are saved on this device.</p>') + '<h3>Achievements ' + Object.keys(p.ach).length + '/' + ACH.length + '</h3><div class="achs">' + ach + '</div>' + '<div class="inp" style="margin-top:14px"><input id="pNew" maxlength="16" placeholder="New profile name" aria-label="New profile name"><button class="btn" id="pAdd">Add profile</button></div>' + '<div class="btns"><button class="btn primary" id="pClose">Done</button></div>');
   document.querySelectorAll('.pb').forEach(b => b.onclick = () => {
     store.P.cur = b.dataset.id;
     save();
@@ -411,4 +425,16 @@ export function loadProfiles() {
 // for screenshots and the test driver: show an unlock pop-up without unlocking anything
 const toastTest = id => toast(ACH.find(x => x.id === id) || ACH[0]);
 
-export { AVATARS, prof, recordGame, showProfile, toastTest, trackEvent, unlock, updateStats };
+// The running tally against the people at this table, for the game-over sheet: "You 7 – 4 Tali".
+function rivalryHTML(g) {
+  const p = prof();
+  if (!p || !g.meta || !g.meta.online || !g.seats) return '';
+  const lines = g.seats.slice(1).map((uid, j) => {
+    const h = p.h2h['h:' + uid];
+    if (!h) return '';
+    return '<div class="rival"><span>You <b>' + h.w + ' – ' + h.l + '</b> ' + esc(h.n || g.players[j + 1].name) + '</span>' + (h.theyRb || h.meRb ? '<small>🪨 ' + esc(h.n || '') + ' ' + (h.theyRb || 0) + ' · you ' + (h.meRb || 0) + '</small>' : '') + '</div>';
+  }).join('');
+  return lines ? '<div class="rivals">' + lines + '</div>' : '';
+}
+
+export { AVATARS, prof, recordGame, rivalryHTML, showProfile, toastTest, trackEvent, unlock, updateStats };

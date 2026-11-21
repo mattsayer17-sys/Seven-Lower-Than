@@ -197,6 +197,8 @@ function computeLayout() {
   };
   cpus.forEach((p, k) => { const S = L.seats[k]; fan(p.hand, S.cx, S.handCy, S.hs, true, false, S.w); });
   fan(me.hand, W / 2, L.meHandCy, 1, false, true, W - 6);
+  // the final face-down card, lifted to the middle of the felt for everyone to watch it turn
+  if (store.ui.big) pos[store.ui.big.id] = { cx: W / 2, cy: L.centerCy + store.ch * .1, rot: 0, s: 1.75, z: 3000, down: !store.ui.big.face };
   if (store.ui.drag && store.ui.drag.active && pos[store.ui.drag.id]) pos[store.ui.drag.id] = {
     cx: store.ui.drag.x,
     cy: store.ui.drag.y - store.ch * .2,
@@ -233,6 +235,7 @@ function render() {
   table.classList.toggle('blank', store.ui.intro === 'blank');
   table.classList.toggle('hideui', !!store.ui.hideui);
   table.classList.toggle('wide', L.m >= 3);
+  table.classList.toggle('flipping', !!store.ui.big);
   const tapIds = new Set(), dimIds = new Set();
   Object.keys(store.els).forEach(id => {
     const el = store.els[id],
@@ -248,6 +251,7 @@ function render() {
     el.classList.toggle('ghosting', !!p.ghost);
     el.classList.toggle('stinging', !!p.sting);
     el.classList.toggle('peek', !!p.peek);
+    el.classList.toggle('big', !!(store.ui.big && store.ui.big.id === +id));
     const c = findCard(+id);
     let tap = false,
       dim = false;

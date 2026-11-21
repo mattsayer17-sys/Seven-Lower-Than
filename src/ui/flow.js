@@ -12,6 +12,7 @@ import { rigTour } from './tour.js';
 import { chatReset, chatSync, reactTo } from './chat.js';
 import { hideWelcome } from './welcome.js';
 import { hideModal, showOver } from './sheets.js';
+import { finalFlip, isFinalFlip } from './reveal.js';
 
 // ---------- new game: blank felt, then the deck, then the deal ----------
 function newGame(o) {
@@ -380,6 +381,7 @@ function cpuStep() {
   }
   const d = Shed.cpuChoose(g, pi);
   if (d.kind === 'blind') {
+    if (isFinalFlip(g, pi, d.id)) return finalFlip(d.id, render, () => afterAction(Shed.playBlind(g, pi, d.id)));
     store.ui.reveal = d.id;
     render();
     later(() => {

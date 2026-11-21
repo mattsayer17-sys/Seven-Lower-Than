@@ -3,7 +3,7 @@ import { $, esc } from './dom.js';
 import { later, ordinal, store } from './state.js';
 import { SFX } from './audio.js';
 import { newGame } from './flow.js';
-import { recordGame } from './profile.js';
+import { recordGame, rivalryHTML } from './profile.js';
 import { dailyBlock, wireShare } from './daily.js';
 import { showSetup } from './setup.js';
 import { showOnline, wireRematch } from './online.js';
@@ -86,7 +86,7 @@ function showOver() {
   const rows = g.finished.map((id, i) => '<div class="place' + (id === 0 ? ' me' : '') + '"><span>' + (i === g.finished.length - 1 ? '🪨 Last' : ordinal(i + 1)) + '</span><b>' + g.players[id].name + '</b></div>').join('');
   later(() => {
     const dh = g.meta && g.meta.daily ? dailyBlock(g.meta.daily) : '';
-    showModal('<h2>' + head + '</h2><p>' + sub + '</p>' + rows + dh + '<div class="btns"><button class="btn" id="setup">Setup</button><button class="btn primary" id="again">' + (g.online ? 'Back to online' : 'Play again') + '</button></div>');
+    showModal('<h2>' + head + '</h2><p>' + sub + '</p>' + rows + rivalryHTML(g) + dh + '<div class="btns"><button class="btn" id="setup">Setup</button><button class="btn primary" id="again">' + (g.online ? 'Back to online' : 'Play again') + '</button></div>');
     $('#again').onclick = g.online ? showOnline : () => newGame();
     $('#setup').onclick = showSetup;
     if (g.online) wireRematch();

@@ -5,6 +5,7 @@ import { SFX, buzz } from './audio.js';
 import { findCard } from './cards.js';
 import { hint, humanLegal, render, setMsg } from './render.js';
 import { advance, afterAction, hurry } from './flow.js';
+import { finalFlip, isFinalFlip } from './reveal.js';
 
 // ---------- input: tap and drag ----------
 function humanTap(id) {
@@ -26,6 +27,7 @@ function humanTap(id) {
   if (z === 'down' && me.down.includes(c)) {
     if (store.remote) return store.remote.blind(id);
     store.ui.busy = true;
+    if (isFinalFlip(g, 0, id)) return finalFlip(id, render, () => afterAction(Shed.playBlind(g, 0, id)));
     store.ui.reveal = id;
     render();
     return later(() => {

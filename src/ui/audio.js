@@ -131,6 +131,11 @@ const SFX = {
   turn() {
     tone(660, .07, 'sine', .07);
   },
+  // the last card turning over: a rising breath, then a soft knock as it lands face up
+  reveal() {
+    tone(220, .9, 'sine', .06, 520);
+    tone(140, .12, 'triangle', .14, 0, .95);
+  },
   // lub-dub: two low thumps you feel more than hear
   heart() {
     tone(58, .14, 'sine', .32, 44);
