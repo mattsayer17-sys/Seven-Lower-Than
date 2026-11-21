@@ -13,8 +13,8 @@ const PRESETS = [
   { id: 'chaos', name: 'Chaos', blurb: 'Invisible 4, skip on 8, Jacks reverse, Kings make you pick up.', opts: { transparentOn: true, transparentRank: '4', skipOn: true, skipRank: '8', custom: [{ rank: 'J', effect: 'reverse', on: true }, { rank: 'K', effect: 'pickup', on: true }] } },
 ];
 
-const BASE = { sevensLower: false, transparentOn: false, transparentRank: '4', skipOn: false, skipRank: '8', fourBurns: false, custom: [] };
-const KEYS = ['sevensLower', 'transparentOn', 'transparentRank', 'skipOn', 'skipRank', 'fourBurns', 'custom'];
+const BASE = { sevensLower: false, transparentOn: false, transparentRank: '4', skipOn: false, skipRank: '8', fourBurns: false, blindFollow: false, custom: [] };
+const KEYS = ['sevensLower', 'transparentOn', 'transparentRank', 'skipOn', 'skipRank', 'fourBurns', 'blindFollow', 'custom'];
 const clone = o => JSON.parse(JSON.stringify(o));
 
 // Fill in every house-rule field, so two settings that mean the same thing look the same.
@@ -28,6 +28,7 @@ function normalise(opts) {
     skipOn: !!o.skipOn,
     skipRank: o.skipRank || '8',
     fourBurns: o.fourBurns !== false,
+    blindFollow: !!o.blindFollow,
     custom: v.map(r => { const c = { rank: r.rank, on: r.on !== false }; if (r.effect !== undefined) c.effect = r.effect; if (r.power !== undefined) c.power = r.power; return c; }),
   };
 }
@@ -35,7 +36,7 @@ function normalise(opts) {
 // Same rules? Ignores a card choice for a rule that is off, and the order of own rules.
 function same(a, b) {
   const x = normalise(a), y = normalise(b);
-  const side = o => JSON.stringify([o.sevensLower, o.transparentOn && o.transparentRank, o.skipOn && o.skipRank, o.fourBurns,
+  const side = o => JSON.stringify([o.sevensLower, o.transparentOn && o.transparentRank, o.skipOn && o.skipRank, o.fourBurns, o.blindFollow,
     o.custom.slice().sort((p, q) => (p.rank < q.rank ? -1 : 1)).map(r => [r.rank, r.on, r.effect === undefined ? null : r.effect, r.power === undefined ? null : r.power])]);
   return side(x) === side(y);
 }
@@ -51,7 +52,7 @@ const cleanName = n => String(n == null ? '' : n).replace(/[^\w '&!-]/g, '').tri
 
 function encode(opts, name) {
   const o = normalise(opts);
-  const body = { n: cleanName(name), s: o.sevensLower ? 1 : 0, t: o.transparentOn ? o.transparentRank : 0, k: o.skipOn ? o.skipRank : 0, f: o.fourBurns ? 1 : 0,
+  const body = { n: cleanName(name), s: o.sevensLower ? 1 : 0, t: o.transparentOn ? o.transparentRank : 0, k: o.skipOn ? o.skipRank : 0, f: o.fourBurns ? 1 : 0, b: o.blindFollow ? 1 : 0,
     c: o.custom.map(r => [r.rank, r.effect === undefined ? '' : r.effect, r.power === undefined ? '' : r.power, r.on ? 1 : 0]) };
   const payload = b64.enc(JSON.stringify(body));
   return 'H1-' + payload + '-' + check(payload);
@@ -74,6 +75,7 @@ function decode(code) {
   if (b.t) { if (!step({ type: 'flag', key: 'transparentOn', value: true, rank: String(b.t) })) return bad(r.error); }
   if (b.k) { if (!step({ type: 'flag', key: 'skipOn', value: true, rank: String(b.k) })) return bad(r.error); }
   if (b.f === 1) o.fourBurns = true;
+  if (b.b === 1) o.blindFollow = true;
   const seen = {};
   for (const c of b.c.slice(0, 20)) {
     if (!Array.isArray(c)) return bad('The code is damaged');

@@ -31,6 +31,8 @@ function projectView(g, pi) {
       hand: i === pi ? p.hand : hid(p.hand.length),
       up: p.up, down: hid(p.down.length),
       myDown: i === pi ? p.down.map(c => c.id) : undefined,
+      // face-down cards this seat has turned over for itself (face-down follow-up). Only its owner gets the faces.
+      myKnown: i === pi && p.known && p.known.length ? p.down.filter(c => p.known.includes(c.id)) : undefined,
     })),
     drawCount: g.draw.length, pile: g.pile, burnedCount: g.burned.length,
     winner: g.winner, loser: g.loser, finished: g.finished, stalemate: !!g.stalemate, lastEvent: g.lastEvent || null,

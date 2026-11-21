@@ -148,13 +148,16 @@ function computeLayout() {
     p.down.forEach((c, i) => {
       if (c._slot == null) c._slot = i;
       const rv = store.ui.reveal === c.id;
+      // face-down follow-up: a face-down card of mine I have already turned over shows its face, to me only
+      const pk = p === me && !rv && !c.hidden && (p.known || []).includes(c.id);
       pos[c.id] = {
         cx: sx(c._slot),
         cy: rv ? cy + store.ch * .1 * sz : cy,
         rot: 0,
         s: rv ? Math.min(1, sz * 1.25) : sz,
         z: rv ? 300 : 20,
-        down: !rv
+        down: !rv && !pk,
+        peek: pk
       };
     });
     p.up.forEach((c, i) => {
@@ -243,6 +246,7 @@ function render() {
     el.classList.toggle('nosh', !!p.nosh);
     el.classList.toggle('ghosting', !!p.ghost);
     el.classList.toggle('stinging', !!p.sting);
+    el.classList.toggle('peek', !!p.peek);
     const c = findCard(+id);
     let tap = false,
       dim = false;

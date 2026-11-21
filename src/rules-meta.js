@@ -4,11 +4,11 @@
 // Law: a card that already has an active rule cannot be given another one.
 const Shed = require('./engine.js');
 
-const FLAGS = ['sevensLower', 'transparentOn', 'skipOn', 'fourBurns'];
+const FLAGS = ['sevensLower', 'transparentOn', 'skipOn', 'fourBurns', 'blindFollow'];
 const RANK_KEYS = { transparentRank: 'transparentOn', skipRank: 'skipOn' };
 // ranks a house rule may sit on. 2, 7 and 10 have fixed jobs.
 const PICKABLE = Shed.RANK_LIST.filter(k => !['2', '7', '10'].includes(k));
-const LABEL = { sevensLower: '7s force lower', transparentOn: 'Transparent card', skipOn: 'Skip a go', fourBurns: 'Four of a kind burns' };
+const LABEL = { sevensLower: '7s force lower', transparentOn: 'Transparent card', skipOn: 'Skip a go', fourBurns: 'Four of a kind burns', blindFollow: 'Face-down follow-up' };
 
 const rankOf = (o, key) => (key === 'transparentRank' ? o.transparentRank || '4' : o.skipRank || '8');
 const customActive = r => r && r.on !== false && r.effect && r.effect !== 'none';
@@ -120,6 +120,7 @@ function summarise(opts) {
   const out = [];
   for (const k of Shed.RANK_LIST) if (r.ranks[k].effect) out.push(k + ': ' + Shed.EFFECT_INFO[r.ranks[k].effect]);
   if (r.fourOfAKindBurns) out.push('Four of a kind in a row burns the pile');
+  if (r.blindFollow) out.push('Face-down follow-up: see your next face-down card, add it if it matches');
   return out;
 }
 

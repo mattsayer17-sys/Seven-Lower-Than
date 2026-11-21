@@ -22,6 +22,7 @@ export const store = {
     skipOn: false,
     skipRank: '8',
     fourBurns: true,
+    blindFollow: false,
     players: 2,
     felt: 'green',
     custom: [],

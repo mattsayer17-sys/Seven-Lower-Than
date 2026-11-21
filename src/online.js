@@ -8,6 +8,9 @@
   let nextHidden = 0;
   const hiddenCard = () => ({ id: --nextHidden, rank: '?', suit: '?', hidden: true });
 
+  // a face-down card of mine that I have turned over for myself
+  const known = (p, id) => { const c = (p.myKnown || []).find(k => k.id === id); return c ? Object.assign({}, c) : null; };
+
   function rotate(arr, me) { const n = arr.length; return arr.map((_, i) => arr[(i + me) % n]); }
 
   // seat index in the server's numbering -> index in the rotated game
@@ -18,7 +21,8 @@
     const fill = (a) => a.map(c => (c === null ? hiddenCard() : c));
     const players = rotate(v.players, me).map((p, i) => ({
       id: i, name: p.name, human: i === 0, out: p.out, ready: p.ready,
-      hand: fill(p.hand), up: p.up, down: i === 0 ? p.down.map((c, j) => c || { id: p.myDown[j], rank: '?', suit: '?', hidden: true }) : fill(p.down),
+      hand: fill(p.hand), up: p.up, down: i === 0 ? p.down.map((c, j) => c || known(p, p.myDown[j]) || { id: p.myDown[j], rank: '?', suit: '?', hidden: true }) : fill(p.down),
+      known: i === 0 && p.myKnown ? p.myKnown.map(c => c.id) : [],
     }));
     const ev = v.lastEvent ? remapEvent(v.lastEvent, me, n) : null;
     return {
@@ -88,8 +92,10 @@
       return Shed.play(g, pi, ev.cards.map(c => c.id));
     }
     if (ev.type === 'blind') {
-      if (!bindInto(p.down, ev.cards[0], rekeys)) return null;
-      return Shed.playBlind(g, pi, ev.cards[0].id);
+      // a face-down follow-up plays more than one card: all of them came off their face-down cards
+      if (!ev.success) { if (!bindInto(p.down, ev.cards[0], rekeys)) return null; return Shed.playBlind(g, pi, ev.cards[0].id); }
+      for (const c of ev.cards) if (!bindInto(p.down, c, rekeys)) return null;
+      return Shed.playBlind(g, pi, ev.cards[0].id, { extra: ev.cards.slice(1).map(c => c.id) });
     }
     return null;
   }
@@ -113,6 +119,10 @@
       if (!result || !result.ok) return resync('replay refused', JSON.stringify([ev, result && result.err]));
       mode = 'step';
     }
+    // face-down cards I have turned over for myself: their faces, and which ones they are
+    const sd = snap.players[0], md = g.players[0];
+    for (const c of md.down) { const k = sd.down.find(x => x.id === c.id && !x.hidden); if (k && c.hidden) { const from = Object.assign({}, c); c.rank = k.rank; c.suit = k.suit; c.hidden = false; rekeys.push({ from, to: c, same: true }); } }
+    md.known = sd.known.slice();
     // my own cards drawn from the pile arrive as placeholders until the server tells us what they are
     for (const c of snap.players[0].hand) if (!bindInto(g.players[0].hand, c, rekeys)) return resync('could not bind my hand');
     Shed.sortHand(g.rules, g.players[0].hand);

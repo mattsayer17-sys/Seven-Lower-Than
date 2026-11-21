@@ -407,3 +407,21 @@ test('peek: an invite shows whose table, how full and the rules, before you pick
   assert.equal((await handle(db, 'stranger', { op: 'peek', code: 'NOPE1' })).status, 404);
   assert.equal(db.t.shed_profiles.some(p => p.id === 'stranger'), false);
 });
+
+test('face-down follow-up: only the owner sees a face-down card they turned over', () => {
+  const T = require('../server/table.js');
+  const g = T.createTable({ rules: require('../src/engine.js').makeRuleset({ blindFollow: true }), seed: 5, players: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }] });
+  g.phase = 'play'; g.turn = 0; g.pile = [];
+  const p = g.players[0];
+  p.hand = []; p.up = [];
+  const r = T.applyAction(g, 'a', { type: 'blind', id: p.down[0].id });
+  assert.equal(r.ok, true);
+  if (!p.down.length) return;
+  assert.equal(p.known.length, 1);
+  const mine = T.projectView(g, 0), theirs = T.projectView(g, 1);
+  assert.equal(mine.players[0].myKnown.length, 1);
+  assert.equal(mine.players[0].myKnown[0].id, p.known[0]);
+  assert.equal(theirs.players[0].myKnown, undefined);
+  assert.ok(theirs.players[0].down.every(c => c === null));
+  assert.ok(!JSON.stringify(theirs).includes('"known"'));
+});

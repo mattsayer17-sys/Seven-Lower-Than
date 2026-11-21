@@ -95,16 +95,19 @@ function makeRemote(client, code) {
     r.inflight++;
     r.chain = r.chain.then(() => client.act({ type: 'blind', id })).then(async () => {
       const res = await client.t.view(code);
-      const card = res.view.lastEvent && res.view.lastEvent.cards[0];
+      const cards = res.view.lastEvent ? res.view.lastEvent.cards : [];
+      const card = cards[0];
       const game = g();
       const rk = card && Online.revealMine(game, card);
       if (!rk) throw new Error('Out of step');
       rekeyCard(rk.from, rk.to);
+      // face-down follow-up: more of my face-down cards went on with it
+      for (const c of cards.slice(1)) { const k = Online.revealMine(game, c); if (!k) throw new Error('Out of step'); rekeyCard(k.from, k.to); }
       store.ui.reveal = id;
       render();
       later(() => {
         store.ui.reveal = null;
-        afterAction(Shed.playBlind(game, 0, id));
+        afterAction(Shed.playBlind(game, 0, id, { extra: cards.slice(1).map(c => c.id) }));
         r.inflight--;
         const out = Online.reconcile(game, res.view, res.version);
         if (out.mode === 'resync') resync(out.game, res.version);
@@ -122,7 +125,7 @@ function makeRemote(client, code) {
   };
 
   async function poll() {
-    if (store.remote !== r) return clearInterval(r.timer);
+    if (store.remote !== r) return;
     if (r.busy || r.inflight || store.ui.intro || store.ui.drag) return;
     let res;
     try { res = await client.t.view(code); } catch (e) { return; }
@@ -178,8 +181,21 @@ function makeRemote(client, code) {
       }
     } catch (e) { /* try again next time */ }
   }
-  r.over = () => { clearInterval(r.timer); };
-  r.timer = setInterval(poll, POLL);
+  // Poll fast while waiting for someone else, slowly while it's my go (nothing changes until I move).
+  const waiting = () => { const gm = g(); return !gm || gm.phase !== 'play' || gm.turn !== 0 || gm.players[0].out; };
+  const loop = async () => {
+    if (store.remote !== r || r.stopped) return;
+    r.polling = true;
+    try { await poll(); } finally { r.polling = false; }
+    if (store.remote !== r || r.stopped) return;
+    const soon = r.soon;
+    r.soon = false;
+    r.timer = setTimeout(loop, FAST ? POLL : soon ? 60 : waiting() ? 450 : 1500);
+  };
+  r.over = () => { r.stopped = true; clearTimeout(r.timer); };
+  // one loop only: if a poll is on its way, the next one just comes sooner
+  r.pollNow = () => { if (r.stopped) return; if (r.polling) { r.soon = true; return; } clearTimeout(r.timer); r.timer = setTimeout(loop, FAST ? 5 : 60); };
+  r.timer = setTimeout(loop, POLL);
   r.chatTimer = setInterval(chatPoll, FAST ? 60 : 1600);
   r.resync = resync;
   return r;

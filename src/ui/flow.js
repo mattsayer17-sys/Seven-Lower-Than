@@ -174,6 +174,7 @@ function describe(ev) {
     const c = label(ev.cards[0]);
     if (!ev.success) return n + ' flipped ' + c + ' and had to pick up ' + ev.picked + stingerNote(ev.stingers);
     t = n + ' flipped ' + c;
+    if (ev.cards.length > 1) t += ev.cards.length === 2 ? ' and the next one matched' : ' and the next ' + (ev.cards.length - 1) + ' matched';
   } else {
     const c = ev.cards;
     t = n + ' played ' + (c.length > 1 ? c.length + ' × ' : '') + c[0].rank;
@@ -310,6 +311,7 @@ function advance() {
     }
     store.ui.busy = g.phase === 'swap' ? !!g.players[0].ready : g.turn !== 0 || g.players[0].out;
     render();
+    if (store.ui.busy && store.remote.pollNow) store.remote.pollNow(); // their go: look for their move straight away
     if (g.phase === 'play' && g.turn === 0 && !g.players[0].out) SFX.turn();
     return;
   }

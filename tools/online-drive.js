@@ -203,6 +203,7 @@ function decide(g) {
 
   await scenario('2 players', 1, { players: 2 });
   await scenario('4 players, house rules, reload', 3, { players: 4, transparentOn: true, skipOn: true }, 25);
+  await scenario('2 players, face-down follow-up', 1, { players: 2, blindFollow: true });
 
   // a friend taps the invite link: whose table, how full, the rules, one tap to sit down
   {

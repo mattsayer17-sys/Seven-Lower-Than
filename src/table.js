@@ -2,7 +2,7 @@
 // Glue between the saved settings, the table rules sheet and the pretend guests used in the preview.
 const Meta = require('./rules-meta.js');
 
-const KEYS = ['sevensLower', 'transparentOn', 'transparentRank', 'skipOn', 'skipRank', 'fourBurns', 'custom'];
+const KEYS = ['sevensLower', 'transparentOn', 'transparentRank', 'skipOn', 'skipRank', 'fourBurns', 'blindFollow', 'custom'];
 const copy = v => JSON.parse(JSON.stringify(v));
 
 // the house-rule part of the settings, as the options the engine and the vote work with

@@ -205,15 +205,14 @@ function toast(a) {
 }
 
 // Sit the unlock just above your own hand, near the bottom of the screen, where your eyes already are.
+// The toast sits over my face-down row: the cards there matter least, so it never covers the pile or my hand.
 function placeToast(t) {
-  let top = window.innerHeight * .62;
+  let mid = window.innerHeight * .62;
   try {
-    const g = store.game,
-      ids = g && g.players[0] ? g.players[0].hand.concat(g.players[0].up).map(c => c.id) : [];
-    const tops = ids.map(id => store.els[id]).filter(Boolean).map(el => el.getBoundingClientRect().top).filter(y => y > window.innerHeight * .4);
-    if (tops.length) top = Math.min(...tops);
+    const L = store.lastL, tb = $('#table');
+    if (L && L.meTableCy && tb) mid = tb.getBoundingClientRect().top + L.meTableCy + store.ch * .1;
   } catch (e) {}
-  t.style.top = Math.max(60, top - 12) + 'px';
+  t.style.top = Math.max(60, mid + t.offsetHeight / 2) + 'px';
 }
 
 function nextToast() {

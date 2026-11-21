@@ -77,6 +77,7 @@
     return {
       ranks,
       fourOfAKindBurns: opts.fourBurns !== false,
+      blindFollow: !!opts.blindFollow,
       handSize: 3,
       maxTurns: opts.maxTurns || 1500,
       custom: v.rules,
@@ -327,20 +328,44 @@
     return { ok: true, burned, event: ev, out, over: g.phase === 'over' };
   }
 
-  function playBlind(g, pi, cardId) {
+  // Face-down follow-up (house rule blindFollow): when a face-down card plays, the owner turns over their next one.
+  // Only they see it. If it is the same rank and can go on, it goes straight on in the same go, and the next one turns, and so on.
+  // It is never a choice: a pause to decide would tell everyone else the turned card matched.
+  // known[] on a player lists face-down cards its owner has seen. Online, the server never shows them to anyone else.
+  // the next face-down card the owner has not seen yet, left to right
+  function nextDown(p) { const k = p.known || []; return p.down.find(c => !k.includes(c.id)) || null; }
+  // a seen face-down card that could go on now, same rank as the one just played
+  function follower(g, p, rank) { const k = p.known || []; return p.down.find(c => k.includes(c.id) && !c.hidden && c.rank === rank && canPlayCard(g.rules, c, g.pile)) || null; }
+
+  // told (optional, online only): { extra: [ids] } are the follow-up cards the server played, for a shadow game that cannot see them.
+  function playBlind(g, pi, cardId, told) {
     if (g.phase !== 'play' || g.turn !== pi) return { ok: false, err: 'not your turn' };
     const p = g.players[pi];
     if (zone(g, p) !== 'down') return { ok: false, err: 'bad zone' };
     const c = p.down.find(x => x.id === cardId);
     if (!c) return { ok: false, err: 'no card' };
-    p.down = p.down.filter(x => x.id !== cardId);
+    const take = x => { p.down = p.down.filter(y => y.id !== x.id); if (p.known) p.known = p.known.filter(id => id !== x.id); };
+    take(c);
     g.turns++;
     if (canPlayCard(g.rules, c, g.pile)) {
-      const burned = applyPlayedCards(g, pi, [c]);
-      const ev = { type: 'blind', pi, cards: [c], burned, success: true };
+      let burned = applyPlayedCards(g, pi, [c]);
+      const cards = [c];
+      if (g.rules.blindFollow || told) {
+        for (let k = 0; !burned && p.down.length; k++) {
+          const n = nextDown(p);
+          if (n) p.known = (p.known || []).concat([n.id]);
+          const f = told ? p.down.find(x => x.id === (told.extra || [])[k]) : follower(g, p, c.rank);
+          if (!f) break;
+          take(f);
+          burned = applyPlayedCards(g, pi, [f]);
+          cards.push(f);
+        }
+      }
+      const last = cards[cards.length - 1];
+      const ev = { type: 'blind', pi, cards, burned, success: true };
       g.lastEvent = ev;
       const out = checkOut(g, pi);
-      afterPlay(g, pi, c, burned, ev);
+      afterPlay(g, pi, last, burned, ev, cards.length);
       checkStalemate(g);
       return { ok: true, burned, event: ev, out, over: g.phase === 'over' };
     }
@@ -387,6 +412,9 @@
   function cpuChoose(g, pi) {
     const p = g.players[pi], r = g.rules, z = zone(g, p);
     if (z === 'down') {
+      // a card it has already seen and can play goes first; otherwise a random face-down card
+      const seen = (p.known || []).map(id => p.down.find(c => c.id === id)).filter(c => c && canPlayCard(r, c, g.pile));
+      if (seen.length) return { kind: 'blind', id: seen[0].id };
       const c = p.down[Math.floor(g.rng() * p.down.length)];
       return { kind: 'blind', id: c.id };
     }

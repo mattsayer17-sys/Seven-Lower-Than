@@ -122,8 +122,10 @@ async function shadowGame(n, opts, stats) {
         g.pending = true;
         await cs[i].act(a);
         const r = await cs[i].t.view(code);
-        Online.revealMine(g, r.view.lastEvent.cards[0]);
-        assert.ok(Shed.playBlind(g, 0, a.id).ok);
+        const cards = r.view.lastEvent.cards;
+        for (const c of cards) Online.revealMine(g, c);
+        if (cards.length > 1) stats.follows = (stats.follows || 0) + 1;
+        assert.ok(Shed.playBlind(g, 0, a.id, { extra: cards.slice(1).map(c => c.id) }).ok);
       } else {
         g.pending = true;
         const res = a.type === 'play' ? Shed.play(g, 0, a.ids) : Shed.pickUp(g, 0);
@@ -161,4 +163,17 @@ test('a seat that missed moves resyncs to the right picture', async () => {
   const out = Online.reconcile(g1, r.view, r.version);
   assert.equal(out.mode, 'resync');
   assert.equal(Online.digest(out.game), Online.digest(Online.fromView(r.view)));
+});
+
+test('face-down follow-up: shadows stay in step and nobody else learns the turned card', async () => {
+  const stats = { resyncs: 0, steps: 0, mine: 0, log: [], follows: 0 };
+  for (const n of [2, 3, 4]) for (const p of Presets.PRESETS) {
+    const { db } = await shadowGame(n, Object.assign({}, p.opts, { blindFollow: true }), stats);
+    for (const v of db.t.shed_views) {
+      const me = v.view.me;
+      v.view.players.forEach((q, i) => { if (i !== me) assert.equal(q.myKnown, undefined); });
+    }
+  }
+  assert.equal(stats.resyncs, 0, stats.log.slice(0, 5).join('; '));
+  assert.ok(stats.follows > 0, 'no follow-up happened in ' + JSON.stringify(stats));
 });

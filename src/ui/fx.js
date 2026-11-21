@@ -69,12 +69,18 @@ function burnFx() {
     x = L.pileX,
     y = L.centerCy;
   addFx('fall', x, y, '', 420, 'width:' + cw * .9 + 'px;height:' + ch * 1.3 + 'px;--from:' + (-ch * 2.4).toFixed(0) + 'px');
+  // a few streaks of water chasing the main splash down, so it reads as poured, not dropped
+  for (let i = 0; i < 4; i++) addFx('streak', x + (rnd() * 2 - 1) * cw * .35, y, '', 520, 'height:' + (ch * (1 + rnd() * .6)).toFixed(0) + 'px;--from:' + (-ch * 2.6).toFixed(0) + 'px;animation-delay:' + kms(40 + i * 45) + 'ms');
   addFx('wash', x, y, '', 1150, 'width:' + cw * 1.7 + 'px;height:' + ch * 1.35 + 'px');
-  for (let i = 0; i < 12; i++) {
+  // the splash: a ring of water thrown out from where it lands
+  addFx('ring', x, y + ch * .1, '', 800, 'width:' + cw * 1.2 + 'px;height:' + cw * .5 + 'px;animation-delay:' + kms(230) + 'ms');
+  for (let i = 0; i < 16; i++) {
     const a = rnd() * Math.PI * 2,
-      r = cw * (.7 + rnd() * .6);
-    addFx('drop', x, y, '', 700, '--dx:' + (Math.cos(a) * r).toFixed(0) + 'px;--dy:' + (Math.sin(a) * r * .7 - ch * .25).toFixed(0) + 'px;animation-delay:' + kms(240 + (rnd() * 60 | 0)) + 'ms');
+      r = cw * (.6 + rnd() * .9);
+    addFx('drop', x, y, '', 900, '--dx:' + (Math.cos(a) * r).toFixed(0) + 'px;--up:' + (-ch * (.35 + rnd() * .45)).toFixed(0) + 'px;--dy:' + (Math.sin(a) * r * .5 + ch * .15).toFixed(0) + 'px;animation-delay:' + kms(230 + (rnd() * 80 | 0)) + 'ms');
   }
+  // cold water on a burning pile: a little steam lifts off
+  for (let i = 0; i < 5; i++) addFx('steam', x + (rnd() * 2 - 1) * cw * .5, y - ch * .2, '', 1300, 'width:' + (cw * (.5 + rnd() * .3)).toFixed(0) + 'px;height:' + (cw * (.5 + rnd() * .3)).toFixed(0) + 'px;animation-delay:' + kms(320 + i * 70) + 'ms');
   // the felt darkens where it's wet, then runs of water trickle outwards and soak away
   addFx('wet', x, y, '', 1500, 'width:' + cw * 2.3 + 'px;height:' + ch * 1.8 + 'px;animation-delay:' + kms(260) + 'ms');
   for (let i = 0; i < 7; i++) {
