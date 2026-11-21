@@ -7,6 +7,7 @@ import { recordGame, rivalryHTML } from './profile.js';
 import { dailyBlock, wireShare } from './daily.js';
 import { showSetup } from './setup.js';
 import { showOnline, wireRematch } from './online.js';
+import { showWelcome } from './welcome.js';
 
 // ---------- sheets ----------
 // A sheet may set m.onchange / m.onclick. They are cleared whenever a sheet opens or closes,
@@ -101,7 +102,8 @@ function showLegend() {
   const rows = sp.map(k => '<div class="row"><span><b style="color:var(--brass2)">' + k + '</b> &nbsp;' + esc(Shed.EFFECT_INFO[r.ranks[k].effect]) + '</span></div>').join('') || '<div class="row"><span>No special cards</span></div>';
   showModal('<h2>This table</h2><p>Lowest card starts. Play equal or higher than the pile.' + (r.fourOfAKindBurns ? ' Four of a kind in a row burns the pile.' : '') + '</p>' + '<h3>Special cards</h3>' + rows + '<h3>Order, low to high</h3><p>' + order.join(' › ') + '</p>' + '<div class="btns"><button class="btn" id="lClose">Close</button><button class="btn primary" id="lSetup">Change rules</button></div>');
   $('#lClose').onclick = hideModal;
-  $('#lSetup').onclick = () => showSetup('rules');
+  // solo: the quick house-rules card on the felt; online the table's rules change by vote, in Setup
+  $('#lSetup').onclick = () => { hideModal(); if (store.game && store.game.online) showSetup('rules'); else showWelcome(); };
 }
 
 export { hideModal, initDialogs, showLegend, showModal, showOver };

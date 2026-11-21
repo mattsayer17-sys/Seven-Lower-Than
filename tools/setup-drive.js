@@ -71,9 +71,14 @@ let steps0 = [];
   await click('#bRules');
   await until(() => !!document.querySelector('#lSetup'), 'legend');
   await click('#lSetup');
-  await until(() => !!document.querySelector('#tabRules'), 'setup from legend');
-  assert.equal(await ev(() => document.querySelector('#tabRules').getAttribute('aria-selected')), 'true');
-  ok('Setup reopens on the last tab; "Change rules" lands on Rules');
+  await until(() => !!document.querySelector('#coach.on #qrows'), 'house rules card from legend');
+  assert.equal(await ev(() => document.querySelectorAll('#coach .qrow').length), 6);
+  await click('#wGo');
+  await until(() => !document.querySelector('#coach'), 'house rules card closed');
+  ok('Setup reopens on the last tab; "Change rules" opens the house rules card on the felt');
+  await click('#bNew');
+  await until(() => !!document.querySelector('#tabRules'), 'setup again');
+  await click('#tabRules');
 
   // rule clashes, now decided by rules-meta
   await pick('#rPreset', 'classic');
