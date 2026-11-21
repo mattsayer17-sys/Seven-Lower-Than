@@ -93,6 +93,8 @@ function adoptElements(g) {
     }
   });
   spare.forEach(s => s.el.remove());
+  // a resync can land mid-deal: drop the deal's staggered delays so every card goes straight to its new place
+  Object.values(store.els).forEach(el => { el.style.transitionDelay = ''; el.style.animationDelay = ''; el.classList.remove('fly'); if (el.firstChild) el.firstChild.style.transitionDelay = ''; });
 }
 
 // ---------- new game: blank felt, then the deck, then the deal ----------

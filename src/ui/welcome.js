@@ -16,6 +16,8 @@ export function maybeWelcome() {
   if (!p || (FAST && !window.__MS_WELCOME)) return false;
   // not new: has played, or already met the old walkthrough offer
   if (p.flags.welcomed || p.flags.offer || p.g > 0) return false;
+  // an online game is play already: no getting-started card over someone else's cards, now or later
+  if (store.remote || (store.game && store.game.online)) { p.flags.welcomed = true; save(); return true; }
   if (store.tour || store.demo || store.ui.intro || store.ui.busy || !$('#modal').classList.contains('hidden')) return false;
   p.flags.welcomed = true;
   if (!p.name || p.name === 'Player 1' || p.name === 'You') p.name = Names.suggest();

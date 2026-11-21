@@ -68,7 +68,7 @@ function initDialogs() {
   });
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape' || !seen() || walking()) return;
-    const b = ['#tblLeave', '#rClose', '#lClose', '#lgClose', '#pClose', '#olClose'].map(s => m.querySelector(s)).find(Boolean);
+    const b = ['#tblLeave', '#rClose', '#lClose', '#lgClose', '#pClose', '#olClose', '#lvStay'].map(s => m.querySelector(s)).find(Boolean);
     e.preventDefault();
     if (b) b.click(); else hideModal();
   });

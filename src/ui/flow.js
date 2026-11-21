@@ -111,9 +111,12 @@ function newGame(o) {
   const ids = Object.keys(store.els);
   later(() => {
     // 1. the deck drops onto the felt
+    // online, a card element can be handed to another card mid-deal (a resync), so skip any that moved
     ids.forEach((id, i) => {
-      store.els[id].classList.remove('nt');
-      store.els[id].style.transitionDelay = i * 9 + 'ms';
+      const e = store.els[id];
+      if (!e) return;
+      e.classList.remove('nt');
+      e.style.transitionDelay = i * 9 + 'ms';
     });
     store.ui.intro = 'deck';
     render();
@@ -122,12 +125,15 @@ function newGame(o) {
     // 2. deal, one card at a time round the table
     const stag = n > 2 ? 62 : 90;
     ids.forEach(id => {
-      store.els[id].style.transitionDelay = '';
-      store.els[id].firstChild.style.transitionDelay = '';
+      const e = store.els[id];
+      if (!e) return;
+      e.style.transitionDelay = '';
+      e.firstChild.style.transitionDelay = '';
     });
     store.game.dealOrder.forEach((id, i) => {
       setTimeout(SFX.deal, i * stag + 150);
       const e = store.els[id];
+      if (!e) return;
       e.style.transitionDelay = i * stag + 'ms';
       e.firstChild.style.transitionDelay = i * stag + 330 + 'ms';
       e.style.animationDelay = i * stag + 'ms';
@@ -137,11 +143,12 @@ function newGame(o) {
     render();
     later(() => {
       // 3. table furniture fades in
-      ids.forEach(id => {
-        store.els[id].style.transitionDelay = '';
-        store.els[id].style.animationDelay = '';
-        store.els[id].classList.remove('fly');
-        store.els[id].firstChild.style.transitionDelay = '';
+      Object.keys(store.els).forEach(id => {
+        const e = store.els[id];
+        e.style.transitionDelay = '';
+        e.style.animationDelay = '';
+        e.classList.remove('fly');
+        e.firstChild.style.transitionDelay = '';
       });
       store.ui.hideui = false;
       store.ui.busy = false;
@@ -296,6 +303,15 @@ function hurry() {
   return true;
 }
 
+// In another tab or app switcher, the page title shows it's your go until you look again.
+const BASE_TITLE = document.title;
+function flagTurn() {
+  if (!document.hidden) return;
+  document.title = '● Your go · ' + BASE_TITLE;
+  const back = () => { if (!document.hidden) { document.title = BASE_TITLE; document.removeEventListener('visibilitychange', back); } };
+  document.addEventListener('visibilitychange', back);
+}
+
 function advance() {
   const g = store.game;
   store.ui.sel = [];
@@ -312,7 +328,7 @@ function advance() {
     store.ui.busy = g.phase === 'swap' ? !!g.players[0].ready : g.turn !== 0 || g.players[0].out;
     render();
     if (store.ui.busy && store.remote.pollNow) store.remote.pollNow(); // their go: look for their move straight away
-    if (g.phase === 'play' && g.turn === 0 && !g.players[0].out) SFX.turn();
+    if (g.phase === 'play' && g.turn === 0 && !g.players[0].out) { SFX.turn(); flagTurn(); }
     return;
   }
   if (store.tour && store.tour.manual && g.phase === 'play') {

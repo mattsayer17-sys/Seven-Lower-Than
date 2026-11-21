@@ -333,6 +333,7 @@ function render() {
   lk.style.top = L.centerCy - store.ch * .5 - 10 + 'px';
   lk.classList.toggle('on', isSt && !store.ui.hold);
   if (isSt) $('#lockT').textContent = 'only ' + topc.rank;
+  if (g.turn !== store.ui.turnOf || g.phase !== 'play') { store.ui.turnOf = g.phase === 'play' ? g.turn : null; store.ui.turnSince = Date.now(); }
   const stT = statusText();
   if (st.textContent !== stT) st.textContent = stT;
   $('#bReady').classList.toggle('hidden', !(g.phase === 'swap' && !store.ui.busy && !store.ui.intro));
@@ -354,7 +355,16 @@ function statusText() {
   if (g.phase === 'swap') return store.ui.busy ? '' : 'Rearrange your cards. One chance';
   if (g.phase === 'over') return '';
   if (g.players[0].out) return 'You are out (' + ordinal(g.finished.indexOf(0) + 1) + '). Watching the rest';
-  if (g.turn !== 0) return g.players[g.turn].name + ' is thinking…';
+  if (g.turn !== 0) {
+    // online, say how long it has been, so a long wait reads as "they've put the phone down", not as a broken game
+    const n = g.players[g.turn].name;
+    if (g.online && store.ui.turnSince) {
+      const s = Math.floor((Date.now() - store.ui.turnSince) / 1000);
+      if (s >= 60) return n + ' hasn\'t played for ' + Math.floor(s / 60) + ' min. They may have left the app';
+      if (s >= 15) return n + ' is thinking… ' + s + ' s';
+    }
+    return n + ' is thinking…';
+  }
   if (store.ui.busy) return '';
   const me = g.players[0],
     z = Shed.zone(g, me);
@@ -379,4 +389,12 @@ function hint(t) {
 
 // ---------- flow ----------
 
-export { hint, humanLegal, render, setMsg };
+// Just the status line, for the online wait timer (no card moves).
+function refreshStatus() {
+  const st = $('#status');
+  if (!st || !store.game) return;
+  const t = statusText();
+  if (st.textContent !== t) st.textContent = t;
+}
+
+export { hint, humanLegal, refreshStatus, render, setMsg };

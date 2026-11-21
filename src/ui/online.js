@@ -14,7 +14,7 @@ import { AVATARS, prof, unlock, updateStats } from './profile.js';
 import { hideModal, showModal } from './sheets.js';
 import { hideWelcome } from './welcome.js';
 import { advance, afterAction, newGame } from './flow.js';
-import { hint, render, setMsg } from './render.js';
+import { hint, refreshStatus, render, setMsg } from './render.js';
 import { adoptElements, rekeyCard } from './cards.js';
 import { chatFrom, chatOn } from './chat.js';
 import { fillChange, proposeHTML, readChange, voteCard } from './vote.js';
@@ -194,6 +194,7 @@ function makeRemote(client, code) {
     if (store.remote !== r || r.stopped) return;
     r.polling = true;
     try { await poll(); } finally { r.polling = false; }
+    refreshStatus();
     if (store.remote !== r || r.stopped) return;
     const soon = r.soon;
     r.soon = false;
