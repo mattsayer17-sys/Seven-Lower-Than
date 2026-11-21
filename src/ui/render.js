@@ -16,7 +16,7 @@ function computeLayout() {
   // 4 or 5 at the table: opponents sit round it like a card room (two across the top, one each side),
   // small and readable, while the space goes to the player's own cards
   const wide = m >= 3, nTop = m === 3 ? 1 : 2, hsT = .32, scT = .42;
-  store.cw = wide ? Math.max(38, Math.min(W / 5.1, (H - 152) / (hsT + 1.22 * scT + 3.92) / 1.4, 92)) : Math.max(38, Math.min(W / 5.1, (H - (m > 1 ? 130 : 114)) / (m > 1 ? 5.9 : 6.39) / 1.4, 92));
+  store.cw = wide ? Math.max(38, Math.min(W / 5.1, (H - 152) / (hsT + 1.22 * scT + 3.92) / 1.4, 92)) : Math.max(38, Math.min(W / 5.1, m > 1 ? (H - 130) / 5.9 / 1.4 : (H - 140) / 5.15 / 1.4, 92));
   store.ch = store.cw * 1.4;
   table.style.setProperty('--cw', store.cw + 'px');
   const L = {
@@ -24,8 +24,8 @@ function computeLayout() {
     H
   };
   const panelW = wide ? W / nTop : W / m,
-    sc = m === 1 ? .64 : wide ? Math.min(scT, (panelW - 16) / (store.cw * 3.16)) : Math.min(.56, (panelW - 16) / (store.cw * 3.16)),
-    hs = m === 1 ? .48 : wide ? sc * hsT / scT : sc * .75,
+    sc = m === 1 ? .8 : wide ? Math.min(scT, (panelW - 16) / (store.cw * 3.16)) : Math.min(.56, (panelW - 16) / (store.cw * 3.16)),
+    hs = m === 1 ? .52 : wide ? sc * hsT / scT : sc * .75,
     t0 = m === 1 ? 6 : 24;
   L.panels = cpus.map((p, k) => W * (k + .5) / m);
   L.m = m;

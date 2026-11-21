@@ -28,6 +28,9 @@ const REWORD = [
   ['🔥 Burn it down Burn the pile 🃏', '💧 Cold water Pour cold water on the pile 🃏'],
   // Setup sheet headings: + Play against, + More, + Add a card rule, - Your own special cards, - Or pick one yourself
   [/^setup 7$/, 'setup 8'],
+  // 21 Nov 2026: a stinger rule now lives in its own Stinger tick row, not the list of your own rules
+  [/^custom 3 plays on anything\. Only the same rank can be played on it.*Your own rule×$/, 'custom '],
+  [/^blocked \|2$/, 'blocked |1'],
 ];
 // Achievements added 20 Nov 2026. The current build lists and unlocks these on top of the original 13, so drop them from
 // the current transcript and don't compare the unlocked count; which of the original 13 unlock is still compared via "ach=".

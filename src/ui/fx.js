@@ -97,6 +97,8 @@ function stungFx(i) {
   if (!L) return;
   const sy = L.centerCy - store.ch * .95;
   addFx('stung', L.pileX, sy, 'STUNG', 1150);
+  // the stung player is looking at their own cards, so it lands there too
+  if (i === 0 && L.meTableCy) addFx('stung', L.W / 2, L.meTableCy - store.ch * .1, 'STUNG', 1300);
   for (let k = 0; k < 12; k++) {
     const dx = (rnd() * 2 - 1) * store.cw * .5;
     addFx('ember', L.pileX + (rnd() * 2 - 1) * store.cw * .9, sy + store.ch * .12, '', 900, '--dx:' + dx.toFixed(0) + 'px;animation-delay:' + kms(rnd() * 200 | 0) + 'ms');
