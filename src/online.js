@@ -146,6 +146,8 @@
     cancelVote() { return this._do({ op: 'cancel', code: this.code }); }
     tick() { return this._do({ op: 'tick', code: this.code }); }
     react(text) { return this._do({ op: 'react', code: this.code, text }); }
+    // After a game: a new table with the same rules. The first to ask makes it, everyone else who asks sits at it.
+    async rematch() { const r = await this._do({ op: 'rematch', code: this.code }); this.code = r.code; return r; }
     // Fetch my latest view. Returns the game if it changed since last time, else null.
     async refresh() {
       const r = await this.t.view(this.code);

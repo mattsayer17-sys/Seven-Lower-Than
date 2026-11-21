@@ -72,13 +72,13 @@
         return rows[0] ? rows[0].id : 0;
       },
       async lobby(code) {
-        const t = (await rest('shed_tables?code=eq.' + encodeURIComponent(code) + '&select=status,host,rules,max_players,vote,note'))[0];
+        const t = (await rest('shed_tables?code=eq.' + encodeURIComponent(code) + '&select=status,host,rules,max_players,vote,note,next_code'))[0];
         if (!t) return null;
         const seats = await rest('shed_seats?code=eq.' + encodeURIComponent(code) + '&select=user_id,seat&order=seat');
         const ids = seats.map(s => s.user_id);
         const prof = ids.length ? await rest('shed_profiles?id=in.(' + ids.join(',') + ')&select=id,name') : [];
         const name = Object.fromEntries(prof.map(p => [p.id, p.name]));
-        return { status: t.status, host: t.host, rules: t.rules, max: t.max_players, vote: t.vote || null, note: t.note || '', seats: seats.map(s => ({ id: s.user_id, name: name[s.user_id] || 'Player' })) };
+        return { status: t.status, host: t.host, rules: t.rules, max: t.max_players, vote: t.vote || null, note: t.note || '', next: t.next_code || null, seats: seats.map(s => ({ id: s.user_id, name: name[s.user_id] || 'Player' })) };
       },
     };
   }

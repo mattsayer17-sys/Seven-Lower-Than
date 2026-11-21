@@ -425,3 +425,29 @@ test('face-down follow-up: only the owner sees a face-down card they turned over
   assert.ok(theirs.players[0].down.every(c => c === null));
   assert.ok(!JSON.stringify(theirs).includes('"known"'));
 });
+
+test('rematch: the first to ask opens a table with the same rules, the next is seated at it', async () => {
+  const { handle } = require('../server/handler.js');
+  const { FakeDb, lobbyOf } = require('../server/fakedb.js');
+  const db = new FakeDb();
+  await handle(db, 'a', { op: 'profile', name: 'Matt' });
+  await handle(db, 'b', { op: 'profile', name: 'Tali' });
+  const code = (await handle(db, 'a', { op: 'create', rules: { blindFollow: true, skipOn: true }, max: 2 })).body.code;
+  await handle(db, 'b', { op: 'join', code });
+  assert.equal((await handle(db, 'b', { op: 'rematch', code })).status, 409, 'not before the game is over');
+  db.t.shed_tables.find(t => t.code === code).status = 'over';
+  assert.equal((await handle(db, 'c', { op: 'rematch', code })).status, 400, 'needs a name first');
+  const r1 = await handle(db, 'b', { op: 'rematch', code });
+  assert.equal(r1.status, 200); assert.equal(r1.body.made, true);
+  assert.equal(lobbyOf(db, code).next, r1.body.code);
+  const r2 = await handle(db, 'a', { op: 'rematch', code });
+  assert.equal(r2.body.code, r1.body.code); assert.equal(r2.body.made, false);
+  const lob = lobbyOf(db, r1.body.code);
+  assert.deepEqual(lob.seats.map(s => s.name), ['Tali', 'Matt']);
+  assert.equal(lob.host, 'b');
+  assert.equal(lob.rules.blindFollow, true); assert.equal(lob.rules.skipOn, true);
+  assert.equal(lob.status, 'lobby');
+  const r3 = await handle(db, 'a', { op: 'rematch', code });
+  assert.equal(r3.body.code, r1.body.code, 'asking twice is harmless');
+  assert.equal(lobbyOf(db, r1.body.code).seats.length, 2);
+});

@@ -6,6 +6,7 @@ class Q {
   constructor(db, name) { this.db = db; this.name = name; this.f = []; this.op = 'select'; this.ret = false; this.one = false; this.ord = null; this.desc = false; this.lim = null; }
   select() { if (this.op === 'update') this.ret = true; return this; }
   eq(c, v) { this.f.push(r => r[c] === v); return this; }
+  is(c, v) { this.f.push(r => (r[c] === undefined ? null : r[c]) === v); return this; }
   in(c, a) { this.f.push(r => a.includes(r[c])); return this; }
   order(c, o) { this.ord = c; this.desc = !!(o && o.ascending === false); return this; }
   limit(n) { this.lim = n; return this; }
@@ -58,7 +59,7 @@ function lobbyOf(db, code) {
   if (!t) return null;
   const seats = db.t.shed_seats.filter(x => x.code === code).sort((a, b) => a.seat - b.seat);
   const name = id => (db.t.shed_profiles.find(p => p.id === id) || {}).name || 'Player';
-  return { status: t.status, host: t.host, rules: t.rules, max: t.max_players, vote: t.vote || null, note: t.note || '', seats: seats.map(s => ({ id: s.user_id, name: name(s.user_id) })) };
+  return { status: t.status, host: t.host, rules: t.rules, max: t.max_players, vote: t.vote || null, note: t.note || '', next: t.next_code || null, seats: seats.map(s => ({ id: s.user_id, name: name(s.user_id) })) };
 }
 // The tables a user is seated at that are not finished.
 function mineOf(db, uid) {

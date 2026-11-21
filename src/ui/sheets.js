@@ -6,7 +6,7 @@ import { newGame } from './flow.js';
 import { recordGame } from './profile.js';
 import { dailyBlock, wireShare } from './daily.js';
 import { showSetup } from './setup.js';
-import { showOnline } from './online.js';
+import { showOnline, wireRematch } from './online.js';
 
 // ---------- sheets ----------
 // A sheet may set m.onchange / m.onclick. They are cleared whenever a sheet opens or closes,
@@ -89,6 +89,7 @@ function showOver() {
     showModal('<h2>' + head + '</h2><p>' + sub + '</p>' + rows + dh + '<div class="btns"><button class="btn" id="setup">Setup</button><button class="btn primary" id="again">' + (g.online ? 'Back to online' : 'Play again') + '</button></div>');
     $('#again').onclick = g.online ? showOnline : () => newGame();
     $('#setup').onclick = showSetup;
+    if (g.online) wireRematch();
     wireShare(g.meta && g.meta.daily);
   }, 500);
 }

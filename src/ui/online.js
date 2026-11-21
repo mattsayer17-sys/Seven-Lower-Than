@@ -404,4 +404,42 @@ function showWaiting(c) {
   lobbyTimer = setInterval(tick, POLL * 1.2);
 }
 
-export { showOnline };
+// The game-over sheet of an online game: Rematch is the big button. If someone else asked first, it says so and one tap sits you down.
+function wireRematch() {
+  const r = store.remote;
+  if (!r || !r.code || !$('#again')) return;
+  const old = r.code, t = getTransport();
+  $('#setup').textContent = 'Back to online';
+  $('#setup').onclick = showOnline;
+  $('#again').textContent = 'Rematch';
+  const go = async () => {
+    $('#again').disabled = true;
+    $('#again').textContent = 'Setting the table…';
+    try {
+      const c2 = new Online.Client(t);
+      c2.code = old;
+      await c2.rematch();
+      clearInterval(timer);
+      showWaiting(c2);
+    } catch (e) {
+      if ($('#again')) { $('#again').disabled = false; $('#again').textContent = 'Rematch'; }
+      const p = document.querySelector('#modal .sheet p');
+      if (p) p.textContent = friendly(e);
+    }
+  };
+  $('#again').onclick = go;
+  // someone else may ask first: say who, so the tap feels like accepting
+  const look = async () => {
+    if (!$('#again') || $('#again').disabled) return clearInterval(timer);
+    let lob;
+    try { lob = await t.lobby(old); } catch (e) { return; }
+    if (!lob || !lob.next || !$('#again')) return;
+    let who = 'Your friend';
+    try { const pk = await t.call({ op: 'peek', code: lob.next }); if (pk.status === 200) { if (pk.body.mine) return; who = pk.body.host; } } catch (e) {}
+    $('#again').textContent = who + ' wants a rematch · Sit down';
+  };
+  const timer = setInterval(look, FAST ? 60 : 1500);
+  look();
+}
+
+export { showOnline, wireRematch };

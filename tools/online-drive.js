@@ -193,11 +193,25 @@ function decide(g) {
     }
     await until(() => window.__ms.game().phase === 'over', 'game over');
     if (!reloadAt) assert.equal(await ev(() => window.__ms.remote().playResyncs), 0);
-    await until(() => /Back to online/.test(document.querySelector('#modal').textContent), 'over sheet');
+    await until(() => /Back to online/.test(document.querySelector('#modal').textContent) && /Rematch/.test((document.querySelector('#again') || {}).textContent || ''), 'over sheet');
     assert.equal(await cardCount(), 52);
-    ok(label + ': played to the end in ' + moves + ' moves, over sheet offers Back to online');
-    await click('#again');
-    await until(() => !!document.querySelector('#olMake'), 'back to online sheet');
+    ok(label + ': played to the end in ' + moves + ' moves, over sheet offers Rematch and Back to online');
+    if (nBots === 1 && !label.includes('follow')) {
+      // the other player asks first: my button says so, one tap seats me at the new table
+      const r = await handle(db, bots[0].uid, { op: 'rematch', code });
+      assert.equal(r.status, 200);
+      await until(() => /wants a rematch/.test(document.querySelector('#again').textContent), 'rematch offer');
+      assert.match(await text('#again'), /^Bot1 wants a rematch/);
+      await click('#again');
+      await until(c => (document.querySelector('.sheet h2') || {}).textContent === 'Table ' + c, 'rematch waiting room', r.body.code);
+      await until(() => /Bot1/.test(document.querySelector('#olSeats').textContent) && /Matt/.test(document.querySelector('#olSeats').textContent), 'both at the rematch');
+      ok(label + ': Bot1 asked for a rematch, my button said so, one tap seated me at table ' + r.body.code);
+      await click('#olLeave');
+      await until(() => !!document.querySelector('#olMake'), 'back to online sheet');
+    } else {
+      await click('#setup');
+      await until(() => !!document.querySelector('#olMake'), 'back to online sheet');
+    }
     await click('#olClose');
   }
 

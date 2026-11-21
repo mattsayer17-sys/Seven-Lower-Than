@@ -125,6 +125,36 @@ async function handle(db, uid, b) {
     return reply({ ok: true });
   }
 
+  // Rematch: once a game is over, the first player to ask opens a new table with the same rules and the old one points to it.
+  // Anyone else who asks is seated at that same new table, so a rematch is one tap for everybody.
+  if (b.op === 'rematch') {
+    if (table.status !== 'over') return reply({ error: 'The game is still going' }, 409);
+    if (!seats.some(x => x.user_id === uid)) return reply({ error: 'You are not at this table' }, 403);
+    const sitAt = async next => {
+      const ns = (await db.from('shed_seats').select('user_id,seat').eq('code', next)).data || [];
+      if (ns.some(s => s.user_id === uid)) return reply({ ok: true, code: next, made: false });
+      const nt = (await db.from('shed_tables').select('status,max_players').eq('code', next).maybeSingle()).data;
+      if (!nt || nt.status !== 'lobby') return reply({ error: 'That rematch has already started' }, 409);
+      if (ns.length >= nt.max_players) return reply({ error: 'That table is full' }, 409);
+      const ins = await db.from('shed_seats').insert({ code: next, user_id: uid, seat: ns.reduce((m, s) => Math.max(m, s.seat), -1) + 1 });
+      return ins.error ? reply({ error: 'Someone joined at the same moment, try again' }, 409) : reply({ ok: true, code: next, made: false });
+    };
+    if (table.next_code) return sitAt(table.next_code);
+    for (let i = 0; i < 8; i++) {
+      const code2 = newCode();
+      const ins = await db.from('shed_tables').insert({ code: code2, host: uid, rules: table.rules, max_players: table.max_players });
+      if (ins.error) { if (ins.error.code === '23505') continue; return reply({ error: ins.error.message }, 400); }
+      await db.from('shed_seats').insert({ code: code2, user_id: uid, seat: 0 });
+      // only one rematch per table: if someone else got there first, drop mine and sit at theirs
+      const up = await db.from('shed_tables').update({ next_code: code2 }).eq('code', code).is('next_code', null).select('code');
+      if (up.data && up.data.length) return reply({ ok: true, code: code2, made: true });
+      await db.from('shed_tables').delete().eq('code', code2);
+      const again = (await db.from('shed_tables').select('next_code').eq('code', code).maybeSingle()).data;
+      return again && again.next_code ? sitAt(again.next_code) : reply({ error: 'Try again' }, 409);
+    }
+    return reply({ error: 'Try again' }, 500);
+  }
+
   if (b.op === 'leave') {
     if (table.status !== 'lobby') return reply({ error: 'Game in progress' }, 409);
     if (table.host === uid) await db.from('shed_tables').delete().eq('code', code);
