@@ -60,6 +60,8 @@ The edge function in `server/` is deployed to Supabase separately (`node tools/b
 
 ## Brand
 
-Name: Shiphead. Mark: a boat whose sail is a playing card (one idea, reads at 29 px). Sources in `brand/` (icon.svg full-bleed for app stores, favicon.svg simplified for tiny sizes, icon-1024.png for the App Store). `public/` is copied into `dist/` by the build: apple-touch-icon, manifest icons, og.png share image.
-Colours: navy #16395a to #0a1c2e (icon background, stands out from the green that dominates the Card category), bone #f6efe0, heart red #d8413a, brass #c9a56a / #e3c58e (UI accent, unchanged). The in-game felt stays green.
+Name: Shiphead. Design system (source of truth): https://claude.ai/artifact/YZWDb14MRo5yqHdeEVfY13
+Mark: a playing-card corner index, slab S over an anchor in mark red on a bone card tilted -8 degrees. Wordmark SHIPHEAD in Alfa Slab One, outlined (no font loaded at runtime). Flat colour only.
+Files in `brand/`: icon.svg (store icon, full bleed), mark.svg (card mark), favicon.svg, wordmark-bone.svg, wordmark-navy.svg, icon-1024.png. `public/` is copied into `dist/` by the build: apple-touch-icon, manifest icons, og.png share card.
+Colours: navy #14263a (brand ground), bone #f3ecdc, mark red #c62f2a, brass #c9a56a / #e3c58e (UI accent). The in-game felt stays green.
 Internal keys (`__ms`, daily seed `mouse-shed-`, the `shed` function and tables) keep their old names on purpose so saved data and links keep working.

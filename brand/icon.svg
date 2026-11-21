@@ -1,26 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16395a"/><stop offset="1" stop-color="#0a1c2e"/></linearGradient>
-    <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9cd96"/><stop offset="1" stop-color="#b98f4f"/></linearGradient>
-  </defs>
-  <rect width="1024" height="1024" fill="url(#sky)"/>
-  <g transform="translate(-61 -36) scale(1.12)">
-  <!-- mast and pennant -->
-  <rect x="500" y="118" width="24" height="560" rx="12" fill="#c9a56a"/>
-  <path d="M524 128 L640 160 L524 194 Z" fill="#d8413a"/>
-  <!-- the sail is a playing card -->
-  <g transform="rotate(-7 512 420)">
-    <rect x="322" y="200" width="380" height="470" rx="46" fill="#000" opacity=".28" transform="translate(14 18)"/>
-    <rect x="322" y="200" width="380" height="470" rx="46" fill="#f6efe0"/>
-    <rect x="344" y="222" width="336" height="426" rx="30" fill="none" stroke="#e2d6bd" stroke-width="6"/>
-    <path transform="translate(512 432) scale(2.3) translate(-50 -50)" d="M50 90C22 68 5 50 5 32 5 18 16 8 30 8c9 0 16 5 20 13 4-8 11-13 20-13 14 0 25 10 25 24 0 18-17 36-45 58z" fill="#d8413a"/>
-    <text x="372" y="306" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="78" fill="#d8413a">A</text>
-  </g>
-  <!-- hull -->
-  <path d="M168 676 H856 Q842 742 772 800 H252 Q182 742 168 676 Z" fill="url(#hull)"/>
-  <path d="M190 700 H834" stroke="#8a6633" stroke-width="10" stroke-linecap="round" opacity=".55"/>
-  </g>
-  <!-- sea -->
-  <path d="M0 818 C90 778 170 778 256 818 S422 858 512 818 S682 778 768 818 S934 858 1024 818 V1024 H0 Z" fill="#1f5f86"/>
-  <path d="M0 880 C90 840 170 840 256 880 S422 920 512 880 S682 840 768 880 S934 920 1024 880 V1024 H0 Z" fill="#14476a"/>
-</svg>
+<rect width="1024" height="1024" fill="#14263a"/>
+<g transform="translate(250 175) rotate(-8)">
+<rect x="0" y="0" width="900" height="1200" rx="64" fill="#f3ecdc"/>
+<g transform="translate(58 52) scale(4.1)"><path transform="translate(16.3 79.2)" d="M33 1.4Q23.4 1.4 14.9-0.2Q6.3-1.9 1.7-4L1.7-23.8L23.7-23.8Q23.7-20.7 25.1-19.3Q26.5-17.9 30.2-17.9Q33.3-17.9 34.6-18.9Q36-19.8 36-21.7Q36-23.3 34.7-24.5Q33.4-25.6 30.2-26.8L21.6-29.8Q10.5-34 5.7-39.7Q0.8-45.4 0.8-55.1Q0.8-66.9 8.6-73Q16.3-79.2 34.4-79.2Q43.1-79.2 50.8-77.5Q58.4-75.7 63.1-72.8L63.1-54.9L43.1-54.9Q43.1-59.9 36.9-59.9Q33.9-59.9 32.6-59.2Q31.4-58.4 31.4-56.5Q31.4-54.8 32.9-53.8Q34.3-52.8 37.6-51.7L46.3-48.7Q56.9-45.1 61.8-39.4Q66.6-33.6 66.6-24.3Q66.6-11.6 58.1-5.1Q49.5 1.4 33 1.4" fill="#c62f2a"/>
+<g transform="translate(14 94.6) scale(.72)"><g fill="none" stroke="#c62f2a" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="50" cy="13" r="8.5" stroke-width="10"/>
+<path d="M50 24V86" stroke-width="12"/><path d="M29 35H71" stroke-width="11"/>
+<path d="M16 58C18 78 33 88 50 88C67 88 82 78 84 58" stroke-width="11"/></g>
+<path d="M4 64L15 44L29 62Z M96 64L85 44L71 62Z" fill="#c62f2a" stroke="#c62f2a" stroke-width="4" stroke-linejoin="round"/></g></g>
+</g></svg>
