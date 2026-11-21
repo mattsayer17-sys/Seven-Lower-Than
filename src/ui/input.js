@@ -31,7 +31,7 @@ function humanTap(id) {
     return later(() => {
       store.ui.reveal = null;
       afterAction(Shed.playBlind(g, 0, id));
-    }, 950);
+    }, store.ui.beat === 0 ? 1700 : 950);
   }
   if (!(z === 'hand' && me.hand.includes(c) || z === 'up' && me.up.includes(c))) return;
   if (!humanLegal(c)) {
@@ -62,7 +62,7 @@ function humanTap(id) {
     return humanPlay([id]);
   }
   store.ui.sel = [id];
-  if (twins) hint('You have ' + (twins + 1) + ' ' + c.rank + 's. Play one, or ' + (twins === 1 ? 'both' : 'all ' + (twins + 1)) + ' at once');
+  if (twins) hint(twins === 1 ? 'Tap the other ' + c.rank + ' to play both, or Play for one' : 'Tap the other ' + c.rank + 's to play them together, or Play for one');
   render();
 }
 
@@ -194,12 +194,6 @@ window.addEventListener('pointermove', e => {
 window.addEventListener('pointerup', e => endDrag(e, false));
 window.addEventListener('pointercancel', e => endDrag(e, true));
 $('#bPlay').onclick = () => humanPlay();
-$('#bAll').onclick = () => {
-  const g = store.game, me = g.players[0], c = findCard(store.ui.sel[0]);
-  if (!c) return;
-  const pool = me.hand.includes(c) ? me.hand : me.up;
-  humanPlay(pool.filter(o => o.rank === c.rank).map(o => o.id));
-};
 $('#bPick').onclick = () => {
   if (store.ui.busy) return;
   store.ui.busy = true;

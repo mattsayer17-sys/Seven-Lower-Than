@@ -118,7 +118,7 @@ function makeRemote(client, code) {
         r.inflight--;
         const out = Online.reconcile(game, res.view, res.version);
         if (out.mode === 'resync') resync(out.game, res.version);
-      }, 950);
+      }, store.ui.beat === 0 ? 1700 : 950);
     }, fail);
   };
 

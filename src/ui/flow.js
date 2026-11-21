@@ -228,6 +228,12 @@ function afterAction(r) {
   if (store.remote) store.remote.busy = true;
   const ev = r.event,
     mine = ev.pi === 0;
+  // the last card of the last two players: this play runs in slow motion, then a breath before anything else
+  const slow = store.ui.beat === ev.pi && fxOn();
+  if (slow) {
+    table.classList.add('slowmo');
+    later(() => table.classList.remove('slowmo'), 1800);
+  }
   if (mine) hideWelcome(); // your first move puts the getting-started card away
   const _t = describe(ev) + outNote(r);
   setMsg(_t);
@@ -275,6 +281,7 @@ function afterAction(r) {
       render();
     }, 700);
   } else render();
+  if (slow) delay += 1100;
   // a CPU's move: shorter pause at busy tables, and a tap on the table can hurry it along
   if (!mine && !store.remote) {
     if (g.players.length > 2) delay = Math.round(delay * .7);
@@ -354,7 +361,8 @@ function advance() {
     render();
     // three or more players means more CPUs to wait for, so each one thinks a little quicker
     const busy = g.players.length > 2;
-    schedule(cpuStep, (g.players[0].out ? 350 : busy ? 450 : 750) + Math.random() * (busy ? 250 : 350));
+    // its last card on the line: let the heartbeat run a little before it plays
+    schedule(cpuStep, (g.players[0].out ? 350 : busy ? 450 : 750) + Math.random() * (busy ? 250 : 350) + (store.ui.beat === g.turn && fxOn() ? 2300 : 0));
   } else {
     store.ui.busy = false;
     render();
@@ -377,7 +385,7 @@ function cpuStep() {
     later(() => {
       store.ui.reveal = null;
       afterAction(Shed.playBlind(g, pi, d.id));
-    }, g.players[0].out ? 500 : 950);
+    }, g.players[0].out ? 500 : store.ui.beat === pi && fxOn() ? 1700 : 950);
     return;
   }
   afterAction(d.kind === 'pickup' ? Shed.pickUp(g, pi) : Shed.play(g, pi, d.ids));

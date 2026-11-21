@@ -2,6 +2,7 @@ import Shed from '../engine.js';
 import { $, table } from './dom.js';
 import { ordinal, store } from './state.js';
 import { allCards, findCard } from './cards.js';
+import { beatCheck } from './beat.js';
 import { syncMirror } from './access.js';
 
 // ---------- layout ----------
@@ -266,10 +267,6 @@ function render() {
     el.classList.toggle('twin', !!(c && myTurn && store.ui.sel.length && !store.ui.sel.includes(+id) && (me.hand.includes(c) || me.up.includes(c)) && c.rank === (findCard(store.ui.sel[0]) || {}).rank));
     el.classList.toggle('pulse', canTapSwap && store.ui.swapSel != null && c && me.up.includes(c));
     el.classList.toggle('glow', !!(store.tour && store.tour.glow === +id));
-    // a pair (or more) you could play together gets a small ×2 badge, so playing several at once is obvious
-    const nSame = myTurn && c && !dim && (z === 'hand' && me.hand.includes(c) || z === 'up' && me.up.includes(c)) ? me[z].filter(o => o.rank === c.rank).length : 0;
-    el.classList.toggle('multi', nSame > 1);
-    if (nSame > 1) el.dataset.n = '×' + nSame; else delete el.dataset.n;
   });
   // labels
   const lm = $('#lblMe');
@@ -342,12 +339,6 @@ function render() {
   if (st.textContent !== stT) st.textContent = stT;
   $('#bReady').classList.toggle('hidden', !(g.phase === 'swap' && !store.ui.busy && !store.ui.intro));
   $('#bPlay').classList.toggle('hidden', !(myTurn && store.ui.sel.length));
-  // one of a pair picked: offer the whole set in one tap
-  const selC = store.ui.sel.length ? findCard(store.ui.sel[0]) : null,
-    selZ = selC && (me.hand.includes(selC) ? me.hand : me.up.includes(selC) ? me.up : null),
-    allSame = selZ ? selZ.filter(o => o.rank === selC.rank) : [];
-  $('#bAll').classList.toggle('hidden', !(myTurn && selC && allSame.length > store.ui.sel.length));
-  if (allSame.length > 1) $('#bAll').textContent = allSame.length === 2 ? 'Play both ' + selC.rank + 's' : 'Play all ' + allSame.length;
   if (store.ui.sel.length) {
     const c = findCard(store.ui.sel[0]);
     $('#bPlay').textContent = 'Play ' + (store.ui.sel.length > 1 ? store.ui.sel.length + ' × ' : '') + c.rank;
@@ -356,6 +347,7 @@ function render() {
   $('#bPick').classList.toggle('hidden', !mustPick);
   $('#bSkip').classList.toggle('hidden', !(g.phase === 'play' && me.out) || !!g.online);
   syncMirror(g, { tap: tapIds, dim: dimIds, picking: myTurn && z === 'down' });
+  beatCheck();
 }
 
 function statusText() {
@@ -408,3 +400,4 @@ function refreshStatus() {
 }
 
 export { hint, humanLegal, refreshStatus, render, setMsg };
+

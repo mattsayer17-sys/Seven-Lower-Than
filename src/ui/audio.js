@@ -130,6 +130,11 @@ const SFX = {
   },
   turn() {
     tone(660, .07, 'sine', .07);
+  },
+  // lub-dub: two low thumps you feel more than hear
+  heart() {
+    tone(58, .14, 'sine', .32, 44);
+    tone(52, .16, 'sine', .26, 40, .2);
   }
 };
 
