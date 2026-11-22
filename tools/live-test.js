@@ -11,6 +11,8 @@ function decide(g) {
   const p = g.players[0];
   if (g.phase === 'swap') return p.ready ? null : { type: 'ready' };
   if (g.phase !== 'play' || g.turn !== 0) return null;
+  // face-down follow-up go open: try the next card on alternate turns, otherwise Done
+  if (g.follow && g.follow.pi === 0) return p.down.length && g.pile.length % 2 ? { type: 'blind', id: p.down[0].id } : { type: 'done' };
   const z = Shed.zone(g, p);
   if (z === 'down') return { type: 'blind', id: p.down[0].id };
   const gr = Shed.legalGroups(g, 0).sort((a, b) => Shed.power(g.rules, a[0]) - Shed.power(g.rules, b[0]));
@@ -58,7 +60,9 @@ function decide(g) {
         if (a.type === 'ready') await cs[i].act(a);
         else if (a.type === 'blind') {
           g.pending = true; await cs[i].act(a);
-          const r = await cs[i].t.view(code); const cards = r.view.lastEvent.cards; for (const c of cards) Online.revealMine(g, c); if (cards.length > 1) follows++; Shed.playBlind(g, 0, a.id, { extra: cards.slice(1).map(c => c.id) });
+          const r = await cs[i].t.view(code); const lev = r.view.lastEvent;
+          Online.revealMine(g, lev.type === 'follow' ? lev.card : lev.cards[0]); if (lev.type === 'follow') follows++; Shed.playBlind(g, 0, a.id);
+        } else if (a.type === 'done') { g.pending = true; Shed.followDone(g, 0); await cs[i].act(a);
         } else { g.pending = true; if (a.type === 'play') Shed.play(g, 0, a.ids); else Shed.pickUp(g, 0); await cs[i].act(a); }
         for (let j = 0; j < players; j++) {
           const r = await cs[j].t.view(code); const was = G[j].phase;
