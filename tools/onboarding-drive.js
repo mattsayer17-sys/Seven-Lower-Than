@@ -34,7 +34,7 @@ let steps0 = [];
   const q = await ev(() => ({ rows: [...document.querySelectorAll('#coach .qrow b')].map(b => b.textContent), on: [...document.querySelectorAll('#coach .qs')].map(x => x.checked), fixed: document.querySelector('#coach .qfixed').textContent }));
   assert.deepEqual(q.rows, ['Seven lower than', 'Skip a go', 'Invisible card', 'Stinger', 'Four of a kind burns', 'Face-down follow-up']);
   assert.deepEqual(q.on, [true, false, false, false, true, false]);
-  assert.match(q.fixed, /2 resets · 10 burns · Ace high/);
+  assert.match(q.fixed, /2 resets, 10 burns, ace high/);
   await ev(() => document.querySelector('.qs[data-i="1"]').click());
   await ev(() => { const s = document.querySelector('.qr[data-i="1"]'); s.value = '9'; s.dispatchEvent(new Event('change')); });
   await ev(() => document.querySelector('.qs[data-i="3"]').click());

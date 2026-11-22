@@ -2,9 +2,16 @@
 
 Newest first. One line per change. Every session adds its lines here in the same commit as the work.
 
+## 2026-11-22
+- Face-down follow-up is now a choice: after a face-down card goes on, tap another to try it (a match goes on, a miss goes in your hand) or tap Done. Server redeployed with it.
+- Card back is now a casino house back: royal blue, double gold frame, gold medallion with SH.
+- New card-brand identity: S over a spade and H over a heart as a double-ended card, gold frame, spade-with-heart emblem, Bodoni wordmark; header, icon, favicon, card back and share card updated.
+- Brand blue darkened to royal #152f78 across card back, icon, favicon, logo and share card.
+- Original court cards restored; card faces get crisp white stock, a fine edge, bolder indices and a flat gold plate.
+- Pot outline is a soft inset ring instead of a dashed box.
+- Coach card copy: "Always on: 2 resets, 10 burns, ace high"; no arrow shorthand.
+- Decided against light mode: table looks stay per player (felt, back, colour-blind deck).
 
-## 2026-11-22 (branch facedown-tap, not live)
-- Face-down follow-up is now a choice: after a face-down card goes on, tap another to try it (a match goes on, a miss goes in your hand) or tap Done. Needs the server redeployed when merged.
 ## 2026-11-21
 - Repo memory: CLAUDE.md (session routine), docs/STATE.md (live state, next steps, decisions), this changelog, `npm run status`. Old merged branches effects, setup-v2 and reactions-names deleted.
 - "You is out" grammar fix in the move line.

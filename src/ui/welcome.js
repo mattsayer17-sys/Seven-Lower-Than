@@ -104,10 +104,10 @@ export function showWelcome() {
   c.setAttribute('aria-label', 'Getting started');
   c.innerHTML = '<button class="x" id="wPlay" aria-label="Just play">×</button>' +
     '<b>Get rid of all your cards</b><span>Play the same or higher. Whoever\'s left holding cards hits Rock Bottom. <button class="lnk" id="wWatch">Show me (30 s)</button></span>' +
-    '<h4>Your house rules</h4><p class="qfixed">Always on: 2 resets · 10 burns · Ace high</p>' +
+    '<h4>Your house rules</h4><p class="qfixed">Always on: 2 resets, 10 burns, ace high</p>' +
     '<div id="qrows">' + quickRows() + '</div>' +
     '<div class="cbtns"><button class="btn sm" id="wRead">How to play</button><button class="btn sm primary" id="wGo">Play</button></div>' +
-    '<p class="qmore">' + (live ? 'Changes start with your next game. ' : '') + 'More in New → Rules: your own card rules, saved sets, share codes</p>';
+    '<p class="qmore">' + (live ? 'Changes start with your next game. ' : '') + 'Your own card rules, saved sets and share codes are in New, under Rules</p>';
   $('#table').appendChild(c);
   void c.offsetWidth;
   c.classList.add('on');
