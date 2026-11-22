@@ -103,16 +103,15 @@ function makeRemote(client, code) {
     r.inflight++;
     r.chain = r.chain.then(() => client.act({ type: 'blind', id })).then(async () => {
       const res = await client.t.view(code);
-      const cards = res.view.lastEvent ? res.view.lastEvent.cards : [];
-      const card = cards[0];
+      const lev = res.view.lastEvent;
+      // a face-down follow-up try comes back as a 'follow' event with the one card it turned
+      const card = lev ? (lev.type === 'follow' ? lev.card : (lev.cards || [])[0]) : null;
       const game = g();
       const rk = card && Online.revealMine(game, card);
       if (!rk) throw new Error('Out of step');
       rekeyCard(rk.from, rk.to);
-      // face-down follow-up: more of my face-down cards went on with it
-      for (const c of cards.slice(1)) { const k = Online.revealMine(game, c); if (!k) throw new Error('Out of step'); rekeyCard(k.from, k.to); }
       const finish = () => {
-        afterAction(Shed.playBlind(game, 0, id, { extra: cards.slice(1).map(c => c.id) }));
+        afterAction(Shed.playBlind(game, 0, id));
         r.inflight--;
         const out = Online.reconcile(game, res.view, res.version);
         if (out.mode === 'resync') resync(out.game, res.version);
@@ -122,12 +121,20 @@ function makeRemote(client, code) {
       render();
       later(() => {
         store.ui.reveal = null;
-        afterAction(Shed.playBlind(game, 0, id, { extra: cards.slice(1).map(c => c.id) }));
+        afterAction(Shed.playBlind(game, 0, id));
         r.inflight--;
         const out = Online.reconcile(game, res.view, res.version);
         if (out.mode === 'resync') resync(out.game, res.version);
       }, store.ui.beat === 0 ? 1700 : 950);
     }, fail);
+  };
+
+  // finishing a face-down follow-up go: nothing hidden, so it applies straight away
+  r.done = () => {
+    const game = g();
+    game.pending = true;
+    afterAction(Shed.followDone(game, 0));
+    r.send({ type: 'done' });
   };
 
   r.afterDeal = () => {

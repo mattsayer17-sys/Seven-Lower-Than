@@ -26,6 +26,8 @@ function decide(g) {
   const p = g.players[0];
   if (g.phase === 'swap') return p.ready ? null : { type: 'ready' };
   if (g.phase !== 'play' || g.turn !== 0) return null;
+  // a face-down follow-up go is open: try the next card on alternate turns, otherwise stop
+  if (g.follow && g.follow.pi === 0) return p.down.length && g.pile.length % 2 ? { type: 'blind', id: p.down[0].id } : { type: 'done' };
   const z = Shed.zone(g, p);
   if (z === 'down') return { type: 'blind', id: p.down[0].id };
   const gr = Shed.legalGroups(g, 0).sort((a, b) => Shed.power(g.rules, a[0]) - Shed.power(g.rules, b[0]));
@@ -122,10 +124,14 @@ async function shadowGame(n, opts, stats) {
         g.pending = true;
         await cs[i].act(a);
         const r = await cs[i].t.view(code);
-        const cards = r.view.lastEvent.cards;
-        for (const c of cards) Online.revealMine(g, c);
-        if (cards.length > 1) stats.follows = (stats.follows || 0) + 1;
-        assert.ok(Shed.playBlind(g, 0, a.id, { extra: cards.slice(1).map(c => c.id) }).ok);
+        const lev = r.view.lastEvent;
+        Online.revealMine(g, lev.type === 'follow' ? lev.card : lev.cards[0]);
+        if (lev.type === 'follow') stats.follows = (stats.follows || 0) + 1;
+        assert.ok(Shed.playBlind(g, 0, a.id).ok);
+      } else if (a.type === 'done') {
+        g.pending = true;
+        assert.ok(Shed.followDone(g, 0).ok);
+        await cs[i].act(a);
       } else {
         g.pending = true;
         const res = a.type === 'play' ? Shed.play(g, 0, a.ids) : Shed.pickUp(g, 0);
@@ -165,7 +171,7 @@ test('a seat that missed moves resyncs to the right picture', async () => {
   assert.equal(Online.digest(out.game), Online.digest(Online.fromView(r.view)));
 });
 
-test('face-down follow-up: shadows stay in step and nobody else learns the turned card', async () => {
+test('face-down follow-up: shadows stay in step through tries, misses and Done', async () => {
   const stats = { resyncs: 0, steps: 0, mine: 0, log: [], follows: 0 };
   for (const n of [2, 3, 4]) for (const p of Presets.PRESETS) {
     const { db } = await shadowGame(n, Object.assign({}, p.opts, { blindFollow: true }), stats);

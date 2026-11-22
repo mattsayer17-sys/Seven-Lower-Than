@@ -3,7 +3,7 @@
 The single source of truth for what is live, what is in flight and what is next. Every session reads this first and
 updates it before finishing (see CLAUDE.md). History is in CHANGELOG.md.
 
-Last updated: 21 Nov 2026 18:00
+Last updated: 22 Nov 2026 11:30
 
 ## Live
 - Site: https://shiphead.vercel.app (also https://seven-lower-than.vercel.app). Every push to `main` deploys to production.
@@ -13,6 +13,10 @@ Last updated: 21 Nov 2026 18:00
 - Test rows from live tests are still in the database (tables QBF75, PF9H6, W4JPS, NX57H, TF5XY, BS99B and their anonymous Test users). Deleting needs Matt to confirm in Supabase.
 
 ## In flight (not in main)
+- Branch `facedown-tap` (PR, waiting for Matt's go). New face-down follow-up rule (Matt, 22 Nov 10:31): after a face-down card goes on, the go stays open. The player may tap another face-down card (everyone sees it turn): same rank and allowed, it goes on and they may try again; anything else goes into their hand and the go ends. Or they tap Done. Replaces the old auto-turn for the owner only (p.known is no longer filled).
+  - Engine: g.follow {pi, rank, count, last}; playBlind routes to the try while a go is open; followDone; play and pickUp refused while open; effects (skip, reverse, again) apply when the go closes, counting every card that went on. CPU tries 35% of the time.
+  - Server: action `done`; projectView includes follow. The edge function MUST be redeployed (steps below) at the same moment this merges: an old client cannot finish an open go, a new client against the old server gets the old auto rule.
+  - Online: replay handles 'follow' events; digest includes follow; r.done().
 - Branch `visuals` (commit 12c6de0), preview only, waiting for Matt's go. Built after a brand review scored brand/game coherence 4/10 and logo craft 5/10:
   - House card back (src/ui/state.js SHIP_BACK, brand/back.svg): court blue, white lattice, white and gold frame, small S/H card in the middle. Default 'shiphead'; a saved 'red' default migrates once (settings.backV).
   - Court cards (src/ui/cards.js court()): double-ended J/Q/K figures, robe in currentColor so colour-blind suits follow.
@@ -40,7 +44,8 @@ Buy domains (playshiphead.com primary; shiphead.app, shiphead.co.uk as redirects
 - Brand: Shiphead. Logo: double-ended court card, SHIP court red #d4231b upright, HEAD court blue #1b3d8f upside down. Wordmark Big Shoulders Display Black. Design system artifact: https://claude.ai/artifact/YZWDb14MRo5yqHdeEVfY13
 - Look: dark + gold game UI on green baize, PokerStars-class finish without looking like a poker site. Crisp 2.5 px gold edges, no glows or endless pulses (exception: the final flip verdict). Buttons 10 px radius, 40 px high. Copy in sentence case, no full stops in headings, no emoji in sentences. unslop / frontend-design in polish mode only.
 - First launch: no sign-in, no form, cards already dealt; the coach card shows the house rules as switches. Name only asked when going online.
-- Rules: max 5 players. 2 resets, 10 burns, ace high always. Seven lower than on by default. Stinger plays on anything, only same rank or invisible follows, stingers burn on pickup. Transparent (invisible) plays on anything except a skip card. Face-down follow-up auto-plays matches, only the owner sees the turned card. Votes online: simple majority, host breaks ties.
+- Face-down follow-up (on branch facedown-tap): tap to try the next face-down card after one goes on; match goes on, miss goes in your hand, or Done.
+- Rules: max 5 players. 2 resets, 10 burns, ace high always. Seven lower than on by default. Stinger plays on anything, only same rank or invisible follows, stingers burn on pickup. Transparent (invisible) plays on anything except a skip card. Face-down follow-up (live): auto-plays matches, only the owner sees the turned card (being replaced, see facedown-tap). Votes online: simple majority, host breaks ties.
 - Final face-down flip: only when two players are left and the mover's only card is face-down. Heartbeat on both phones; about 4.5 s from tap to result.
 - Pairs: tap one card, matching cards get a gold edge and a prompt. No badges or extra buttons.
 - Online: reactions only (no free text); one-tap rematch; head to head shown on the game-over sheet.

@@ -408,7 +408,7 @@ test('peek: an invite shows whose table, how full and the rules, before you pick
   assert.equal(db.t.shed_profiles.some(p => p.id === 'stranger'), false);
 });
 
-test('face-down follow-up: only the owner sees a face-down card they turned over', () => {
+test('face-down follow-up: the open go shows in every view, a try turns the card for everyone, Done ends it', () => {
   const T = require('../server/table.js');
   const g = T.createTable({ rules: require('../src/engine.js').makeRuleset({ blindFollow: true }), seed: 5, players: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }] });
   g.phase = 'play'; g.turn = 0; g.pile = [];
@@ -416,15 +416,18 @@ test('face-down follow-up: only the owner sees a face-down card they turned over
   p.hand = []; p.up = [];
   const r = T.applyAction(g, 'a', { type: 'blind', id: p.down[0].id });
   assert.equal(r.ok, true);
-  if (!p.down.length) return;
-  assert.equal(p.known.length, 1);
-  const mine = T.projectView(g, 0), theirs = T.projectView(g, 1);
-  assert.equal(mine.players[0].myKnown.length, 1);
-  assert.equal(mine.players[0].myKnown[0].id, p.known[0]);
-  assert.equal(theirs.players[0].myKnown, undefined);
+  assert.ok(g.follow);
+  const theirs = T.projectView(g, 1);
+  assert.equal(theirs.follow.pi, 0);
   assert.ok(theirs.players[0].down.every(c => c === null));
-  assert.ok(!JSON.stringify(theirs).includes('"known"'));
+  const t = T.applyAction(g, 'a', { type: 'blind', id: p.down[0].id });
+  assert.equal(t.ok, true);
+  assert.equal(T.projectView(g, 1).lastEvent.type, 'follow');
+  if (g.follow) assert.equal(T.applyAction(g, 'a', { type: 'done' }).ok, true);
+  assert.equal(g.follow, null);
+  assert.equal(T.applyAction(g, 'a', { type: 'done' }).ok, false);
 });
+
 
 test('rematch: the first to ask opens a table with the same rules, the next is seated at it', async () => {
   const { handle } = require('../server/handler.js');

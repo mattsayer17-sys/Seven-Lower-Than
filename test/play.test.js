@@ -491,51 +491,79 @@ test('follow-up off: a face-down card plays alone and nothing is turned over', (
   assert.deepEqual(g.players[0].known || [], []);
   assert.equal(g.turn, 1);
 });
-test('follow-up on: the next face-down card turns over for its owner, and a match goes on in the same go', () => {
+test('follow-up on: after a face-down card goes on, the go stays open and nothing else can happen', () => {
   const g = setup({ rules: BF, hands: [[]], downs: [['9S', '9H', '3C']], pile: ['5D'] });
   const r = S.playBlind(g, 0, ids(g, 0, 'down', ['9S'])[0]);
-  assert.deepEqual(r.event.cards.map(c => c.rank + c.suit), ['9S', '9H']);
-  assert.equal(g.pile.length, 3);
-  // the 3 turned over next, did not match, and stays face down with its owner knowing it
-  assert.deepEqual(g.players[0].down.map(c => c.rank + c.suit), ['3C']);
-  assert.deepEqual(g.players[0].known, [g.players[0].down[0].id]);
-  assert.equal(g.turn, 1);
-});
-test('follow-up on: no match means the turned card waits, and the go passes', () => {
-  const g = setup({ rules: BF, hands: [[]], downs: [['6S', 'KH', '3C']], pile: ['5D'] });
-  const r = S.playBlind(g, 0, ids(g, 0, 'down', ['6S'])[0]);
-  assert.equal(r.event.cards.length, 1);
-  assert.deepEqual(g.players[0].known, ids(g, 0, 'down', ['KH']));
-  assert.equal(g.turn, 1);
-});
-test('follow-up: a matching card that is not allowed on the pile does not go (colour rule)', () => {
-  const g = setup({ rules: Object.assign({ custom: [{ rank: 'J', effect: 'redNext' }] }, BF), hands: [[]], downs: [['JH', 'JS', '3C']], pile: ['5D'] });
-  const r = S.playBlind(g, 0, ids(g, 0, 'down', ['JH'])[0]);
-  assert.equal(r.event.cards.length, 1);
-});
-test('follow-up: four of a kind made by follow-ups burns, and the player goes again', () => {
-  const g = setup({ rules: BF, hands: [[]], downs: [['9S', '9H', '3C']], pile: ['9D', '9C'] });
-  const r = S.playBlind(g, 0, ids(g, 0, 'down', ['9S'])[0]);
-  assert.equal(r.burned, true);
+  assert.equal(r.event.open, true);
   assert.equal(g.turn, 0);
-  assert.equal(r.event.cards.length, 2);
+  assert.deepEqual(g.follow && [g.follow.pi, g.follow.rank, g.follow.count], [0, '9', 1]);
+  assert.equal(S.pickUp(g, 0).ok, false);
+  // nothing was turned for the owner alone
+  assert.deepEqual(g.players[0].known || [], []);
 });
-test('follow-up: two skip cards played this way skip two', () => {
+test('follow-up: tapping a matching card puts it on, and the go stays open while cards are left', () => {
+  const g = setup({ rules: BF, hands: [[]], downs: [['9S', '9H', '3C']], pile: ['5D'] });
+  S.playBlind(g, 0, ids(g, 0, 'down', ['9S'])[0]);
+  const r = S.playBlind(g, 0, ids(g, 0, 'down', ['9H'])[0]);
+  assert.equal(r.event.type, 'follow');
+  assert.equal(r.event.matched, true);
+  assert.equal(g.pile.length, 3);
+  assert.equal(g.turn, 0);
+  assert.equal(g.follow.count, 2);
+});
+test('follow-up: a card that does not match goes into the hand and the go passes', () => {
+  const g = setup({ rules: BF, hands: [[]], downs: [['9S', 'KH', '3C']], pile: ['5D'] });
+  S.playBlind(g, 0, ids(g, 0, 'down', ['9S'])[0]);
+  const r = S.playBlind(g, 0, ids(g, 0, 'down', ['KH'])[0]);
+  assert.equal(r.event.matched, false);
+  assert.deepEqual(g.players[0].hand.map(c => c.rank + c.suit), ['KH']);
+  assert.deepEqual(g.players[0].down.map(c => c.rank + c.suit), ['3C']);
+  assert.equal(g.follow, null);
+  assert.equal(g.turn, 1);
+});
+test('follow-up: Done ends the go and the turn moves on', () => {
+  const g = setup({ rules: BF, hands: [[]], downs: [['9S', 'KH', '3C']], pile: ['5D'] });
+  S.playBlind(g, 0, ids(g, 0, 'down', ['9S'])[0]);
+  assert.equal(S.followDone(g, 0).ok, true);
+  assert.equal(g.follow, null);
+  assert.equal(g.turn, 1);
+  assert.equal(S.followDone(g, 1).ok, false);
+});
+test('follow-up: a matching card not allowed on the pile does not go on (colour rule)', () => {
+  const g = setup({ rules: Object.assign({ custom: [{ rank: 'J', effect: 'redNext' }] }, BF), hands: [[]], downs: [['JH', 'JS', '3C']], pile: ['5D'] });
+  S.playBlind(g, 0, ids(g, 0, 'down', ['JH'])[0]);
+  const r = S.playBlind(g, 0, ids(g, 0, 'down', ['JS'])[0]);
+  assert.equal(r.event.matched, false);
+  assert.equal(g.players[0].hand.length, 1);
+});
+test('follow-up: four of a kind made by a follow-up burns, and the player goes again', () => {
+  const g = setup({ rules: BF, hands: [[]], downs: [['9S', '9H', '3C']], pile: ['9D', '9C'] });
+  S.playBlind(g, 0, ids(g, 0, 'down', ['9S'])[0]);
+  const r = S.playBlind(g, 0, ids(g, 0, 'down', ['9H'])[0]);
+  assert.equal(r.burned, true);
+  assert.equal(g.follow, null);
+  assert.equal(g.turn, 0);
+});
+test('follow-up: two skip cards played this way skip two once the go ends', () => {
   const g = setup({ players: 3, rules: Object.assign({ skipOn: true, skipRank: '8' }, BF), hands: [[], ['5S'], ['5H']], downs: [['8S', '8H', '3C']], pile: ['5D'] });
-  const r = S.playBlind(g, 0, ids(g, 0, 'down', ['8S'])[0]);
-  assert.equal(r.event.cards.length, 2);
+  S.playBlind(g, 0, ids(g, 0, 'down', ['8S'])[0]);
+  S.playBlind(g, 0, ids(g, 0, 'down', ['8H'])[0]);
+  const r = S.followDone(g, 0);
   assert.deepEqual(r.event.skippedAll, [1, 2]);
   assert.equal(g.turn, 0);
 });
 test('follow-up: the last face-down cards going on together finish the player', () => {
   const g = setup({ rules: BF, hands: [[], ['5S']], downs: [['9S', '9H']], pile: ['5D'] });
-  const r = S.playBlind(g, 0, ids(g, 0, 'down', ['9S'])[0]);
+  S.playBlind(g, 0, ids(g, 0, 'down', ['9S'])[0]);
+  const r = S.playBlind(g, 0, ids(g, 0, 'down', ['9H'])[0]);
   assert.equal(r.out, true);
+  assert.equal(g.follow, null);
 });
-test('follow-up online: a shadow game replays the cards the server says went on', () => {
-  const g = setup({ hands: [[]], downs: [['9S', '9H', '3C']], pile: ['5D'] });
-  const [a, b] = ids(g, 0, 'down', ['9S', '9H']);
-  const r = S.playBlind(g, 0, a, { extra: [b] });
-  assert.equal(r.event.cards.length, 2);
-  assert.equal(g.players[0].down.length, 1);
+test('follow-up: a computer player with the go open either tries a card or stops', () => {
+  const g = setup({ rules: BF, hands: [[], []], downs: [['5S'], ['9S', '9H', '3C']], pile: ['5D'] });
+  g.turn = 1;
+  S.playBlind(g, 1, ids(g, 1, 'down', ['9S'])[0]);
+  const r = S.cpuTurn(g, 1);
+  assert.equal(r.ok, true);
+  assert.equal(r.event.type, 'follow');
 });
