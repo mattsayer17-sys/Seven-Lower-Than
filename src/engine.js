@@ -152,7 +152,7 @@
     for (let k = 0; k < rules.handSize; k++) for (const p of players) p.hand.push(deck.pop());
     return {
       rules, rng, players, draw: deck, pile: [], burned: [], phase: 'swap', turn: 0, dir: 1,
-      winner: null, loser: null, finished: [], log: [], lastEvent: null, lastBurn: null, turns: 0, stalemate: false,
+      winner: null, loser: null, finished: [], log: [], lastEvent: null, lastBurn: null, turns: 0, stalemate: false, follow: null,
     };
   }
 
@@ -310,6 +310,7 @@
 
   function play(g, pi, cardIds) {
     if (g.phase !== 'play' || g.turn !== pi) return { ok: false, err: 'not your turn' };
+    if (followOpen(g, pi)) return { ok: false, err: 'try a face-down card or tap Done' };
     const p = g.players[pi], z = zone(g, p);
     if (z !== 'hand' && z !== 'up') return { ok: false, err: 'bad zone' };
     const cards = cardIds.map(id => p[z].find(c => c.id === id));
@@ -328,44 +329,71 @@
     return { ok: true, burned, event: ev, out, over: g.phase === 'over' };
   }
 
-  // Face-down follow-up (house rule blindFollow): when a face-down card plays, the owner turns over their next one.
-  // Only they see it. If it is the same rank and can go on, it goes straight on in the same go, and the next one turns, and so on.
-  // It is never a choice: a pause to decide would tell everyone else the turned card matched.
-  // known[] on a player lists face-down cards its owner has seen. Online, the server never shows them to anyone else.
-  // the next face-down card the owner has not seen yet, left to right
-  function nextDown(p) { const k = p.known || []; return p.down.find(c => !k.includes(c.id)) || null; }
-  // a seen face-down card that could go on now, same rank as the one just played
-  function follower(g, p, rank) { const k = p.known || []; return p.down.find(c => k.includes(c.id) && !c.hidden && c.rank === rank && canPlayCard(g.rules, c, g.pile)) || null; }
+  // Face-down follow-up (house rule blindFollow). After a face-down card goes on, the go stays open: the player may tap
+  // another face-down card. Everyone sees it turn. Same rank and allowed on the pile: it goes on and they may try again.
+  // Anything else goes into their hand and the go ends. Or they tap Done. g.follow holds the open go:
+  // { pi, rank, count, last } where count is how many cards went on this go and last is the last one (for its effect).
+  function followOpen(g, pi) { return !!g.follow && g.follow.pi === pi; }
+  // close the open go: the cards that went on take effect now (skips, reverse, play again), then the turn moves
+  function closeFollow(g, pi, burned, ev) {
+    const f = g.follow;
+    g.follow = null;
+    afterPlay(g, pi, f.last, burned, ev, f.count);
+    checkStalemate(g);
+  }
+  function followFlip(g, pi, cardId) {
+    const p = g.players[pi], f = g.follow;
+    const c = p.down.find(x => x.id === cardId);
+    if (!c) return { ok: false, err: 'no card' };
+    p.down = p.down.filter(y => y.id !== c.id);
+    if (p.known) p.known = p.known.filter(id => id !== c.id);
+    if (c.rank === f.rank && canPlayCard(g.rules, c, g.pile)) {
+      const burned = applyPlayedCards(g, pi, [c]);
+      f.count++; f.last = c;
+      const ev = { type: 'follow', pi, card: c, matched: true, burned, count: f.count };
+      g.lastEvent = ev;
+      const out = checkOut(g, pi);
+      if (burned || out || !p.down.length || g.phase === 'over') closeFollow(g, pi, burned, ev);
+      else ev.open = true;
+      return { ok: true, burned, event: ev, out, over: g.phase === 'over' };
+    }
+    p.hand.push(c);
+    sortHand(g.rules, p.hand);
+    const ev = { type: 'follow', pi, card: c, matched: false, count: f.count };
+    g.lastEvent = ev;
+    closeFollow(g, pi, false, ev);
+    return { ok: true, event: ev, over: g.phase === 'over' };
+  }
+  function followDone(g, pi) {
+    if (g.phase !== 'play' || g.turn !== pi || !followOpen(g, pi)) return { ok: false, err: 'nothing to finish' };
+    const ev = { type: 'follow', pi, done: true, count: g.follow.count };
+    g.lastEvent = ev;
+    closeFollow(g, pi, false, ev);
+    return { ok: true, event: ev, over: g.phase === 'over' };
+  }
 
-  // told (optional, online only): { extra: [ids] } are the follow-up cards the server played, for a shadow game that cannot see them.
-  function playBlind(g, pi, cardId, told) {
+  function playBlind(g, pi, cardId) {
     if (g.phase !== 'play' || g.turn !== pi) return { ok: false, err: 'not your turn' };
+    if (followOpen(g, pi)) return followFlip(g, pi, cardId);
     const p = g.players[pi];
     if (zone(g, p) !== 'down') return { ok: false, err: 'bad zone' };
     const c = p.down.find(x => x.id === cardId);
     if (!c) return { ok: false, err: 'no card' };
-    const take = x => { p.down = p.down.filter(y => y.id !== x.id); if (p.known) p.known = p.known.filter(id => id !== x.id); };
-    take(c);
+    p.down = p.down.filter(y => y.id !== c.id);
+    if (p.known) p.known = p.known.filter(id => id !== c.id);
     g.turns++;
     if (canPlayCard(g.rules, c, g.pile)) {
-      let burned = applyPlayedCards(g, pi, [c]);
-      const cards = [c];
-      if (g.rules.blindFollow || told) {
-        for (let k = 0; !burned && p.down.length; k++) {
-          const n = nextDown(p);
-          if (n) p.known = (p.known || []).concat([n.id]);
-          const f = told ? p.down.find(x => x.id === (told.extra || [])[k]) : follower(g, p, c.rank);
-          if (!f) break;
-          take(f);
-          burned = applyPlayedCards(g, pi, [f]);
-          cards.push(f);
-        }
-      }
-      const last = cards[cards.length - 1];
-      const ev = { type: 'blind', pi, cards, burned, success: true };
+      const burned = applyPlayedCards(g, pi, [c]);
+      const ev = { type: 'blind', pi, cards: [c], burned, success: true };
       g.lastEvent = ev;
       const out = checkOut(g, pi);
-      afterPlay(g, pi, last, burned, ev, cards.length);
+      // the go stays open for a follow-up try (a burn already means going again, so no follow-up then)
+      if (g.rules.blindFollow && !burned && !out && p.down.length && g.phase === 'play') {
+        g.follow = { pi, rank: c.rank, count: 1, last: c };
+        ev.open = true;
+        return { ok: true, burned, event: ev, out, over: false };
+      }
+      afterPlay(g, pi, c, burned, ev, 1);
       checkStalemate(g);
       return { ok: true, burned, event: ev, out, over: g.phase === 'over' };
     }
@@ -395,6 +423,7 @@
   // force skips the 'you can play' check. Online, the client replays another player's pick-up without seeing their hand.
   function pickUp(g, pi, force) {
     if (g.phase !== 'play' || g.turn !== pi) return { ok: false, err: 'not your turn' };
+    if (followOpen(g, pi)) return { ok: false, err: 'try a face-down card or tap Done' };
     if (!force && canAnyPlay(g, pi)) return { ok: false, err: 'you can play' };
     const p = g.players[pi];
     if (!g.pile.length) return { ok: false, err: 'empty pile' };
@@ -411,6 +440,10 @@
   // ---------- CPU ----------
   function cpuChoose(g, pi) {
     const p = g.players[pi], r = g.rules, z = zone(g, p);
+    if (followOpen(g, pi)) {
+      if (p.down.length && g.rng() < 0.35) return { kind: 'blind', id: p.down[Math.floor(g.rng() * p.down.length)].id };
+      return { kind: 'done' };
+    }
     if (z === 'down') {
       // a card it has already seen and can play goes first; otherwise a random face-down card
       const seen = (p.known || []).map(id => p.down.find(c => c.id === id)).filter(c => c && canPlayCard(r, c, g.pile));
@@ -439,10 +472,11 @@
   function cpuTurn(g, pi) {
     const d = cpuChoose(g, pi);
     if (d.kind === 'blind') return playBlind(g, pi, d.id);
+    if (d.kind === 'done') return followDone(g, pi);
     if (d.kind === 'pickup') return pickUp(g, pi);
     return play(g, pi, d.ids);
   }
 
-  const api = { sortHand, SUITS, RED, EFFECTS, EFFECT_INFO, RANK_LIST, validateCustom, describeRule, makeRuleset, newGame, swap, cpuSwap, startPlay, zone, legalGroups, canAnyPlay, canPlayCard, play, playBlind, pickUp, cpuChoose, cpuTurn, effectiveTop, power, effect, mulberry32 };
+  const api = { sortHand, SUITS, RED, EFFECTS, EFFECT_INFO, RANK_LIST, validateCustom, describeRule, makeRuleset, newGame, swap, cpuSwap, startPlay, zone, legalGroups, canAnyPlay, canPlayCard, play, playBlind, followDone, pickUp, cpuChoose, cpuTurn, effectiveTop, power, effect, mulberry32 };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Shed = api;
 })(typeof window !== 'undefined' ? window : globalThis);

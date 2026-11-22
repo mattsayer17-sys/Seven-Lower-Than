@@ -120,7 +120,7 @@ function summarise(opts) {
   const out = [];
   for (const k of Shed.RANK_LIST) if (r.ranks[k].effect) out.push(k + ': ' + Shed.EFFECT_INFO[r.ranks[k].effect]);
   if (r.fourOfAKindBurns) out.push('Four of a kind in a row burns the pile');
-  if (r.blindFollow) out.push('Face-down follow-up: see your next face-down card, add it if it matches');
+  if (r.blindFollow) out.push('Face-down follow-up: after a face-down card goes on, try another; a match goes on, a miss goes in your hand');
   return out;
 }
 

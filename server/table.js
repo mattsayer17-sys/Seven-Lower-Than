@@ -36,6 +36,7 @@ function projectView(g, pi) {
     })),
     drawCount: g.draw.length, pile: g.pile, burnedCount: g.burned.length,
     winner: g.winner, loser: g.loser, finished: g.finished, stalemate: !!g.stalemate, lastEvent: g.lastEvent || null,
+    follow: g.follow ? { pi: g.follow.pi, rank: g.follow.rank, count: g.follow.count, last: g.follow.last } : null,
   };
 }
 
@@ -64,6 +65,7 @@ function applyAction(g, userId, a) {
       return Shed.play(g, pi, a.ids);
     }
     case 'blind': return isId(a.id) ? Shed.playBlind(g, pi, a.id) : { ok: false, err: 'bad card' };
+    case 'done': return Shed.followDone(g, pi);
     case 'pickup': return Shed.pickUp(g, pi);
     default: return { ok: false, err: 'unknown action' };
   }

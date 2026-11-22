@@ -354,6 +354,7 @@ function render() {
   }
   const mustPick = myTurn && z !== 'down' && !Shed.canAnyPlay(g, 0);
   $('#bPick').classList.toggle('hidden', !mustPick);
+  $('#bDone').classList.toggle('hidden', !(myTurn && g.follow && g.follow.pi === 0));
   $('#bSkip').classList.toggle('hidden', !(g.phase === 'play' && me.out) || !!g.online);
   syncMirror(g, { tap: tapIds, dim: dimIds, picking: myTurn && z === 'down' });
   beatCheck();
@@ -379,6 +380,7 @@ function statusText() {
   if (store.ui.busy) return '';
   const me = g.players[0],
     z = Shed.zone(g, me);
+  if (g.follow && g.follow.pi === 0) return 'Another ' + g.follow.rank + '? Tap a face-down card to try, or tap Done';
   if (z === 'down') return 'Pick a hidden card';
   const top = Shed.effectiveTop(g.rules, g.pile);
   if (!g.pile.length || !top) return 'Your turn. Play anything';

@@ -178,11 +178,15 @@ function describe(ev) {
   const n = who(ev.pi);
   let t;
   if (ev.type === 'pickup') return n + (ev.count ? ' picked up ' + ev.count + ' card' + (ev.count > 1 ? 's' : '') : ' picked up nothing') + stingerNote(ev.stingers);
-  if (ev.type === 'blind') {
+  if (ev.type === 'follow') {
+    if (ev.done) return n + ' stopped there';
+    const c = label(ev.card);
+    if (!ev.matched) return n + ' turned ' + c + '. No match, it goes in ' + (ev.pi === 0 ? 'your' : 'their') + ' hand';
+    t = n + ' turned ' + c + '. It matched';
+  } else if (ev.type === 'blind') {
     const c = label(ev.cards[0]);
     if (!ev.success) return n + ' flipped ' + c + ' and had to pick up ' + ev.picked + stingerNote(ev.stingers);
     t = n + ' flipped ' + c;
-    if (ev.cards.length > 1) t += ev.cards.length === 2 ? ' and the next one matched' : ' and the next ' + (ev.cards.length - 1) + ' matched';
   } else {
     const c = ev.cards;
     t = n + ' played ' + (c.length > 1 ? c.length + ' × ' : '') + c[0].rank;
@@ -241,7 +245,7 @@ function afterAction(r) {
   (store.ui.log = store.ui.log || []).push(_t);
   if (store.ui.log.length > 12) store.ui.log.shift();
   const pickedByMe = ev.forced && ev.forced.pi === 0 || ev.type === 'pickup' && mine || ev.type === 'blind' && !ev.success && mine;
-  if (ev.burned) SFX.burn(ev);else if (ev.forced || ev.type === 'pickup' || ev.type === 'blind' && !ev.success) SFX.pick(pickedByMe);else SFX.play(mine);
+  if (ev.burned) SFX.burn(ev);else if (ev.forced || ev.type === 'pickup' || ev.type === 'blind' && !ev.success || ev.type === 'follow' && !ev.matched && !ev.done) SFX.pick(pickedByMe || ev.type === 'follow' && mine);else if (!(ev.type === 'follow' && ev.done)) SFX.play(mine);
   if (ev.skipped != null) setTimeout(SFX.skip, 150);
   if (isSting(ev)) setTimeout(SFX.lock, 120);
   if ((ev.again || ev.reversed) && !ev.burned) setTimeout(SFX.again, 150);
@@ -390,7 +394,7 @@ function cpuStep() {
     }, g.players[0].out ? 500 : store.ui.beat === pi && fxOn() ? 1700 : 950);
     return;
   }
-  afterAction(d.kind === 'pickup' ? Shed.pickUp(g, pi) : Shed.play(g, pi, d.ids));
+  afterAction(d.kind === 'pickup' ? Shed.pickUp(g, pi) : d.kind === 'done' ? Shed.followDone(g, pi) : Shed.play(g, pi, d.ids));
 }
 
 // ---------- input: tap and drag ----------

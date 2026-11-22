@@ -46,7 +46,7 @@ const QUICK = [
   { key: 'transparentOn', rank: 'transparentRank', name: 'Invisible card', tip: 'Plays on anything, the card under still counts' },
   { key: 'stinger', rank: 'stinger', name: 'Stinger', tip: 'Only the same card can go on it' },
   { key: 'fourBurns', name: 'Four of a kind burns', tip: 'Four the same in a row clears the pile' },
-  { key: 'blindFollow', name: 'Face-down follow-up', tip: 'See your next face-down card; a match goes too' }
+  { key: 'blindFollow', name: 'Face-down follow-up', tip: 'After a face-down card goes on, try another: a match goes on, a miss goes in your hand' }
 ];
 const stIdx = () => store.settings.custom.findIndex(r => r.effect === 'stinger');
 const isOn = q => q.key === 'stinger' ? stIdx() >= 0 && store.settings.custom[stIdx()].on !== false : !!store.settings[q.key];

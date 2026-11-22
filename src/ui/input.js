@@ -203,6 +203,14 @@ $('#bPick').onclick = () => {
   if (r.ok && store.remote) store.remote.send({ type: 'pickup' });
   afterAction(r);
 };
+// face-down follow-up: stop trying and end the go
+$('#bDone').onclick = () => {
+  const g = store.game;
+  if (store.ui.busy || !g || !g.follow || g.follow.pi !== 0) return;
+  if (store.remote) return store.remote.done();
+  store.ui.busy = true;
+  afterAction(Shed.followDone(g, 0));
+};
 $('#bReady').onclick = () => {
   const g = store.game;
   if (g.phase !== 'swap' || store.ui.busy) return;

@@ -30,6 +30,7 @@
       burned: Array.from({ length: v.burnedCount }, () => hiddenCard()), phase: v.phase, turn: to(v.turn, me, n), dir: v.dir || 1,
       winner: to(v.winner, me, n), loser: to(v.loser, me, n), finished: (v.finished || []).map(i => to(i, me, n)),
       log: [], lastEvent: ev, lastBurn: null, turns: 0, stalemate: !!v.stalemate, online: true, seats: rotate(v.seats, me),
+      follow: v.follow ? Object.assign({}, v.follow, { pi: to(v.follow.pi, me, n) }) : null,
     };
   }
 
@@ -52,7 +53,7 @@
     const ids = a => a.map(c => c.id).sort((x, y) => x - y);
     return JSON.stringify({
       ph: g.phase, t: g.turn, d: g.dir, pile: g.pile.map(c => c.id), dr: g.draw.length, bu: g.burned.length,
-      w: g.winner, l: g.loser, f: g.finished,
+      w: g.winner, l: g.loser, f: g.finished, fo: g.follow ? [g.follow.pi, g.follow.count] : null,
       p: g.players.map((p, i) => ({ o: p.out, h: i === 0 ? ids(p.hand) : p.hand.length, u: ids(p.up), dn: p.down.length })),
     });
   }
@@ -92,10 +93,14 @@
       return Shed.play(g, pi, ev.cards.map(c => c.id));
     }
     if (ev.type === 'blind') {
-      // a face-down follow-up plays more than one card: all of them came off their face-down cards
-      if (!ev.success) { if (!bindInto(p.down, ev.cards[0], rekeys)) return null; return Shed.playBlind(g, pi, ev.cards[0].id); }
-      for (const c of ev.cards) if (!bindInto(p.down, c, rekeys)) return null;
-      return Shed.playBlind(g, pi, ev.cards[0].id, { extra: ev.cards.slice(1).map(c => c.id) });
+      if (!bindInto(p.down, ev.cards[0], rekeys)) return null;
+      return Shed.playBlind(g, pi, ev.cards[0].id);
+    }
+    // a face-down follow-up try (the card turned for everyone) or Done
+    if (ev.type === 'follow') {
+      if (ev.done) return Shed.followDone(g, pi);
+      if (!bindInto(p.down, ev.card, rekeys)) return null;
+      return Shed.playBlind(g, pi, ev.card.id);
     }
     return null;
   }
