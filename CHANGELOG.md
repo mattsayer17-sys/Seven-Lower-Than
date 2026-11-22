@@ -2,6 +2,13 @@
 
 Newest first. One line per change. Every session adds its lines here in the same commit as the work.
 
+## 2026-11-22 (branch visuals, PR #2, not live)
+- Brand blue darkened to royal #152f78 across card back, icon, favicon, logo and share card.
+- Original court cards restored; card faces get crisp white stock, a fine edge, bolder indices and a flat gold plate.
+- Pot outline is a soft inset ring instead of a dashed box.
+- Coach card copy: "Always on: 2 resets, 10 burns, ace high"; no arrow shorthand.
+- Decided against light mode: table looks stay per player (felt, back, colour-blind deck).
+
 ## 2026-11-21
 - Repo memory: CLAUDE.md (session routine), docs/STATE.md (live state, next steps, decisions), this changelog, `npm run status`. Old merged branches effects, setup-v2 and reactions-names deleted.
 - "You is out" grammar fix in the move line.
