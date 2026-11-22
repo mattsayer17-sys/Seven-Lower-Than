@@ -17,7 +17,6 @@ Last updated: 22 Nov 2026 20:40
 ## In flight (not in main)
 - Branch `h2h-server` (this PR), waiting for Matt's go. Server op `h2h` {with:[uids]} returns per opponent {n, w, l, meRb, theyRb} from shed_results (my place lower = a win; place = players = Rock Bottom; last 1000 games). The phone asks on the game-over sheet and when the profile opens, and the server's numbers replace the device copy (src/ui/profile.js applyRivals/syncRivals, src/ui/online.js fetchRivals). Results are now written before views when a game ends. Server handler build handler-1f22d9b6fbe1.mjs (v9), backwards compatible; deploy steps below.
 - Known limit: the server knows the device's online identity, not the local profile, so several local profiles on one phone share one online record. Accounts (Next 6) fix this.
-- PR #5 `live-test-tap` (another session): live test for the tap rule. Not touched here.
 
 ## Decisions (22 Nov)
 - No light mode. Appearance choices stay per player and on their own device (felt, card back, colour-blind deck). More table themes later as cosmetics.
