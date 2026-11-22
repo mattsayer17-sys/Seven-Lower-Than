@@ -3,7 +3,7 @@
 The single source of truth for what is live, what is in flight and what is next. Every session reads this first and
 updates it before finishing (see CLAUDE.md). History is in CHANGELOG.md.
 
-Last updated: 22 Nov 2026 12:30
+Last updated: 22 Nov 2026 20:40
 
 ## Live
 - Site: https://shiphead.vercel.app (also https://seven-lower-than.vercel.app). Every push to `main` deploys to production.
@@ -15,14 +15,16 @@ Last updated: 22 Nov 2026 12:30
 - Look (live 22 Nov, PR #2): royal blue #152f78; card-brand identity: S over a spade and H over a heart on a double-ended card with a double gold frame and the Shiphead suit (a spade with a heart set in it) in the centre (brand/mark.svg, brand/emblem.svg); Bodoni Moda Black for indices and wordmark, outlined. Header: white spade-and-heart + Bodoni wordmark. Favicon: the emblem. Card back: casino house back, royal blue, fine lattice, double gold frame, gold medallion with "SH" (src/ui/state.js SHIP_BACK, brand/back.svg); default 'shiphead', a saved 'red' default migrated once (settings.backV). Card faces: original court plates, crisp white stock, fine edge, bolder tabular indices, flat gold plate. Labels in sentence case, avatar in a disc, pot outline a soft inset ring. compare.js squashes case.
 - Face-down follow-up (live 22 Nov, PR #4): after a face-down card goes on, the go stays open; tap another face-down card (everyone sees it turn): same rank and allowed, it goes on and you may try again; otherwise it goes into your hand and the go ends; or tap Done. Engine g.follow {pi, rank, count, last}, followDone; play and pickUp refused while open; effects apply when the go closes. CPU tries 35% of the time. Server action `done`, follow in the view, online replay of 'follow' events.
 ## In flight (not in main)
-- Nothing. Visuals (#2) and the face-down tap rule (#4) went live 22 Nov 12:30.
+- Branch `h2h-server` (this PR), waiting for Matt's go. Server op `h2h` {with:[uids]} returns per opponent {n, w, l, meRb, theyRb} from shed_results (my place lower = a win; place = players = Rock Bottom; last 1000 games). The phone asks on the game-over sheet and when the profile opens, and the server's numbers replace the device copy (src/ui/profile.js applyRivals/syncRivals, src/ui/online.js fetchRivals). Results are now written before views when a game ends. Server handler build handler-1f22d9b6fbe1.mjs (v9), backwards compatible; deploy steps below.
+- Known limit: the server knows the device's online identity, not the local profile, so several local profiles on one phone share one online record. Accounts (Next 6) fix this.
+- PR #5 `live-test-tap` (another session): live test for the tap rule. Not touched here.
 
 ## Decisions (22 Nov)
 - No light mode. Appearance choices stay per player and on their own device (felt, card back, colour-blind deck). More table themes later as cosmetics.
 
 ## Next, in order
 1. Matt buys domains; connect playshiphead.com to the Vercel project, switch the invite SITE constant and og URLs.
-2. Head-to-head tally on the server (from shed_results) so both phones agree. Today it is stored per device.
+2. Head-to-head tally on the server: built, PR h2h-server.
 3. Computer players filling empty seats and replacing leavers, plus forfeits.
 4. Live updates: Supabase Realtime instead of polling (CSP connect-src needs wss://fmgyzabdkityfyakmqhg.supabase.co).
 5. Report/block UI (long-press a seat name; tables shed_blocks, shed_reports exist).
@@ -42,7 +44,7 @@ Buy domains (playshiphead.com primary; shiphead.app, shiphead.co.uk as redirects
 - Rules: max 5 players. 2 resets, 10 burns, ace high always. Seven lower than on by default. Stinger plays on anything, only same rank or invisible follows, stingers burn on pickup. Transparent (invisible) plays on anything except a skip card. Face-down follow-up: tap to try the next face-down card after one goes on; a match goes on, a miss goes in your hand, or Done (Matt, 22 Nov; replaced the auto-turn seen only by the owner). Votes online: simple majority, host breaks ties.
 - Final face-down flip: only when two players are left and the mover's only card is face-down. Heartbeat on both phones; about 4.5 s from tap to result.
 - Pairs: tap one card, matching cards get a gold edge and a prompt. No badges or extra buttons.
-- Online: reactions only (no free text); one-tap rematch; head to head shown on the game-over sheet.
+- Online: reactions only (no free text); one-tap rematch; head to head shown on the game-over sheet, counted on the server so both phones agree.
 - Loser is "Rock Bottom". Business model: free, ads, cosmetic packs, subscription after 5 online games.
 - Haptics: named patterns in src/ui/audio.js. iPhone web has none (Safari has no vibration API); real haptics come with the app wrap. No paid haptics SDK needed.
 - Internal names kept on purpose: __ms, daily seed 'mouse-shed-', `shed` function and tables, repo and Vercel project names.

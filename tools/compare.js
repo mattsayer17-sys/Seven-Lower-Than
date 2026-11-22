@@ -33,7 +33,7 @@ const REWORD = [
   // 21 Nov 2026: a stinger rule now lives in its own Stinger tick row, not the list of your own rules
   [/^custom 3 plays on anything\. Only the same rank can be played on it.*Your own rule×$/, 'custom '],
   [/^blocked \|2$/, 'blocked |1'],
-  ['Games against other people will show here once online tables open.', 'Play friends online and your record against each of them builds here.'],
+  ['Games against other people will show here once online tables open. Records are saved on this device.', 'Play friends online and your record against each of them builds here, the same on their phone as on yours.'],
 ];
 // Achievements added 20 Nov 2026. The current build lists and unlocks these on top of the original 13, so drop them from
 // the current transcript and don't compare the unlocked count; which of the original 13 unlock is still compared via "ach=".
