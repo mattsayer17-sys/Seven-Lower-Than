@@ -3,6 +3,11 @@
 Newest first. One line per change. Every session adds its lines here in the same commit as the work.
 
 ## 2026-11-22
+- Effects and pauses are longer so burns, pick-ups and their words can be read; a CPU's face-down follow-up tries are quick.
+- Achievement pop-ups sit at the top of the screen, clear of every card.
+- Invisible card shows itself, then the card beneath, then itself again.
+- The last-card reveal turns over slowly as it grows and moves to the centre, with no hover first.
+- Setup explainer for face-down follow-up matches the tap rule.
 - Lower than (was Seven lower than) can sit on any card except 2 and 10, 7 by default, from the welcome card, Rules tab, codes and votes.
 - The welcome card's rules line is now a button that opens the full Rules tab.
 - Live test tool updated for the face-down tap rule; server v8 deployed and live-tested.

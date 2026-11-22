@@ -204,17 +204,9 @@ function toast(a) {
   if (!toastBusy) nextToast();
 }
 
-// Sit the unlock just above your own hand, near the bottom of the screen, where your eyes already are.
-// The toast sits over my face-down row: the cards there matter least, so it never covers the pile or my hand.
+// The unlock sits along the top, over the header, so it never covers any card you might need to see or tap.
 function placeToast(t) {
-  let mid = window.innerHeight * .62;
-  try {
-    const L = store.lastL, tb = $('#table'), md = $('#modal');
-    // a sheet is open: keep clear of it, along the top
-    if (md && !md.classList.contains('hidden')) mid = 6 + t.offsetHeight / 2;
-    else if (L && L.meTableCy && tb) mid = tb.getBoundingClientRect().top + L.meTableCy + store.ch * .1;
-  } catch (e) {}
-  t.style.top = Math.max(6 + t.offsetHeight, mid + t.offsetHeight / 2) + 'px';
+  t.style.top = 6 + t.offsetHeight + 'px';
 }
 
 function nextToast() {
