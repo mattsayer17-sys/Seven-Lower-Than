@@ -3,7 +3,7 @@
 The single source of truth for what is live, what is in flight and what is next. Every session reads this first and
 updates it before finishing (see CLAUDE.md). History is in CHANGELOG.md.
 
-Last updated: 21 Nov 2026 18:00
+Last updated: 22 Nov 2026 10:45
 
 ## Live
 - Site: https://shiphead.vercel.app (also https://seven-lower-than.vercel.app). Every push to `main` deploys to production.
@@ -13,12 +13,16 @@ Last updated: 21 Nov 2026 18:00
 - Test rows from live tests are still in the database (tables QBF75, PF9H6, W4JPS, NX57H, TF5XY, BS99B and their anonymous Test users). Deleting needs Matt to confirm in Supabase.
 
 ## In flight (not in main)
-- Branch `visuals` (commit 12c6de0), preview only, waiting for Matt's go. Built after a brand review scored brand/game coherence 4/10 and logo craft 5/10:
-  - House card back (src/ui/state.js SHIP_BACK, brand/back.svg): court blue, white lattice, white and gold frame, small S/H card in the middle. Default 'shiphead'; a saved 'red' default migrates once (settings.backV).
-  - Court cards (src/ui/cards.js court()): double-ended J/Q/K figures, robe in currentColor so colour-blind suits follow.
-  - Logo redrawn symmetric; small mark brand/mark-small.svg for header and favicon; new icon PNGs; og.png rebuilt.
-  - All labels sentence case; header avatar in a 32 px disc. compare.js squashes case.
-  - When merged: update the design system artifact (back, court art, small mark, symmetric logo).
+- Branch `visuals` (PR #2), preview only, waiting for Matt's go:
+  - Royal blue #152f78 (Matt, 22 Nov: the earlier #1b3d8f was too light; darker royal reads premium). Used on the card back, icon, favicon, logo, share card.
+  - House card back (src/ui/state.js SHIP_BACK, brand/back.svg): royal blue, white lattice, white and gold frame, gold corner diamonds, small S/H card in the middle. Default 'shiphead'; a saved 'red' default migrates once (settings.backV).
+  - Card faces: Matt preferred the original court plates (crown, letter, suit), so the drawn court figures were dropped. Faces get a premium finish: crisp white stock instead of the cream tint, a fine edge, bolder tabular indices, flat gold plate.
+  - New card-brand identity (22 Nov 10:30, Matt: "make SH like poker card branding"): S and H are the card notation for spades and hearts. Mark (brand/mark.svg) = white card with S over a black spade top-left, H over a red heart bottom-right (double-ended), double gold frame, and the Shiphead suit in the centre: a black spade with a red heart set in it (brand/emblem.svg). Index and wordmark type: Bodoni Moda Black, outlined. App icon: royal ground, card tilted -6 deg. Header: white spade with red heart (brand/emblem-white.svg) + Bodoni wordmark. Favicon: the emblem. Card back (22 Nov 10:50, Matt: "backs SH like a casino professional brand"): royal blue, fine lattice, double gold frame, gold medallion with "SH" in Bodoni.
+  - og.png: fanned house backs, Bodoni wordmark, Inter Tight lines.
+  - Whole-screen pass: all labels sentence case; header avatar in a disc; pot outline solid and inset instead of dashed; coach card copy without middots or arrows.
+  - compare.js squashes case; onboarding-drive expects the new "Always on" line.
+  - When merged: update the design system artifact (royal blue, card-brand mark, emblem, Bodoni wordmark, back).
+- Decision 22 Nov: no light mode. Appearance choices stay per player and on their own device (felt, card back, colour-blind deck). More table themes later as cosmetics.
 
 ## Next, in order
 1. Matt reviews the visuals preview; merge `visuals` when he says, then update the design system.
@@ -37,7 +41,7 @@ Last updated: 21 Nov 2026 18:00
 Buy domains (playshiphead.com primary; shiphead.app, shiphead.co.uk as redirects). Trademark attorney: classes 9 and 41 in UK, EU, US (US SHIPHEAD marks exist for beer and clothing; check visual distance from Heads Up!). Apple Developer and Google Play enrolment. Real-device VoiceOver/TalkBack pass.
 
 ## Product decisions and rulings
-- Brand: Shiphead. Logo: double-ended court card, SHIP court red #d4231b upright, HEAD court blue #1b3d8f upside down. Wordmark Big Shoulders Display Black. Design system artifact: https://claude.ai/artifact/YZWDb14MRo5yqHdeEVfY13
+- Brand: Shiphead. Logo: double-ended court card, SHIP court red #d4231b upright, HEAD royal blue upside down (live: #1b3d8f; branch visuals: #152f78). Wordmark Big Shoulders Display Black. Design system artifact: https://claude.ai/artifact/YZWDb14MRo5yqHdeEVfY13
 - Look: dark + gold game UI on green baize, PokerStars-class finish without looking like a poker site. Crisp 2.5 px gold edges, no glows or endless pulses (exception: the final flip verdict). Buttons 10 px radius, 40 px high. Copy in sentence case, no full stops in headings, no emoji in sentences. unslop / frontend-design in polish mode only.
 - First launch: no sign-in, no form, cards already dealt; the coach card shows the house rules as switches. Name only asked when going online.
 - Rules: max 5 players. 2 resets, 10 burns, ace high always. Seven lower than on by default. Stinger plays on anything, only same rank or invisible follows, stingers burn on pickup. Transparent (invisible) plays on anything except a skip card. Face-down follow-up auto-plays matches, only the owner sees the turned card. Votes online: simple majority, host breaks ties.
