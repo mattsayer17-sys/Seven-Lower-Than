@@ -94,7 +94,7 @@ test('removeCustom and toggleCustom', () => {
 test('describeChange reads like a sentence', () => {
   assert.equal(Meta.describeChange({ type: 'flag', key: 'skipOn', value: true }, {}), 'Turn on Skip a go (8s)');
   assert.equal(Meta.describeChange({ type: 'flag', key: 'transparentOn', value: true }, { transparentRank: '9' }), 'Turn on Transparent card (9s)');
-  assert.equal(Meta.describeChange({ type: 'flag', key: 'sevensLower', value: false }, {}), 'Turn off 7s force lower');
+  assert.equal(Meta.describeChange({ type: 'flag', key: 'sevensLower', value: false }, {}), 'Turn off Lower than');
   assert.equal(Meta.describeChange({ type: 'flag', key: 'fourBurns', value: false }, {}), 'Turn off Four of a kind burns');
   assert.equal(Meta.describeChange({ type: 'rank', key: 'skipRank', value: '9' }, {}), 'Move Skip a go to 9s');
   assert.equal(Meta.describeChange({ type: 'addCustom', rank: '3', effect: 'stinger' }, {}), 'Add a rule: 3: plays on anything. Only the same rank can be played on it (invisible cards still allowed). Burned, not picked up, if the pile is taken');
@@ -360,7 +360,7 @@ test('the proposal menu flips each rule and offers removing own rules', () => {
   assert.equal(by('flag:skipOn').rankKey, null);
   assert.equal(by('flag:transparentOn').label, 'Turn on Transparent card');
   assert.equal(by('flag:transparentOn').rankKey, 'transparentRank');
-  assert.equal(by('flag:sevensLower').label, 'Turn off 7s force lower', 'sevens default on');
+  assert.equal(by('flag:sevensLower').label, 'Turn off Lower than', 'sevens default on');
   assert.equal(by('rm:J').change.type, 'removeCustom');
 });
 
@@ -376,4 +376,13 @@ test('pretend guests vote predictably', () => {
   assert.equal(tali.vote({ type: 'addCustom' }), 'yes');
   assert.equal(dave.vote({ type: 'addCustom' }), 'no');
   assert.equal(dave.vote({ type: 'flag' }), 'yes');
+});
+
+test('lower than: moves card, reads plainly, and clashes only with rules that are on', () => {
+  assert.equal(Meta.LABEL.sevensLower, 'Lower than');
+  assert.equal(Meta.PICKABLE.includes('7'), true);
+  assert.equal(Meta.applyChange({}, { type: 'rank', key: 'lowerRank', value: '6' }).opts.lowerRank, '6');
+  assert.equal(Meta.applyChange({ skipOn: true }, { type: 'rank', key: 'lowerRank', value: '8' }).ok, false);
+  assert.equal(Meta.applyChange({}, { type: 'rank', key: 'lowerRank', value: '8' }).ok, true);
+  assert.equal(Meta.describeChange({ type: 'rank', key: 'lowerRank', value: '6' }), 'Move Lower than to 6s');
 });

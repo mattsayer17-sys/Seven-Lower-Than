@@ -134,3 +134,12 @@ test('code length stays shareable', () => {
   const longest = P.encode(P.PRESETS.find(p => p.id === 'chaos').opts, 'Chaos');
   assert.ok(longest.length < 140, String(longest.length));
 });
+
+test('a lower than card other than 7 survives a code; 7 keeps the short code', () => {
+  const o = { lowerRank: 'J' };
+  const r = P.decode(P.encode(o));
+  assert.equal(r.ok, true);
+  assert.equal(P.normalise(r.opts).lowerRank, 'J');
+  assert.equal(P.encode({}), P.encode({ lowerRank: '7' }));
+  assert.equal(P.same({ sevensLower: false, lowerRank: '9' }, { sevensLower: false }), true);
+});

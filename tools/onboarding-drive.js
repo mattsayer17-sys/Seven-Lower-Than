@@ -32,7 +32,7 @@ let steps0 = [];
   assert.deepEqual(w.buttons, ['Show me (30 s)', 'How to play']); assert.equal(w.x, 'Just play');
   // the house rules are on the card: the usual extras as switches, a card picker where it applies
   const q = await ev(() => ({ rows: [...document.querySelectorAll('#coach .qrow b')].map(b => b.textContent), on: [...document.querySelectorAll('#coach .qs')].map(x => x.checked), fixed: document.querySelector('#coach .qfixed').textContent }));
-  assert.deepEqual(q.rows, ['Seven lower than', 'Skip a go', 'Invisible card', 'Stinger', 'Four of a kind burns', 'Face-down follow-up']);
+  assert.deepEqual(q.rows, ['Lower than', 'Skip a go', 'Invisible card', 'Stinger', 'Four of a kind burns', 'Face-down follow-up']);
   assert.deepEqual(q.on, [true, false, false, false, true, false]);
   assert.match(q.fixed, /2 resets, 10 burns, ace high/);
   await ev(() => document.querySelector('.qs[data-i="1"]').click());
@@ -122,6 +122,17 @@ let steps0 = [];
   await until(() => !document.querySelector('#coach'), 'escape closed');
   assert.equal(await ev(() => window.__ms.prof().flags.welcomed), true);
   ok('Escape dismisses it too');
+
+  // 9. Lower than picks its own card; the footer button opens the full Rules tab
+  await fresh();
+  await until(() => window.__ms && !!document.querySelector('#coach .qr[data-i="0"]'), 'welcome 5', 400);
+  await ev(() => { const s = document.querySelector('.qr[data-i="0"]'); s.value = '6'; s.dispatchEvent(new Event('change')); });
+  const lo = await ev(() => { const k = window.__ms.game().rules.ranks; return [k['6'].effect, k['7'].effect, window.__ms.settings().lowerRank]; });
+  assert.deepEqual(lo, ['lower', null, '6']);
+  await click('#wOwn');
+  await until(() => !!document.querySelector('#pRules') && !document.querySelector('#pRules').hidden, 'rules tab from welcome');
+  assert.equal(await ev(() => document.querySelector('#rSevRank').value), '6');
+  ok('Lower than moves to 6 from the welcome card, and "Your own rules" opens the Rules tab with 6 picked');
 
   assert.deepEqual(errors, []);
   console.log(steps.join('\n') + '\npage errors: 0');

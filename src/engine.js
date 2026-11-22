@@ -60,13 +60,16 @@
     const ranks = {
       '2': { power: 2, effect: 'reset' },
       '3': { power: 3 }, '4': { power: 4 }, '5': { power: 5 }, '6': { power: 6 },
-      '7': { power: 7, effect: opts.sevensLower === false ? null : 'lower' },
+      '7': { power: 7, effect: null },
       '8': { power: 8 },
       '9': { power: 9 },
       '10': { power: 10, effect: 'burn' },
       'J': { power: 11 }, 'Q': { power: 12 }, 'K': { power: 13 }, 'A': { power: 14 },
     };
-    // House rules that pick their own rank. Ranks with a fixed job (2, 7, 10) are never offered for these.
+    // House rules that pick their own rank. Ranks with a fixed job (2, 10) are never offered for these.
+    // Lower than: after this card, play the same or lower. 7 unless a table picks another card.
+    const lr = opts.lowerRank || '7';
+    if (opts.sevensLower !== false && ranks[lr] && lr !== '2' && lr !== '10') ranks[lr].effect = 'lower';
     if (opts.transparentOn && ranks[opts.transparentRank || '4']) ranks[opts.transparentRank || '4'].effect = 'transparent';
     if (opts.skipOn && ranks[opts.skipRank || '8']) ranks[opts.skipRank || '8'].effect = 'skip';
     const v = validateCustom((opts.custom || []).filter(r => r && r.on !== false));

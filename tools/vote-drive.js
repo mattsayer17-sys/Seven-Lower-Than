@@ -60,7 +60,7 @@ const assert = require('node:assert/strict');
   // 4. your own Yes/No buttons
   await ev(() => window.__ms.table.dispatch({ type: 'propose', by: 'dave', change: { type: 'flag', key: 'sevensLower', value: false } }));
   await until(() => !!document.querySelector('#vYes') || /Passed|Voted/.test(document.querySelector('#tblLast').textContent), 'vote card');
-  await until(() => document.querySelector('#tblLast').textContent.includes('7s'), 'sevens vote settled');
+  await until(() => document.querySelector('#tblLast').textContent.includes('Lower than'), 'sevens vote settled');
   ok('guests vote on their own');
 
   // 5. custom rule and the clash with it

@@ -257,3 +257,13 @@ test('colour demand: next card must be that colour, any rank; only an invisible 
   assert.ok(can(r, '5S', ['JD']) && !can(r, '5H', ['JD']), 'black demand');
   assert.deepEqual(S.validateCustom([{ rank: 'Q', effect: 'redNext' }]).rejected, []);
 });
+
+test('lower than can sit on another card, never on 2 or 10', () => {
+  const r9 = S.makeRuleset({ lowerRank: '9' });
+  assert.equal(r9.ranks['9'].effect, 'lower');
+  assert.equal(r9.ranks['7'].effect, null);
+  assert.equal(can(r9, '8H', ['9S']), true);
+  assert.equal(can(r9, 'JH', ['9S']), false);
+  assert.equal(S.makeRuleset({ lowerRank: '10' }).ranks['10'].effect, 'burn');
+  assert.equal(S.makeRuleset({ lowerRank: '9', sevensLower: false }).ranks['9'].effect, undefined);
+});

@@ -2,7 +2,7 @@
 // Glue between the saved settings, the table rules sheet and the pretend guests used in the preview.
 const Meta = require('./rules-meta.js');
 
-const KEYS = ['sevensLower', 'transparentOn', 'transparentRank', 'skipOn', 'skipRank', 'fourBurns', 'blindFollow', 'custom'];
+const KEYS = ['sevensLower', 'lowerRank', 'transparentOn', 'transparentRank', 'skipOn', 'skipRank', 'fourBurns', 'blindFollow', 'custom'];
 const copy = v => JSON.parse(JSON.stringify(v));
 
 // the house-rule part of the settings, as the options the engine and the vote work with
@@ -17,7 +17,7 @@ function applyToSettings(s, o) {
 }
 
 const isOn = (o, k) => (k === 'sevensLower' ? o.sevensLower !== false : !!o[k]);
-const RANK_KEY = { transparentOn: 'transparentRank', skipOn: 'skipRank' };
+const RANK_KEY = { transparentOn: 'transparentRank', skipOn: 'skipRank', sevensLower: 'lowerRank' };
 
 // What someone can propose right now. rankKey means the sheet should ask which card.
 function menu(opts) {
