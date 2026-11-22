@@ -3,7 +3,7 @@
 The single source of truth for what is live, what is in flight and what is next. Every session reads this first and
 updates it before finishing (see CLAUDE.md). History is in CHANGELOG.md.
 
-Last updated: 22 Nov 2026 09:10
+Last updated: 22 Nov 2026 10:45
 
 ## Live
 - Site: https://shiphead.vercel.app (also https://seven-lower-than.vercel.app). Every push to `main` deploys to production.
@@ -17,10 +17,11 @@ Last updated: 22 Nov 2026 09:10
   - Royal blue #152f78 (Matt, 22 Nov: the earlier #1b3d8f was too light; darker royal reads premium). Used on the card back, icon, favicon, logo, share card.
   - House card back (src/ui/state.js SHIP_BACK, brand/back.svg): royal blue, white lattice, white and gold frame, gold corner diamonds, small S/H card in the middle. Default 'shiphead'; a saved 'red' default migrates once (settings.backV).
   - Card faces: Matt preferred the original court plates (crown, letter, suit), so the drawn court figures were dropped. Faces get a premium finish: crisp white stock instead of the cream tint, a fine edge, bolder tabular indices, flat gold plate.
-  - Logo redrawn symmetric; small S/H mark (brand/mark-small.svg) for header and favicon (Matt likes "SH"); new icon PNGs; og.png: fanned house backs, Inter Tight.
+  - New card-brand identity (22 Nov 10:30, Matt: "make SH like poker card branding"): S and H are the card notation for spades and hearts. Mark (brand/mark.svg) = white card with S over a black spade top-left, H over a red heart bottom-right (double-ended), double gold frame, and the Shiphead suit in the centre: a black spade with a red heart set in it (brand/emblem.svg). Index and wordmark type: Bodoni Moda Black, outlined. App icon: royal ground, card tilted -6 deg. Header: white spade with red heart (brand/emblem-white.svg) + Bodoni wordmark. Favicon: the emblem. Card back: the emblem in a gold ring on royal blue.
+  - og.png: fanned house backs, Bodoni wordmark, Inter Tight lines.
   - Whole-screen pass: all labels sentence case; header avatar in a disc; pot outline solid and inset instead of dashed; coach card copy without middots or arrows.
   - compare.js squashes case; onboarding-drive expects the new "Always on" line.
-  - When merged: update the design system artifact (royal blue, back, small mark, symmetric logo).
+  - When merged: update the design system artifact (royal blue, card-brand mark, emblem, Bodoni wordmark, back).
 - Decision 22 Nov: no light mode. Appearance choices stay per player and on their own device (felt, card back, colour-blind deck). More table themes later as cosmetics.
 
 ## Next, in order

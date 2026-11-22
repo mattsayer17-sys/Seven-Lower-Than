@@ -3,6 +3,7 @@
 Newest first. One line per change. Every session adds its lines here in the same commit as the work.
 
 ## 2026-11-22 (branch visuals, PR #2, not live)
+- New card-brand identity: S over a spade and H over a heart as a double-ended card, gold frame, spade-with-heart emblem, Bodoni wordmark; header, icon, favicon, card back and share card updated.
 - Brand blue darkened to royal #152f78 across card back, icon, favicon, logo and share card.
 - Original court cards restored; card faces get crisp white stock, a fine edge, bolder indices and a flat gold plate.
 - Pot outline is a soft inset ring instead of a dashed box.
