@@ -3,6 +3,7 @@
 Newest first. One line per change. Every session adds its lines here in the same commit as the work.
 
 ## 2026-11-22
+- Live test tool updated for the face-down tap rule; server v8 deployed and live-tested.
 - Face-down follow-up is now a choice: after a face-down card goes on, tap another to try it (a match goes on, a miss goes in your hand) or tap Done. Server redeployed with it.
 - Card back is now a casino house back: royal blue, double gold frame, gold medallion with SH.
 - New card-brand identity: S over a spade and H over a heart as a double-ended card, gold frame, spade-with-heart emblem, Bodoni wordmark; header, icon, favicon, card back and share card updated.
