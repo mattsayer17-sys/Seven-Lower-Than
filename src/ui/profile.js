@@ -6,6 +6,7 @@ import { SFX } from './audio.js';
 import { isSting } from './flow.js';
 import { dailyStreak } from './daily.js';
 import { hideModal, showModal } from './sheets.js';
+import { fetchRivals } from './online.js';
 
 // ---------- profiles, records, achievements ----------
 const AVATARS = ['🐭', '🦊', '🐸', '🐙', '🦉', '🐢'];
@@ -339,24 +340,48 @@ function recordGame(g, meIdx, youMouse) {
   updateStats();
 }
 
-function showProfile() {
-  const p = prof(),
-    ks = Object.keys(p.h2h);
-  // people first, most played first, then the CPU levels
+// One line per opponent: people first, most played first, then the CPU levels.
+function h2hRows(p) {
+  const ks = Object.keys(p.h2h);
   const tot = k => p.h2h[k].w + p.h2h[k].l;
   ks.sort((a, b) => (b.indexOf('h:') === 0) - (a.indexOf('h:') === 0) || tot(b) - tot(a));
-  const rows = ks.length ? ks.map(k => {
+  return ks.length ? ks.map(k => {
     const h = p.h2h[k],
       t = h.w + h.l,
       nm = h.n || keyName(k),
       rb = k.indexOf('h:') === 0 && (h.theyRb || h.meRb) ? ' · 🪨 ' + nm + ' ' + (h.theyRb || 0) + ', you ' + (h.meRb || 0) : '';
     return '<div class="row"><span>' + esc(nm) + '<small>' + t + ' game' + (t === 1 ? '' : 's') + esc(rb) + '</small></span><b>' + h.w + ' – ' + h.l + '</b></div>';
   }).join('') : '<div class="row"><span>No games yet<small>Your record against each opponent builds here</small></span></div>';
+}
+
+// The server's count wins for people played online; the copy on the device is only a cache for when it can't be reached.
+// Returns true if anything changed.
+function applyRivals(map) {
+  const p = prof();
+  if (!p || !map) return false;
+  let changed = false;
+  for (const uid of Object.keys(map)) {
+    const s = map[uid], k = 'h:' + uid, h = p.h2h[k] = p.h2h[k] || { w: 0, l: 0 };
+    for (const f of ['w', 'l', 'meRb', 'theyRb']) if ((h[f] || 0) !== (s[f] || 0)) { h[f] = s[f] || 0; changed = true; }
+  }
+  if (changed) save();
+  return changed;
+}
+
+// Bring the online records up to date from the server, then redraw whatever is showing them.
+function syncRivals(uids, redraw) {
+  fetchRivals(uids).then(m => { if (applyRivals(m) && redraw) redraw(); });
+}
+
+function showProfile() {
+  const p = prof(),
+    ks = Object.keys(p.h2h);
+  const rows = '<div id="pH2h">' + h2hRows(p) + '</div>';
   const human = ks.some(k => k.indexOf('h:') === 0);
   const ach = ACH.map(a => '<div class="ach' + (p.ach[a.id] ? ' on' : '') + '"><i>' + a.i + '</i><span><b>' + esc(a.n) + '</b><small>' + esc(a.d) + '</small></span></div>').join('');
   const profs = store.P.list.map(q => '<button class="chip pb' + (q.id === p.id ? ' on' : '') + '" data-id="' + q.id + '">' + q.av + ' ' + esc(q.name) + '</button>').join('');
   const avs = AVATARS.map(a => '<button class="av' + (a === p.av ? ' on' : '') + '" data-a="' + a + '">' + a + '</button>').join('');
-  showModal('<h2>Profile</h2><div class="chips">' + profs + '</div>' + '<div class="inp"><input id="pName" maxlength="16" value="' + esc(p.name) + '" aria-label="Name"><button class="btn" id="pSave">Rename</button></div><div class="note err" id="pNote" role="status"></div>' + '<div class="avs">' + avs + '</div>' + '<h3>Record</h3><div class="stat3"><div><b>' + p.g + '</b><small>Games</small></div><div><b>' + p.w + '</b><small>1st</small></div><div><b>' + p.m + '</b><small>🪨 Last</small></div></div>' + '<h3>Head to head</h3>' + rows + (human ? '' : '<p class="note" style="margin-top:8px">Play friends online and your record against each of them builds here. Records are saved on this device.</p>') + '<h3>Achievements ' + Object.keys(p.ach).length + '/' + ACH.length + '</h3><div class="achs">' + ach + '</div>' + '<div class="inp" style="margin-top:14px"><input id="pNew" maxlength="16" placeholder="New profile name" aria-label="New profile name"><button class="btn" id="pAdd">Add profile</button></div>' + '<div class="btns"><button class="btn primary" id="pClose">Done</button></div>');
+  showModal('<h2>Profile</h2><div class="chips">' + profs + '</div>' + '<div class="inp"><input id="pName" maxlength="16" value="' + esc(p.name) + '" aria-label="Name"><button class="btn" id="pSave">Rename</button></div><div class="note err" id="pNote" role="status"></div>' + '<div class="avs">' + avs + '</div>' + '<h3>Record</h3><div class="stat3"><div><b>' + p.g + '</b><small>Games</small></div><div><b>' + p.w + '</b><small>1st</small></div><div><b>' + p.m + '</b><small>🪨 Last</small></div></div>' + '<h3>Head to head</h3>' + rows + (human ? '' : '<p class="note" style="margin-top:8px">Play friends online and your record against each of them builds here, the same on their phone as on yours.</p>') + '<h3>Achievements ' + Object.keys(p.ach).length + '/' + ACH.length + '</h3><div class="achs">' + ach + '</div>' + '<div class="inp" style="margin-top:14px"><input id="pNew" maxlength="16" placeholder="New profile name" aria-label="New profile name"><button class="btn" id="pAdd">Add profile</button></div>' + '<div class="btns"><button class="btn primary" id="pClose">Done</button></div>');
   document.querySelectorAll('.pb').forEach(b => b.onclick = () => {
     store.P.cur = b.dataset.id;
     save();
@@ -389,6 +414,8 @@ function showProfile() {
     showProfile();
   };
   $('#pClose').onclick = hideModal;
+  const people = ks.filter(k => k.indexOf('h:') === 0).map(k => k.slice(2));
+  if (people.length) syncRivals(people, () => { const el = $('#pH2h'); if (el) el.innerHTML = h2hRows(prof()); });
 }
 
 // ---------- daily deal ----------
@@ -426,7 +453,7 @@ function rivalryHTML(g) {
     if (!h) return '';
     return '<div class="rival"><span>You <b>' + h.w + ' – ' + h.l + '</b> ' + esc(h.n || g.players[j + 1].name) + '</span>' + (h.theyRb || h.meRb ? '<small>🪨 ' + esc(h.n || '') + ' ' + (h.theyRb || 0) + ' · you ' + (h.meRb || 0) + '</small>' : '') + '</div>';
   }).join('');
-  return lines ? '<div class="rivals">' + lines + '</div>' : '';
+  return lines ? '<div class="rivals" id="rivals">' + lines + '</div>' : '';
 }
 
-export { AVATARS, prof, recordGame, rivalryHTML, showProfile, toastTest, trackEvent, unlock, updateStats };
+export { AVATARS, prof, recordGame, rivalryHTML, syncRivals, showProfile, toastTest, trackEvent, unlock, updateStats };

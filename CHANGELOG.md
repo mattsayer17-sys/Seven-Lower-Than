@@ -4,15 +4,18 @@ Newest first. One line per change. Every session adds its lines here in the same
 
 ## 2026-11-23
 - The see-through rule is called "Invisible card" everywhere, including the Rules tab and table votes.
-
-## 2026-11-22
 - Effects and pauses are longer so burns, pick-ups and their words can be read; a CPU's face-down follow-up tries are quick.
 - Achievement pop-ups sit at the top of the screen, clear of every card.
 - Invisible card shows itself, then the card beneath, then itself again.
 - The last-card reveal turns over slowly as it grows and moves to the centre, with no hover first.
 - Setup explainer for face-down follow-up matches the tap rule.
-- Lower than (was Seven lower than) can sit on any card except 2 and 10, 7 by default, from the welcome card, Rules tab, codes and votes.
+- Lower than (was Seven lower than) can sit on any card except 2 and 10, 7 by default, from the welcome card, Rules tab, codes and votes; server redeployed with it.
 - The welcome card's rules line is now a button that opens the full Rules tab.
+- Head to head against friends now comes from the server, so both phones show the same score; the copy on the phone is only a fallback.
+- Server writes a game's result before the final view, so the game-over sheet never misses the last game.
+- Live test checks head to head on the real server.
+
+## 2026-11-22
 - Live test tool updated for the face-down tap rule; server v8 deployed and live-tested.
 - Face-down follow-up is now a choice: after a face-down card goes on, tap another to try it (a match goes on, a miss goes in your hand) or tap Done. Server redeployed with it.
 - Card back is now a casino house back: royal blue, double gold frame, gold medallion with SH.
