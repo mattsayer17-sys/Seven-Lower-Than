@@ -3,17 +3,18 @@
 The single source of truth for what is live, what is in flight and what is next. Every session reads this first and
 updates it before finishing (see CLAUDE.md). History is in CHANGELOG.md.
 
-Last updated: 22 Nov 2026 20:30
+Last updated: 23 Nov 2026 23:45
 
 ## Live
 - Site: https://shiphead.vercel.app (also https://seven-lower-than.vercel.app). Every push to `main` deploys to production.
-- Server: Supabase project fmgyzabdkityfyakmqhg, edge function `shed` v8 (server/build/handler-5a492bdc7dce.mjs, face-down tap rule with action `done`), imported from raw.githubusercontent at commit 9cbba20. Deployed 22 Nov 12:40; live test passed (2 games, follow-ups played, 0 resyncs).
+- Server: Supabase project fmgyzabdkityfyakmqhg, edge function `shed` v9 (server/build/handler-1f22d9b6fbe1.mjs, pinned at commit 15dd25a: adds the `h2h` request, results written before views). Deployed and live-tested 22 Nov 20:50. Backwards compatible with the live site.
 - SQL applied: server/sql/2026-11-21-reactions-only.sql, server/sql/2026-11-21-rematch.sql.
 - Vercel project prj_1CPlStcWsf3u0Hh8lLjv0CbWZW4Z, team team_L010Khha3QfqKwmIRHO0vNCb.
 - Test rows from live tests are still in the database (tables QBF75, PF9H6, W4JPS, NX57H, TF5XY, BS99B, H3HC4, B4RX6 and their anonymous Test users). Deleting needs Matt to confirm in Supabase.
 
 - Look (live 22 Nov, PR #2): royal blue #152f78; card-brand identity: S over a spade and H over a heart on a double-ended card with a double gold frame and the Shiphead suit (a spade with a heart set in it) in the centre (brand/mark.svg, brand/emblem.svg); Bodoni Moda Black for indices and wordmark, outlined. Header: white spade-and-heart + Bodoni wordmark. Favicon: the emblem. Card back: casino house back, royal blue, fine lattice, double gold frame, gold medallion with "SH" (src/ui/state.js SHIP_BACK, brand/back.svg); default 'shiphead', a saved 'red' default migrated once (settings.backV). Card faces: original court plates, crisp white stock, fine edge, bolder tabular indices, flat gold plate. Labels in sentence case, avatar in a disc, pot outline a soft inset ring. compare.js squashes case.
 - Face-down follow-up (live 22 Nov, PR #4): after a face-down card goes on, the go stays open; tap another face-down card (everyone sees it turn): same rank and allowed, it goes on and you may try again; otherwise it goes into your hand and the go ends; or tap Done. Engine g.follow {pi, rank, count, last}, followDone; play and pickUp refused while open; effects apply when the go closes. CPU tries 35% of the time. Server action `done`, follow in the view, online replay of 'follow' events.
+- Head to head (live 23 Nov, PR #6): counted on the server from shed_results, so both phones agree; the phone syncs on the game-over sheet and when the profile opens. Limit: several local profiles on one phone share one online record until accounts.
 ## In flight (not in main)
 - Branch `lower-rank` (PR open, waiting for Matt): "Lower than" (was "Seven lower than") picks its card like Skip and Invisible, default 7, never 2 or 10. Option `lowerRank`; codes keep the short form for 7 and carry the card otherwise; votes can move it ("Move Lower than to 6s"). No card moves onto one that a rule which is on already holds. Welcome card footer is now a button that opens the full Rules tab. Engine and rules-meta changed, so the server needs redeploying when this merges (handler build dist/srv/handler-<sha>.mjs, steps below), then live-test.
 - Next branch `pacing` (Matt's playtest 22 Nov): slower big pick-ups and 10 burn so the word and effect read; achievements never block play; face-down follow-up gives the player time; invisible card shows itself, pauses, shows the card beneath, then settles.
@@ -23,7 +24,7 @@ Last updated: 22 Nov 2026 20:30
 
 ## Next, in order
 1. Matt buys domains; connect playshiphead.com to the Vercel project, switch the invite SITE constant and og URLs.
-2. Head-to-head tally on the server (from shed_results) so both phones agree. Today it is stored per device.
+2. Head-to-head tally on the server: live 23 Nov (PR #6). Server request `h2h` {with:[uids]} gives {n,w,l,meRb,theyRb} per opponent from shed_results; the phone syncs on the game-over sheet and profile.
 3. Computer players filling empty seats and replacing leavers, plus forfeits.
 4. Live updates: Supabase Realtime instead of polling (CSP connect-src needs wss://fmgyzabdkityfyakmqhg.supabase.co).
 5. Report/block UI (long-press a seat name; tables shed_blocks, shed_reports exist).
@@ -43,7 +44,7 @@ Buy domains (playshiphead.com primary; shiphead.app, shiphead.co.uk as redirects
 - Rules: max 5 players. 2 resets, 10 burns, ace high always. Seven lower than on by default. Stinger plays on anything, only same rank or invisible follows, stingers burn on pickup. Transparent (invisible) plays on anything except a skip card. Face-down follow-up: tap to try the next face-down card after one goes on; a match goes on, a miss goes in your hand, or Done (Matt, 22 Nov; replaced the auto-turn seen only by the owner). Votes online: simple majority, host breaks ties.
 - Final face-down flip: only when two players are left and the mover's only card is face-down. Heartbeat on both phones; about 4.5 s from tap to result.
 - Pairs: tap one card, matching cards get a gold edge and a prompt. No badges or extra buttons.
-- Online: reactions only (no free text); one-tap rematch; head to head shown on the game-over sheet.
+- Online: reactions only (no free text); one-tap rematch; head to head shown on the game-over sheet, counted on the server so both phones agree.
 - Loser is "Rock Bottom". Business model: free, ads, cosmetic packs, subscription after 5 online games.
 - Haptics: named patterns in src/ui/audio.js. iPhone web has none (Safari has no vibration API); real haptics come with the app wrap. No paid haptics SDK needed.
 - Internal names kept on purpose: __ms, daily seed 'mouse-shed-', `shed` function and tables, repo and Vercel project names.

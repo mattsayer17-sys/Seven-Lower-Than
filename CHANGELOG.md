@@ -2,6 +2,11 @@
 
 Newest first. One line per change. Every session adds its lines here in the same commit as the work.
 
+## 2026-11-23
+- Head to head against friends now comes from the server, so both phones show the same score; the copy on the phone is only a fallback.
+- Server writes a game's result before the final view, so the game-over sheet never misses the last game.
+- Live test checks head to head on the real server.
+
 ## 2026-11-22
 - Lower than (was Seven lower than) can sit on any card except 2 and 10, 7 by default, from the welcome card, Rules tab, codes and votes.
 - The welcome card's rules line is now a button that opens the full Rules tab.

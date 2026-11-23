@@ -3,7 +3,7 @@ import { $, esc } from './dom.js';
 import { later, ordinal, store } from './state.js';
 import { SFX } from './audio.js';
 import { newGame } from './flow.js';
-import { recordGame, rivalryHTML } from './profile.js';
+import { recordGame, rivalryHTML, syncRivals } from './profile.js';
 import { dailyBlock, wireShare } from './daily.js';
 import { showSetup } from './setup.js';
 import { showOnline, wireRematch } from './online.js';
@@ -91,6 +91,12 @@ function showOver() {
     $('#again').onclick = g.online ? showOnline : () => newGame();
     $('#setup').onclick = showSetup;
     if (g.online) wireRematch();
+    // the device counted this game already; the server's tally replaces it, so both phones agree
+    if (g.online && g.seats) syncRivals(g.seats.slice(1), () => {
+      const old = $('#rivals'), html = rivalryHTML(g);
+      if (old) old.outerHTML = html || '';
+      else if (html && $('#modal .btns')) $('#modal .btns').insertAdjacentHTML('beforebegin', html);
+    });
     wireShare(g.meta && g.meta.daily);
   }, 500);
 }
