@@ -7,7 +7,7 @@ Last updated: 23 Nov 2026 23:55
 
 ## Live
 - Site: https://shiphead.vercel.app (also https://seven-lower-than.vercel.app). Every push to `main` deploys to production.
-- Server: Supabase project fmgyzabdkityfyakmqhg, edge function `shed` v9 (server/build/handler-1f22d9b6fbe1.mjs, pinned at commit 15dd25a: adds the `h2h` request, results written before views). Deployed and live-tested 22 Nov 20:50. Backwards compatible with the live site.
+- Server: Supabase project fmgyzabdkityfyakmqhg, edge function `shed` v10 (server/build/handler-a31f41f0ed4f.mjs, pinned at the PR #8 merge commit on main: Lower than card, Invisible card wording, plus v9's `h2h`). Deployed and live-tested 23 Nov. Backwards compatible with the live site.
 - SQL applied: server/sql/2026-11-21-reactions-only.sql, server/sql/2026-11-21-rematch.sql.
 - Vercel project prj_1CPlStcWsf3u0Hh8lLjv0CbWZW4Z, team team_L010Khha3QfqKwmIRHO0vNCb.
 - Test rows from live tests are still in the database (tables QBF75, PF9H6, W4JPS, NX57H, TF5XY, BS99B, H3HC4, B4RX6 and their anonymous Test users). Deleting needs Matt to confirm in Supabase.
