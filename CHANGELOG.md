@@ -2,7 +2,7 @@
 
 Newest first. One line per change. Every session adds its lines here in the same commit as the work.
 
-## 2026-11-22 (branch h2h-server, PR open, not live)
+## 2026-11-23
 - Head to head against friends now comes from the server, so both phones show the same score; the copy on the phone is only a fallback.
 - Server writes a game's result before the final view, so the game-over sheet never misses the last game.
 - Live test checks head to head on the real server.

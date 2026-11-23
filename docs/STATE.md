@@ -3,27 +3,27 @@
 The single source of truth for what is live, what is in flight and what is next. Every session reads this first and
 updates it before finishing (see CLAUDE.md). History is in CHANGELOG.md.
 
-Last updated: 22 Nov 2026 20:40
+Last updated: 23 Nov 2026 23:45
 
 ## Live
 - Site: https://shiphead.vercel.app (also https://seven-lower-than.vercel.app). Every push to `main` deploys to production.
-- Server: Supabase project fmgyzabdkityfyakmqhg, edge function `shed` v9 (server/build/handler-1f22d9b6fbe1.mjs, pinned at commit 15dd25a on branch h2h-server: adds the `h2h` request, results written before views). Deployed and live-tested 22 Nov 20:50. Backwards compatible with the live site.
+- Server: Supabase project fmgyzabdkityfyakmqhg, edge function `shed` v9 (server/build/handler-1f22d9b6fbe1.mjs, pinned at commit 15dd25a: adds the `h2h` request, results written before views). Deployed and live-tested 22 Nov 20:50. Backwards compatible with the live site.
 - SQL applied: server/sql/2026-11-21-reactions-only.sql, server/sql/2026-11-21-rematch.sql.
 - Vercel project prj_1CPlStcWsf3u0Hh8lLjv0CbWZW4Z, team team_L010Khha3QfqKwmIRHO0vNCb.
 - Test rows from live tests are still in the database (tables QBF75, PF9H6, W4JPS, NX57H, TF5XY, BS99B, H3HC4, B4RX6 and their anonymous Test users). Deleting needs Matt to confirm in Supabase.
 
 - Look (live 22 Nov, PR #2): royal blue #152f78; card-brand identity: S over a spade and H over a heart on a double-ended card with a double gold frame and the Shiphead suit (a spade with a heart set in it) in the centre (brand/mark.svg, brand/emblem.svg); Bodoni Moda Black for indices and wordmark, outlined. Header: white spade-and-heart + Bodoni wordmark. Favicon: the emblem. Card back: casino house back, royal blue, fine lattice, double gold frame, gold medallion with "SH" (src/ui/state.js SHIP_BACK, brand/back.svg); default 'shiphead', a saved 'red' default migrated once (settings.backV). Card faces: original court plates, crisp white stock, fine edge, bolder tabular indices, flat gold plate. Labels in sentence case, avatar in a disc, pot outline a soft inset ring. compare.js squashes case.
 - Face-down follow-up (live 22 Nov, PR #4): after a face-down card goes on, the go stays open; tap another face-down card (everyone sees it turn): same rank and allowed, it goes on and you may try again; otherwise it goes into your hand and the go ends; or tap Done. Engine g.follow {pi, rank, count, last}, followDone; play and pickUp refused while open; effects apply when the go closes. CPU tries 35% of the time. Server action `done`, follow in the view, online replay of 'follow' events.
+- Head to head (live 23 Nov, PR #6): counted on the server from shed_results, so both phones agree; the phone syncs on the game-over sheet and when the profile opens. Limit: several local profiles on one phone share one online record until accounts.
 ## In flight (not in main)
-- Branch `h2h-server` (this PR), waiting for Matt's go. Server op `h2h` {with:[uids]} returns per opponent {n, w, l, meRb, theyRb} from shed_results (my place lower = a win; place = players = Rock Bottom; last 1000 games). The phone asks on the game-over sheet and when the profile opens, and the server's numbers replace the device copy (src/ui/profile.js applyRivals/syncRivals, src/ui/online.js fetchRivals). Results are now written before views when a game ends. Server v9 is already live (the site on main simply doesn't call `h2h` yet); merging puts the phone side live.
-- Known limit: the server knows the device's online identity, not the local profile, so several local profiles on one phone share one online record. Accounts (Next 6) fix this.
+- Nothing from this session. Other open PRs: #7 lower-rank, #8 pacing (other sessions).
 
 ## Decisions (22 Nov)
 - No light mode. Appearance choices stay per player and on their own device (felt, card back, colour-blind deck). More table themes later as cosmetics.
 
 ## Next, in order
 1. Matt buys domains; connect playshiphead.com to the Vercel project, switch the invite SITE constant and og URLs.
-2. Head-to-head tally on the server: built, PR h2h-server.
+2. Head-to-head tally on the server: live 23 Nov (PR #6). Server request `h2h` {with:[uids]} gives {n,w,l,meRb,theyRb} per opponent from shed_results; the phone syncs on the game-over sheet and profile.
 3. Computer players filling empty seats and replacing leavers, plus forfeits.
 4. Live updates: Supabase Realtime instead of polling (CSP connect-src needs wss://fmgyzabdkityfyakmqhg.supabase.co).
 5. Report/block UI (long-press a seat name; tables shed_blocks, shed_reports exist).
