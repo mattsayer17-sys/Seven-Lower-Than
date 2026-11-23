@@ -13,7 +13,7 @@ test('heldRanks: defaults hold 2, 7 and 10', () => {
 test('heldRanks follows the house rules and active own rules only', () => {
   const h = Meta.heldRanks({ sevensLower: false, transparentOn: true, skipOn: true, skipRank: '9', custom: [{ rank: 'J', effect: 'reverse' }, { rank: 'Q', effect: 'none' }, { rank: 'K', effect: 'burn', on: false }] });
   assert.equal(h['7'], undefined);
-  assert.equal(h['4'], 'the transparent card rule');
+  assert.equal(h['4'], 'the invisible card rule');
   assert.equal(h['9'], 'the skip a go rule');
   assert.equal(h['J'], 'your own rule for J');
   assert.equal(h['Q'], undefined, 'a plain-card rule holds nothing');
@@ -47,7 +47,7 @@ test('flag: unknown rule and non-boolean values are refused', () => {
 test('a card with a rule cannot be given another one', () => {
   // skip on the same rank transparent already holds
   let r = Meta.applyChange({ transparentOn: true, transparentRank: '8', skipRank: '8' }, { type: 'flag', key: 'skipOn', value: true });
-  assert.deepEqual([r.ok, r.error], [false, '8 is already used by the transparent card rule']);
+  assert.deepEqual([r.ok, r.error], [false, '8 is already used by the invisible card rule']);
   // 7s lower when an own rule holds 7
   r = Meta.applyChange({ sevensLower: false, custom: [{ rank: '7', effect: 'burn' }] }, { type: 'flag', key: 'sevensLower', value: true });
   assert.deepEqual([r.ok, r.error], [false, '7 is already used by your own rule for 7']);
@@ -62,7 +62,7 @@ test('rank moves: pickable, not the other house rule, not an own rule', () => {
   assert.equal(Meta.applyChange({}, { type: 'rank', key: 'skipRank', value: '7' }).ok, false);
   assert.equal(Meta.applyChange({}, { type: 'rank', key: 'skipRank', value: '10' }).ok, false);
   const other = Meta.applyChange({ transparentRank: '4' }, { type: 'rank', key: 'skipRank', value: '4' });
-  assert.deepEqual([other.ok, other.error], [false, '4 is already used by the transparent card rule']);
+  assert.deepEqual([other.ok, other.error], [false, '4 is already used by the invisible card rule']);
   const own = Meta.applyChange({ custom: [{ rank: 'J', effect: 'again' }] }, { type: 'rank', key: 'transparentRank', value: 'J' });
   assert.equal(own.ok, false);
   assert.equal(Meta.applyChange({}, { type: 'rank', key: 'bogus', value: '5' }).ok, false);
@@ -93,7 +93,7 @@ test('removeCustom and toggleCustom', () => {
 
 test('describeChange reads like a sentence', () => {
   assert.equal(Meta.describeChange({ type: 'flag', key: 'skipOn', value: true }, {}), 'Turn on Skip a go (8s)');
-  assert.equal(Meta.describeChange({ type: 'flag', key: 'transparentOn', value: true }, { transparentRank: '9' }), 'Turn on Transparent card (9s)');
+  assert.equal(Meta.describeChange({ type: 'flag', key: 'transparentOn', value: true }, { transparentRank: '9' }), 'Turn on Invisible card (9s)');
   assert.equal(Meta.describeChange({ type: 'flag', key: 'sevensLower', value: false }, {}), 'Turn off Lower than');
   assert.equal(Meta.describeChange({ type: 'flag', key: 'fourBurns', value: false }, {}), 'Turn off Four of a kind burns');
   assert.equal(Meta.describeChange({ type: 'rank', key: 'skipRank', value: '9' }, {}), 'Move Skip a go to 9s');
@@ -241,7 +241,7 @@ test('a clashing proposal is refused before anyone votes on it', () => {
   const s = Object.assign(table(), { opts: { transparentOn: true, transparentRank: '8', skipRank: '8' } });
   const r = Room.reduce(s, { type: 'propose', by: 'tali', change: skipOn }, 0);
   assert.equal(r.state.vote, null);
-  assert.equal(r.events[0].reason, '8 is already used by the transparent card rule');
+  assert.equal(r.events[0].reason, '8 is already used by the invisible card rule');
 });
 
 test('two at the table: the host wins a disagreement and the result says so', () => {
@@ -358,7 +358,7 @@ test('the proposal menu flips each rule and offers removing own rules', () => {
   const by = id => m.find(x => x.id === id);
   assert.equal(by('flag:skipOn').label, 'Turn off Skip a go');
   assert.equal(by('flag:skipOn').rankKey, null);
-  assert.equal(by('flag:transparentOn').label, 'Turn on Transparent card');
+  assert.equal(by('flag:transparentOn').label, 'Turn on Invisible card');
   assert.equal(by('flag:transparentOn').rankKey, 'transparentRank');
   assert.equal(by('flag:sevensLower').label, 'Turn off Lower than', 'sevens default on');
   assert.equal(by('rm:J').change.type, 'removeCustom');

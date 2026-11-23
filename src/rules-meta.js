@@ -8,10 +8,10 @@ const FLAGS = ['sevensLower', 'transparentOn', 'skipOn', 'fourBurns', 'blindFoll
 const RANK_KEYS = { transparentRank: 'transparentOn', skipRank: 'skipOn', lowerRank: 'sevensLower' };
 // ranks a house rule may sit on. 2 and 10 have fixed jobs.
 const PICKABLE = Shed.RANK_LIST.filter(k => !['2', '10'].includes(k));
-const LABEL = { sevensLower: 'Lower than', transparentOn: 'Transparent card', skipOn: 'Skip a go', fourBurns: 'Four of a kind burns', blindFollow: 'Face-down follow-up' };
+const LABEL = { sevensLower: 'Lower than', transparentOn: 'Invisible card', skipOn: 'Skip a go', fourBurns: 'Four of a kind burns', blindFollow: 'Face-down follow-up' };
 
 const rankOf = (o, key) => (key === 'transparentRank' ? o.transparentRank || '4' : key === 'lowerRank' ? o.lowerRank || '7' : o.skipRank || '8');
-const RULE_NAME = { transparentRank: 'the transparent card rule', skipRank: 'the skip a go rule', lowerRank: 'the lower than rule' };
+const RULE_NAME = { transparentRank: 'the invisible card rule', skipRank: 'the skip a go rule', lowerRank: 'the lower than rule' };
 const isOn = (o, flag) => (flag === 'sevensLower' ? o.sevensLower !== false : !!o[flag]);
 const customActive = r => r && r.on !== false && r.effect && r.effect !== 'none';
 
@@ -19,7 +19,7 @@ const customActive = r => r && r.on !== false && r.effect && r.effect !== 'none'
 function heldRanks(o) {
   const m = { '2': 'the 2s reset rule', '10': 'the 10s burn rule' };
   if (o.sevensLower !== false) m[rankOf(o, 'lowerRank')] = 'the lower than rule';
-  if (o.transparentOn) m[rankOf(o, 'transparentRank')] = 'the transparent card rule';
+  if (o.transparentOn) m[rankOf(o, 'transparentRank')] = 'the invisible card rule';
   if (o.skipOn) m[rankOf(o, 'skipRank')] = 'the skip a go rule';
   for (const r of o.custom || []) if (customActive(r)) m[r.rank] = 'your own rule for ' + r.rank;
   return m;

@@ -2,6 +2,9 @@
 
 Newest first. One line per change. Every session adds its lines here in the same commit as the work.
 
+## 2026-11-23
+- The see-through rule is called "Invisible card" everywhere, including the Rules tab and table votes.
+
 ## 2026-11-22
 - Effects and pauses are longer so burns, pick-ups and their words can be read; a CPU's face-down follow-up tries are quick.
 - Achievement pop-ups sit at the top of the screen, clear of every card.
