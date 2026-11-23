@@ -68,6 +68,15 @@ function getTransport() {
   return transport;
 }
 
+// Head to head against these people, from the server, so both phones show the same score.
+// Never signs anyone in: with no online session on this device there is nothing to fetch.
+async function fetchRivals(uids) {
+  const t = getTransport();
+  uids = (uids || []).filter(Boolean);
+  if (!t.uid || !uids.length) return null;
+  try { const r = await t.call({ op: 'h2h', with: uids }); return r.status === 200 && r.body.h2h ? r.body.h2h : null; } catch (e) { return null; }
+}
+
 const friendly = e => (/fetch|network|Failed|reach|sign in/i.test(e.message || '') ? "Can't reach the online service from here. Check your connection, or open the web version" : e.message || 'Something went wrong');
 
 // who we are still waiting on to lock in, by name
@@ -473,4 +482,4 @@ function wireRematch() {
   look();
 }
 
-export { showOnline, wireRematch };
+export { fetchRivals, showOnline, wireRematch };

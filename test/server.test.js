@@ -454,3 +454,39 @@ test('rematch: the first to ask opens a table with the same rules, the next is s
   assert.equal(r3.body.code, r1.body.code, 'asking twice is harmless');
   assert.equal(lobbyOf(db, r1.body.code).seats.length, 2);
 });
+
+test('head to head comes from the results table, the same for both players', async () => {
+  const db = new FakeDb();
+  const games = 3;
+  for (let i = 0; i < games; i++) {
+    const code = await lobby(db, 2);
+    await handle(db, 'u1', { op: 'start', code });
+    await playOut(db, code);
+  }
+  const a = (await handle(db, 'u1', { op: 'h2h', with: ['u2', 'u1', 'nobody', '<bad>'] })).body.h2h;
+  const b = (await handle(db, 'u2', { op: 'h2h', with: ['u1'] })).body.h2h;
+  assert.deepEqual(Object.keys(a), ['u2']);
+  assert.equal(a.u2.n, games);
+  assert.equal(a.u2.w + a.u2.l, games);
+  assert.equal(a.u2.w, b.u1.l);
+  assert.equal(a.u2.l, b.u1.w);
+  assert.equal(a.u2.meRb, b.u1.theyRb);
+  assert.equal(a.u2.theyRb, b.u1.meRb);
+  assert.equal(a.u2.meRb + a.u2.theyRb, games); // two players: someone hits Rock Bottom every game
+  assert.deepEqual((await handle(db, 'u3', { op: 'h2h', with: ['u1'] })).body.h2h, {});
+  assert.deepEqual((await handle(db, 'u1', { op: 'h2h' })).body.h2h, {});
+});
+
+test('in a 3 player game, head to head compares places, Rock Bottom is last place only', async () => {
+  const db = new FakeDb();
+  const code = await lobby(db, 3);
+  await handle(db, 'u1', { op: 'start', code });
+  await playOut(db, code);
+  const place = Object.fromEntries(db.t.shed_results.map(r => [r.user_id, r.place]));
+  const h = (await handle(db, 'u1', { op: 'h2h', with: ['u2', 'u3'] })).body.h2h;
+  for (const o of ['u2', 'u3']) {
+    assert.equal(h[o].w, place.u1 < place[o] ? 1 : 0);
+    assert.equal(h[o].theyRb, place[o] === 3 ? 1 : 0);
+    assert.equal(h[o].meRb, place.u1 === 3 ? 1 : 0);
+  }
+});

@@ -2,6 +2,11 @@
 
 Newest first. One line per change. Every session adds its lines here in the same commit as the work.
 
+## 2026-11-23
+- Head to head against friends now comes from the server, so both phones show the same score; the copy on the phone is only a fallback.
+- Server writes a game's result before the final view, so the game-over sheet never misses the last game.
+- Live test checks head to head on the real server.
+
 ## 2026-11-22
 - Live test tool updated for the face-down tap rule; server v8 deployed and live-tested.
 - Face-down follow-up is now a choice: after a face-down card goes on, tap another to try it (a match goes on, a miss goes in your hand) or tap Done. Server redeployed with it.

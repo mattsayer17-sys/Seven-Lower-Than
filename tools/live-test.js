@@ -77,6 +77,12 @@ function decide(g) {
     const lob2 = await cs[0].t.lobby(code);
     console.log('game ' + (k + 1) + ': ' + players + ' players, code ' + code + ', status ' + lob2.status + ', loser seat ' + G[0].loser + ', replayed ' + steps + ' moves, resyncs in play ' + resyncs + ', face-down follow-ups ' + follows);
     if (lob2.status !== 'over' || resyncs) process.exitCode = 1;
+    // v9: head to head from the results table. Fresh users, so one game against each opponent, wins and losses add up.
+    const hh = await cs[0].t.call({ op: 'h2h', with: cs.slice(1).map(c => c.t.uid) });
+    const rows = Object.values((hh.body && hh.body.h2h) || {});
+    const fine = hh.status === 200 && rows.length === players - 1 && rows.every(x => x.n === 1 && x.w + x.l === 1) && rows.filter(x => x.theyRb).length + rows[0].meRb === 1;
+    console.log('  head to head ' + (fine ? 'ok' : 'WRONG ' + JSON.stringify(hh.body)));
+    if (!fine) process.exitCode = 1;
   }
   console.log('USERS ' + made.join(','));
   console.log('CODES ' + codes.join(','));

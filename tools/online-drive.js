@@ -199,7 +199,10 @@ function decide(g) {
     if (nBots === 1) {
       const tally = await text('#modal .rival');
       assert.match(tally, /^You \d+ – \d+ Bot1/);
-      ok(label + ': game-over sheet shows the running tally: ' + tally.replace(/\s+/g, ' '));
+      const myUid = await ev(() => window.__MS_TRANSPORT.uid);
+      const truth = (await handle(db, myUid, { op: 'h2h', with: [bots[0].uid] })).body.h2h[bots[0].uid];
+      await until(t => new RegExp('^You ' + t.w + ' – ' + t.l + ' Bot1').test((document.querySelector('#modal .rival') || {}).textContent || ''), 'tally matches the server', truth);
+      ok(label + ': game-over sheet shows the running tally: ' + tally.replace(/\s+/g, ' ') + ', the same as the server');
     }
     if (nBots === 1 && !label.includes('follow')) {
       // the other player asks first: my button says so, one tap seats me at the new table
@@ -218,6 +221,17 @@ function decide(g) {
       await until(() => !!document.querySelector('#olMake'), 'back to online sheet');
     }
     await click('#olClose');
+    if (nBots === 1 && !label.includes('follow')) {
+      // a wrong count on the device is put right by the server when the profile opens
+      const myUid = await ev(() => window.__MS_TRANSPORT.uid);
+      const truth = (await handle(db, myUid, { op: 'h2h', with: [bots[0].uid] })).body.h2h[bots[0].uid];
+      await ev(u => { window.__ms.prof().h2h['h:' + u].w = 77; }, bots[0].uid);
+      await click('#bProf');
+      await until(t => [...document.querySelectorAll('#pH2h .row b')].some(b => b.textContent === t.w + ' – ' + t.l), 'profile tally from the server', truth);
+      assert.equal(await ev(u => window.__ms.prof().h2h['h:' + u].w, bots[0].uid), truth.w);
+      ok(label + ': a tampered device count (77 wins) was replaced by the server\'s ' + truth.w + ' – ' + truth.l + ' in the profile');
+      await click('#pClose');
+    }
   }
 
   await scenario('2 players', 1, { players: 2 });

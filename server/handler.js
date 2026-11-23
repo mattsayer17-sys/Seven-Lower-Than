@@ -12,6 +12,7 @@ const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const newCode = () => Array.from({ length: 5 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
 const cleanName = n => String(n || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 20);
 const reply = (body, status = 200) => ({ status, body });
+const H2H_GAMES = 1000; // most recent games counted for head to head
 
 // House rule votes before the game starts. The same Room reducer solo play uses, run here with the server's clock.
 // Each write is checked against `rev`, so two people voting at the same instant cannot overwrite each other.
@@ -61,6 +62,27 @@ async function handle(db, uid, b) {
     const seats = (await db.from('shed_seats').select('user_id').eq('code', code)).data || [];
     const host = (await db.from('shed_profiles').select('name').eq('id', t.host).maybeSingle()).data;
     return reply({ host: host ? host.name : 'A friend', seated: seats.length, max: t.max_players, status: t.status, rules: t.rules, mine: seats.some(x => x.user_id === uid) });
+  }
+  // Head to head against the people I have played online, worked out from the results table so every phone shows the same
+  // score. For each opponent: games together, my wins (I finished ahead), losses, and Rock Bottom both ways (last place).
+  if (b.op === 'h2h') {
+    const others = [...new Set((Array.isArray(b.with) ? b.with : []).map(String))].filter(x => x && x !== uid && /^[\w-]{1,64}$/.test(x)).slice(0, 20);
+    const out = {};
+    if (!others.length) return reply({ ok: true, h2h: out });
+    const mine = (await db.from('shed_results').select('code,place,players').eq('user_id', uid).order('finished_at', { ascending: false }).limit(H2H_GAMES)).data || [];
+    if (!mine.length) return reply({ ok: true, h2h: out });
+    const me = Object.fromEntries(mine.map(r => [r.code, r]));
+    const theirs = (await db.from('shed_results').select('code,user_id,place').in('user_id', others).in('code', mine.map(r => r.code))).data || [];
+    for (const r of theirs) {
+      const m = me[r.code];
+      if (!m) continue;
+      const h = out[r.user_id] = out[r.user_id] || { n: 0, w: 0, l: 0, meRb: 0, theyRb: 0 };
+      h.n++;
+      if (m.place < r.place) h.w++; else h.l++;
+      if (m.place === m.players) h.meRb++;
+      if (r.place === m.players) h.theyRb++;
+    }
+    return reply({ ok: true, h2h: out });
   }
   const prof = await db.from('shed_profiles').select('id,name').eq('id', uid).maybeSingle();
   if (!prof.data) return reply({ error: 'Pick a name first' }, 400);
@@ -198,11 +220,10 @@ async function handle(db, uid, b) {
     const version = gr.data.version + 1;
     const up = await db.from('shed_games').update({ state: g, version }).eq('code', code).eq('version', gr.data.version).select('code');
     if (!up.data || !up.data.length) return reply({ error: 'Out of date, try again' }, 409);
+    // Results go in before the views, so by the time a phone sees the game is over its head to head already counts it.
+    if (g.phase === 'over') await db.from('shed_results').upsert(g.finished.map((pi, k) => ({ code, user_id: g.seats[pi], place: k + 1, players: g.seats.length })));
     await db.from('shed_views').upsert(g.seats.map((id, i) => ({ code, user_id: id, view: T.projectView(g, i), version })));
-    if (g.phase === 'over') {
-      await db.from('shed_tables').update({ status: 'over' }).eq('code', code);
-      await db.from('shed_results').upsert(g.finished.map((pi, k) => ({ code, user_id: g.seats[pi], place: k + 1, players: g.seats.length })));
-    }
+    if (g.phase === 'over') await db.from('shed_tables').update({ status: 'over' }).eq('code', code);
     return reply({ ok: true });
   }
   return reply({ error: 'Unknown request' }, 400);
