@@ -8,6 +8,8 @@ Newest first. One line per change. Every session adds its lines here in the same
 - Live test checks head to head on the real server.
 
 ## 2026-11-22
+- Lower than (was Seven lower than) can sit on any card except 2 and 10, 7 by default, from the welcome card, Rules tab, codes and votes.
+- The welcome card's rules line is now a button that opens the full Rules tab.
 - Live test tool updated for the face-down tap rule; server v8 deployed and live-tested.
 - Face-down follow-up is now a choice: after a face-down card goes on, tap another to try it (a match goes on, a miss goes in your hand) or tap Done. Server redeployed with it.
 - Card back is now a casino house back: royal blue, double gold frame, gold medallion with SH.

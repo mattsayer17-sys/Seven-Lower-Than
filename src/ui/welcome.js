@@ -8,6 +8,7 @@ import { FAST, save, store } from './state.js';
 import { prof, updateStats } from './profile.js';
 import { hideModal, showModal } from './sheets.js';
 import { startDemo } from './tour.js';
+import { showSetup } from './setup.js';
 
 // First launch: nothing stands between opening the app and playing. The cards are already dealt.
 // Once the deal settles, a small card on the felt (not a pop-up) offers the rules. Ignoring it is fine:
@@ -41,7 +42,7 @@ export function hideWelcome() {
 // The house rules people already play by, right on the felt: the fixed ones in a line, the usual extras as switches
 // with the card picker beside them. Change a switch and the game that's dealt plays by it. No pop-up, no form.
 const QUICK = [
-  { key: 'sevensLower', name: 'Seven lower than', tip: 'After a 7, play 7 or lower' },
+  { key: 'sevensLower', rank: 'lowerRank', name: 'Lower than', tip: 'After this card, play the same or lower' },
   { key: 'skipOn', rank: 'skipRank', name: 'Skip a go', tip: 'Next player misses a turn' },
   { key: 'transparentOn', rank: 'transparentRank', name: 'Invisible card', tip: 'Plays on anything, the card under still counts' },
   { key: 'stinger', rank: 'stinger', name: 'Stinger', tip: 'Only the same card can go on it' },
@@ -49,18 +50,19 @@ const QUICK = [
   { key: 'blindFollow', name: 'Face-down follow-up', tip: 'After a face-down card goes on, try another: a match goes on, a miss goes in your hand' }
 ];
 const stIdx = () => store.settings.custom.findIndex(r => r.effect === 'stinger');
-const isOn = q => q.key === 'stinger' ? stIdx() >= 0 && store.settings.custom[stIdx()].on !== false : !!store.settings[q.key];
-const rankOf = q => q.key === 'stinger' ? (stIdx() >= 0 ? store.settings.custom[stIdx()].rank : store.settings.stingerRank || '9') : store.settings[q.rank] || (q.key === 'skipOn' ? '8' : '4');
+const isOn = q => q.key === 'stinger' ? stIdx() >= 0 && store.settings.custom[stIdx()].on !== false : q.key === 'sevensLower' ? store.settings.sevensLower !== false : !!store.settings[q.key];
+const rankOf = q => q.key === 'stinger' ? (stIdx() >= 0 ? store.settings.custom[stIdx()].rank : store.settings.stingerRank || '9') : store.settings[q.rank] || (q.key === 'skipOn' ? '8' : q.key === 'sevensLower' ? '7' : '4');
 // ranks taken by the other rules, so two rules never share a card
 function taken(q) {
   const o = Object.assign({}, store.settings, { custom: store.settings.custom.filter((r, j) => !(q.key === 'stinger' && j === stIdx())) });
   if (q.key === 'skipOn') o.skipOn = false;
   if (q.key === 'transparentOn') o.transparentOn = false;
+  if (q.key === 'sevensLower') o.sevensLower = false;
   return Meta.heldRanks(o);
 }
 function quickRows() {
   return QUICK.map((q, i) => {
-    const pick = q.rank ? '<select class="qr" data-i="' + i + '" aria-label="' + q.name + ' card">' + Meta.PICKABLE.map(k => { const t = taken(q)[k]; return '<option value="' + k + '"' + (k === rankOf(q) ? ' selected' : '') + (t && k !== rankOf(q) ? ' disabled' : '') + '>' + k + '</option>'; }).join('') + '</select>' : q.key === 'sevensLower' ? '<i class="qfix">7</i>' : '';
+    const pick = q.rank ? '<select class="qr" data-i="' + i + '" aria-label="' + q.name + ' card">' + Meta.PICKABLE.map(k => { const t = taken(q)[k]; return '<option value="' + k + '"' + (k === rankOf(q) ? ' selected' : '') + (t && k !== rankOf(q) ? ' disabled' : '') + '>' + k + '</option>'; }).join('') + '</select>' : '';
     return '<label class="qrow"><input type="checkbox" switch class="qs" data-i="' + i + '"' + (isOn(q) ? ' checked' : '') + '><span><b>' + q.name + '</b><small>' + q.tip + '</small></span>' + pick + '</label>';
   }).join('');
 }
@@ -107,7 +109,7 @@ export function showWelcome() {
     '<h4>Your house rules</h4><p class="qfixed">Always on: 2 resets, 10 burns, ace high</p>' +
     '<div id="qrows">' + quickRows() + '</div>' +
     '<div class="cbtns"><button class="btn sm" id="wRead">How to play</button><button class="btn sm primary" id="wGo">Play</button></div>' +
-    '<p class="qmore">' + (live ? 'Changes start with your next game. ' : '') + 'Your own card rules, saved sets and share codes are in New, under Rules</p>';
+    '<p class="qmore">' + (live ? 'Changes start with your next game. ' : '') + '<button class="lnk" id="wOwn">Your own rules, saved sets and share codes</button></p>';
   $('#table').appendChild(c);
   void c.offsetWidth;
   c.classList.add('on');
@@ -116,6 +118,7 @@ export function showWelcome() {
   $('#wRead').onclick = () => { hideWelcome(); showPrimer(); };
   $('#wPlay').onclick = hideWelcome;
   $('#wGo').onclick = hideWelcome;
+  $('#wOwn').onclick = () => { hideWelcome(); showSetup('rules'); };
   coachKeys = e => { if (e.key === 'Escape' && $('#modal').classList.contains('hidden')) hideWelcome(); };
   document.addEventListener('keydown', coachKeys);
 }

@@ -5,18 +5,20 @@
 const Shed = require('./engine.js');
 
 const FLAGS = ['sevensLower', 'transparentOn', 'skipOn', 'fourBurns', 'blindFollow'];
-const RANK_KEYS = { transparentRank: 'transparentOn', skipRank: 'skipOn' };
-// ranks a house rule may sit on. 2, 7 and 10 have fixed jobs.
-const PICKABLE = Shed.RANK_LIST.filter(k => !['2', '7', '10'].includes(k));
-const LABEL = { sevensLower: '7s force lower', transparentOn: 'Transparent card', skipOn: 'Skip a go', fourBurns: 'Four of a kind burns', blindFollow: 'Face-down follow-up' };
+const RANK_KEYS = { transparentRank: 'transparentOn', skipRank: 'skipOn', lowerRank: 'sevensLower' };
+// ranks a house rule may sit on. 2 and 10 have fixed jobs.
+const PICKABLE = Shed.RANK_LIST.filter(k => !['2', '10'].includes(k));
+const LABEL = { sevensLower: 'Lower than', transparentOn: 'Transparent card', skipOn: 'Skip a go', fourBurns: 'Four of a kind burns', blindFollow: 'Face-down follow-up' };
 
-const rankOf = (o, key) => (key === 'transparentRank' ? o.transparentRank || '4' : o.skipRank || '8');
+const rankOf = (o, key) => (key === 'transparentRank' ? o.transparentRank || '4' : key === 'lowerRank' ? o.lowerRank || '7' : o.skipRank || '8');
+const RULE_NAME = { transparentRank: 'the transparent card rule', skipRank: 'the skip a go rule', lowerRank: 'the lower than rule' };
+const isOn = (o, flag) => (flag === 'sevensLower' ? o.sevensLower !== false : !!o[flag]);
 const customActive = r => r && r.on !== false && r.effect && r.effect !== 'none';
 
 // rank -> why it is taken. Setup and the vote both go through this.
 function heldRanks(o) {
   const m = { '2': 'the 2s reset rule', '10': 'the 10s burn rule' };
-  if (o.sevensLower !== false) m['7'] = '7s force lower';
+  if (o.sevensLower !== false) m[rankOf(o, 'lowerRank')] = 'the lower than rule';
   if (o.transparentOn) m[rankOf(o, 'transparentRank')] = 'the transparent card rule';
   if (o.skipOn) m[rankOf(o, 'skipRank')] = 'the skip a go rule';
   for (const r of o.custom || []) if (customActive(r)) m[r.rank] = 'your own rule for ' + r.rank;
@@ -35,7 +37,7 @@ function applyChange(opts, change) {
     case 'flag': {
       if (!FLAGS.includes(change.key) || typeof change.value !== 'boolean') return fail('unknown rule');
       // turning transparent or skip on can also say which card it goes on, in the same vote
-      const rk = change.key === 'transparentOn' ? 'transparentRank' : change.key === 'skipOn' ? 'skipRank' : null;
+      const rk = change.key === 'transparentOn' ? 'transparentRank' : change.key === 'skipOn' ? 'skipRank' : change.key === 'sevensLower' ? 'lowerRank' : null;
       if (change.rank !== undefined) {
         if (!rk || !change.value) return fail('a card only goes with turning a rule on');
         const moved = applyChange(o, { type: 'rank', key: rk, value: change.rank });
@@ -44,7 +46,7 @@ function applyChange(opts, change) {
       }
       if (change.value) {
         // switching on: the card it needs must be free
-        const need = change.key === 'sevensLower' ? '7' : change.key === 'transparentOn' ? rankOf(o, 'transparentRank') : change.key === 'skipOn' ? rankOf(o, 'skipRank') : null;
+        const need = change.key === 'sevensLower' ? rankOf(o, 'lowerRank') : change.key === 'transparentOn' ? rankOf(o, 'transparentRank') : change.key === 'skipOn' ? rankOf(o, 'skipRank') : null;
         if (need) {
           const held = heldRanks(Object.assign({}, o, { [change.key]: false }));
           if (held[need]) return fail(taken(need, held[need]));
@@ -56,8 +58,12 @@ function applyChange(opts, change) {
     case 'rank': {
       if (!RANK_KEYS[change.key]) return fail('unknown rule');
       if (!PICKABLE.includes(change.value)) return fail(change.value + ' cannot hold a house rule');
-      const other = change.key === 'transparentRank' ? rankOf(o, 'skipRank') : rankOf(o, 'transparentRank');
-      if (change.value === other) return fail(taken(change.value, change.key === 'transparentRank' ? 'the skip a go rule' : 'the transparent card rule'));
+      // transparent and skip never share a card; no card moves onto one that a rule which is on already holds
+      for (const k of Object.keys(RANK_KEYS)) {
+        if (k === change.key) continue;
+        const pair = (k === 'transparentRank' || k === 'skipRank') && (change.key === 'transparentRank' || change.key === 'skipRank');
+        if ((pair || isOn(o, RANK_KEYS[k])) && change.value === rankOf(o, k)) return fail(taken(change.value, RULE_NAME[k]));
+      }
       const held = heldRanks(Object.assign({}, o, { [RANK_KEYS[change.key]]: false, sevensLower: false }));
       if (held[change.value] && held[change.value].indexOf('your own') === 0) return fail(taken(change.value, held[change.value]));
       o[change.key] = change.value;
@@ -101,12 +107,13 @@ function describeChange(change, opts) {
   switch (change && change.type) {
     case 'flag': {
       const on = change.value;
-      if (change.rank !== undefined) o = Object.assign({}, o, { transparentRank: change.key === 'transparentOn' ? change.rank : o.transparentRank, skipRank: change.key === 'skipOn' ? change.rank : o.skipRank });
+      if (change.rank !== undefined) o = Object.assign({}, o, { transparentRank: change.key === 'transparentOn' ? change.rank : o.transparentRank, skipRank: change.key === 'skipOn' ? change.rank : o.skipRank, lowerRank: change.key === 'sevensLower' ? change.rank : o.lowerRank });
       if (change.key === 'transparentOn') return (on ? 'Turn on' : 'Turn off') + ' ' + LABEL.transparentOn + (on ? ' (' + rankOf(o, 'transparentRank') + 's)' : '');
       if (change.key === 'skipOn') return (on ? 'Turn on' : 'Turn off') + ' ' + LABEL.skipOn + (on ? ' (' + rankOf(o, 'skipRank') + 's)' : '');
+      if (change.key === 'sevensLower') return (on ? 'Turn on' : 'Turn off') + ' ' + LABEL.sevensLower + (on ? ' (' + (change.rank !== undefined ? change.rank : rankOf(o, 'lowerRank')) + 's)' : '');
       return (on ? 'Turn on ' : 'Turn off ') + LABEL[change.key];
     }
-    case 'rank': return 'Move ' + (change.key === 'transparentRank' ? LABEL.transparentOn : LABEL.skipOn) + ' to ' + change.value + 's';
+    case 'rank': return 'Move ' + (change.key === 'transparentRank' ? LABEL.transparentOn : change.key === 'lowerRank' ? LABEL.sevensLower : LABEL.skipOn) + ' to ' + change.value + 's';
     case 'addCustom': return 'Add a rule: ' + Shed.describeRule({ rank: String(change.rank).toUpperCase(), effect: change.effect, power: change.power });
     case 'removeCustom': return 'Remove the rule on ' + change.rank + 's';
     case 'toggleCustom': return (change.value ? 'Turn on' : 'Turn off') + ' the rule on ' + change.rank + 's';

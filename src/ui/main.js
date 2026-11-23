@@ -49,6 +49,7 @@ window.__ms = {
   advance: () => advance(),
   render: () => render(),
   setSettings: o => Object.assign(store.settings, o),
+  settings: () => store.settings,
   table: tableForTest,
   welcome: () => showWelcome(),
   digest: () => Online.digest(store.game),

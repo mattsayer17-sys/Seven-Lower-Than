@@ -18,6 +18,7 @@ export const store = {
     saved: [],
     sevensLower: true,
     transparentOn: false,
+    lowerRank: '7',
     transparentRank: '4',
     skipOn: false,
     skipRank: '8',
