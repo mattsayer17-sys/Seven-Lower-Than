@@ -198,7 +198,7 @@ function computeLayout() {
   cpus.forEach((p, k) => { const S = L.seats[k]; fan(p.hand, S.cx, S.handCy, S.hs, true, false, S.w); });
   fan(me.hand, W / 2, L.meHandCy, 1, false, true, W - 6);
   // the final face-down card, lifted to the middle of the felt for everyone to watch it turn
-  if (store.ui.big) pos[store.ui.big.id] = { cx: W / 2, cy: (L.centerCy + L.meTableCy) / 2, rot: 0, s: store.ui.big.stage === 'lift' ? 1.7 : 1.9, z: 3000, down: !store.ui.big.face };
+  if (store.ui.big) pos[store.ui.big.id] = { cx: W / 2, cy: (L.centerCy + L.meTableCy) / 2, rot: 0, s: 1.9, z: 3000, down: !store.ui.big.face };
   if (store.ui.drag && store.ui.drag.active && pos[store.ui.drag.id]) pos[store.ui.drag.id] = {
     cx: store.ui.drag.x,
     cy: store.ui.drag.y - store.ch * .2,

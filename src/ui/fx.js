@@ -12,7 +12,8 @@ const reduced = () => {
   }
 };
 const fxMode = () => reduced() ? 'off' : ['normal', 'fast', 'off'].includes(store.settings.motion) ? store.settings.motion : 'normal';
-const fxK = () => fxMode() === 'fast' ? .55 : fxMode() === 'off' ? .35 : 1;
+// Normal runs effects at 1.4x their base length so words and effects can be read (Matt's playtest, 22 Nov)
+const fxK = () => fxMode() === 'fast' ? .7 : fxMode() === 'off' ? .35 : 1.4;
 const fxOn = () => fxMode() !== 'off';
 const kms = ms => Math.round(ms * fxK());
 // Effects draw their own random numbers so they never shift the game's. keepStream advances Math.random exactly as the

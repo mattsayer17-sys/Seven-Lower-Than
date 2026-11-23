@@ -268,32 +268,45 @@ function afterAction(r) {
     });
     store.ui.hold = bl;
     render();
-    delay = 1200;
+    // the water lands on the pile and you see it go before play moves on
+    delay = 2200;
     later(() => {
       store.ui.hold = null;
       bl.forEach(c => {
         if (store.els[c.id]) store.els[c.id].classList.remove('burning');
       });
       render();
-    }, 650);
+    }, 1200);
   } else if (ev.forced) {
     store.ui.hold = ev.forced.cards.slice();
     render();
     ev.forced.cards.forEach(c => shake(c.id));
-    delay = 1300;
+    delay = pickPause(ev.forced.count, 1900);
     later(() => {
       store.ui.hold = null;
       render();
-    }, 700);
-  } else render();
+    }, 1100);
+  } else {
+    render();
+    // a pick-up holds the table long enough to read who took how many; a big one waits for the whole OUCH
+    const n = ev.type === 'pickup' ? ev.count : ev.type === 'blind' && !ev.success ? ev.picked : ev.type === 'follow' && !ev.matched && !ev.done ? 1 : 0;
+    if (n) delay = pickPause(n, 1300);
+    // an invisible card shows itself, then the card beneath, then itself again before the next move
+    else if (lastIs(ev, 'transparent') && fxOn()) delay = 2400;
+  }
   if (slow) delay += 1100;
   // a CPU's move: shorter pause at busy tables, and a tap on the table can hurry it along
   if (!mine && !store.remote) {
-    if (g.players.length > 2) delay = Math.round(delay * .7);
+    // a face-down follow-up try is quick: everyone is waiting on it
+    if (ev.type === 'follow') delay = ev.matched ? 650 : Math.min(delay, 1100);
+    else if (g.players.length > 2) delay = Math.round(delay * .85);
     return schedule(advance, delay);
   }
   later(advance, delay);
 }
+
+const pickPause = (n, base) => (n >= 10 ? 2600 : n > 1 ? base : Math.min(base, 1100));
+const lastIs = (ev, e) => { const c = ev.cards && ev.cards[ev.cards.length - 1]; return !!c && ev.type !== 'pickup' && (ev.type !== 'blind' || ev.success) && Shed.effect(store.game.rules, c) === e; };
 
 // The next CPU step waits here so a tap on the table can run it straight away.
 let pend = null;
