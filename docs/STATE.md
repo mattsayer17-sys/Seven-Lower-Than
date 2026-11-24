@@ -7,8 +7,8 @@ Last updated: 24 Nov 2026 21:00
 
 ## Live
 - Site: https://shiphead.vercel.app (also https://seven-lower-than.vercel.app). Every push to `main` deploys to production.
-- Server: Supabase project fmgyzabdkityfyakmqhg (London, eu-west-2), edge function `shed` v12 (server/build/handler-2bab0853e10e.mjs, pinned at commit f179e96 on branch `ios`, PRs waiting for Matt). v11 added rate limits, open-table caps, `delete_me`, `block`/`unblock`/`report`; v12 adds `push_token` and APNs sending on deal and rematch (inactive until the APNS_* secrets are set). Deployed and live-tested 24 Nov. Backwards compatible with the live site (new ops only; limits sit well above normal play).
-- SQL applied: server/sql/2026-11-21-reactions-only.sql, server/sql/2026-11-21-rematch.sql, server/sql/2026-11-24-protection.sql (shed_hits + shed_hit(), profile writes server-only, cascading deletes, reports with target/code/name_seen, pg_cron `shed-cleanup` hourly at :17), server/sql/2026-11-24-push.sql (shed_push device tokens).
+- Server: Supabase project fmgyzabdkityfyakmqhg (London, eu-west-2), edge function `shed` v13 (server/build/handler-6e74b90a4d90.mjs, pinned at commit 11ff95c on branch `realtime`, PRs waiting for Matt). v13 adds computer players online (`add_bot`/`remove_bot`), `nudge` (computer moves and the 90s idle rule) and `leave_game`. v11 added rate limits, open-table caps, `delete_me`, `block`/`unblock`/`report`; v12 adds `push_token` and APNs sending on deal and rematch (inactive until the APNS_* secrets are set). Deployed and live-tested 24 Nov. Backwards compatible with the live site (new ops only; limits sit well above normal play).
+- SQL applied: server/sql/2026-11-21-reactions-only.sql, server/sql/2026-11-21-rematch.sql, server/sql/2026-11-24-protection.sql (shed_hits + shed_hit(), profile writes server-only, cascading deletes, reports with target/code/name_seen, pg_cron `shed-cleanup` hourly at :17), server/sql/2026-11-24-push.sql (shed_push device tokens), server/sql/2026-11-24-bots.sql (shed_profiles.bot). The computer players are 4 non-anonymous accounts (Ace, Jack, Queenie, Kingsley) the server made on first use.
 - Vercel project prj_1CPlStcWsf3u0Hh8lLjv0CbWZW4Z, team team_L010Khha3QfqKwmIRHO0vNCb.
 - Old live-test rows deleted 24 Nov (Matt said yes): 51 Test users, 20 tables. live-test.js now deletes its own users at the end with `delete_me`.
 
@@ -21,6 +21,7 @@ Last updated: 24 Nov 2026 21:00
 ## In flight (not in main)
 - `protection` (PR open, waiting for Matt): abuse and cost protection, Delete my data in the profile, press and hold a name online to block or report, /privacy /terms /support pages, Turnstile hook (off until the site key is set in src/online-config.js), CSP allows Turnstile and Realtime wss. Server side is already live (v11 + SQL).
 - `ios` (PR on top of `protection`, waiting for Matt): Capacitor 8 iOS project in ios/ (Swift Package Manager, no CocoaPods; iPhone only, portrait, iOS 16+), brand icon and splash, PrivacyInfo.xcprivacy, entitlements (push, associated domains, App Attest), src/ui/native.js (status bar, splash, invite links into the lobby, push opt-in after the first online game, notification taps open the table), APNs sender in server/entry.mjs, codemagic.yaml (tag `ios-*` builds and uploads to TestFlight), public/.well-known/apple-app-site-association (TEAMID placeholder). `npm run ios` builds and copies the web app into the iOS project.
+- `realtime` (PR on top of `ios`, waiting for Matt): Supabase Realtime channel on my own view rows (Net.watch, plain WebSocket) nudges the poll, polling drops to 4 s as a safety net; host can add computer players in the waiting room (they don't vote, they come to rematches); the computer moves one step per `nudge`, after the last move has played out on screen (1.1 to 3 s by effect); a person idle 90 s on their go has it played for them, after 3 the computer takes the seat; New mid-game offers Leave for good (computer takes the seat, you finish last). Live-tested 24 Nov.
 
 ## Decisions (22 Nov)
 - No light mode. Appearance choices stay per player and on their own device (felt, card back, colour-blind deck). More table themes later as cosmetics.
@@ -31,8 +32,8 @@ Last updated: 24 Nov 2026 21:00
    Reports land in public.shed_reports (reporter, target, name_seen, reason, code). Someone must read them: the policy pages promise a person does. Next: a daily email of new reports to Matt.
 1. Matt buys domains; connect playshiphead.com to the Vercel project, switch the invite SITE constant and og URLs.
 2. Head-to-head tally on the server: live 23 Nov (PR #6). Server request `h2h` {with:[uids]} gives {n,w,l,meRb,theyRb} per opponent from shed_results; the phone syncs on the game-over sheet and profile.
-3. Computer players filling empty seats and replacing leavers, plus forfeits.
-4. Live updates: Supabase Realtime instead of polling (CSP connect-src needs wss://fmgyzabdkityfyakmqhg.supabase.co).
+3. Computer players, leavers, forfeits: done in `realtime`.
+4. Live updates: done in `realtime` (lobby still polls at 1.5 s; could move to Realtime too).
 5. Report/block UI: done in `protection` (press and hold an opponent's name at an online table).
 7. Accounts: anonymous first, Apple/Google offered at a moment of value (after the first online game).
 8. Progression (XP, seasonal goals), share card, fairness signals.

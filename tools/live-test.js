@@ -104,7 +104,7 @@ function decide(g) {
     await t.call({ op: 'start', code });
     await t.call({ op: 'act', code, action: { type: 'ready' } });
     let bot = 0, mine = 0;
-    for (let i = 0; i < 400; i++) {
+    for (let i = 0; i < 400 && bot < 8; i++) {
       const r = await t.view(code), v = r.view;
       if (v.phase === 'over') break;
       const a = v.follow ? v.follow.pi : v.turn;
@@ -117,8 +117,10 @@ function decide(g) {
         if (n.body.moved) bot++;
       }
     }
+    // leaving for good with only the computer left ends the game
+    await t.call({ op: 'leave_game', code });
     const end = (await t.view(code)).view;
-    const fine = end.phase === 'over' && bot > 3;
+    const fine = end.phase === 'over' && bot >= 8;
     console.log('  computer player ' + (fine ? 'ok' : 'WRONG') + ': ' + ab.body.name + ' made ' + bot + ' moves, me ' + mine + ', phase ' + end.phase);
     if (!fine) process.exitCode = 1;
   }
