@@ -1,0 +1,37 @@
+# Cloud iPhone builds (no Mac needed). Codemagic builds on its Macs, signs with your Apple account and uploads to TestFlight.
+# One-off setup in Codemagic (needs Matt): connect this GitHub repo, add an App Store Connect API key integration named
+# "Shiphead ASC", and create the app record com.playshiphead.app in App Store Connect. Then start "iOS TestFlight".
+workflows:
+  ios-testflight:
+    name: iOS TestFlight
+    max_build_duration: 45
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Shiphead ASC
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.playshiphead.app
+      node: 22
+      xcode: latest
+    triggering:
+      events: [tag]
+      tag_patterns:
+        - pattern: 'ios-*'
+    scripts:
+      - name: Web build
+        script: npm ci && npm run build:min
+      - name: Copy into the iOS project
+        script: npx cap sync ios
+      - name: Signing profiles
+        script: xcode-project use-profiles
+      - name: Build number
+        script: cd ios/App && agvtool new-version -all $BUILD_NUMBER  # Codemagic's own counter, rises every build
+      - name: Build the app
+        script: xcode-project build-ipa --project ios/App/App.xcodeproj --scheme App
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

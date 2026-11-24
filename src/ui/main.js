@@ -16,6 +16,7 @@ import { humanTap } from './input.js';
 import { initDialogs } from './sheets.js';
 import { tableForTest } from './vote.js';
 import Online from '../online.js';
+import { initNative, onPushOpen } from './native.js';
 
 
 
@@ -72,6 +73,9 @@ newGame();
     showOnline({ join });
   } else if (p && (p.flags.welcomed || p.flags.offer || p.g > 0) && (!FAST || window.__MS_START)) showSetup('game');
 }
+// the iPhone app: invite links and notification taps open the table
+initNative({ onJoin: join => showOnline({ join }) });
+onPushOpen(join => showOnline({ join }));
 // once the first deal has settled, say hello (once per profile)
 let welcomeTries = 0;
 const welcomeTimer = setInterval(() => { if (maybeWelcome() || ++welcomeTries > 40) clearInterval(welcomeTimer); }, 500);

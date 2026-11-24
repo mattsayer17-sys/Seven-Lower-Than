@@ -562,3 +562,31 @@ test('block and report: checked, and a blocked player cannot sit at my tables', 
   assert.equal(db.t.shed_reports[0].name_seen, 'Ben');
   assert.equal(db.t.shed_blocks.length, 1);
 });
+
+test('push: tokens register, game start and rematch tell the others, never the one who acted', async () => {
+  const db = new FakeDb();
+  const sent = [];
+  const ctx = { notify: async (tokens, msg) => { sent.push({ tokens, msg }); } };
+  const code = await lobby(db, 3);
+  const tok = u => 'tok-' + u + '-abcdefghijklmnopqrstuvwxyz';
+  for (const u of ['u1', 'u2', 'u3']) assert.equal((await handle(db, u, { op: 'push_token', token: tok(u) }, null, ctx)).status, 200);
+  assert.equal((await handle(db, 'u1', { op: 'push_token', token: 'x' }, null, ctx)).status, 400);
+  assert.equal((await handle(db, 'u1', { op: 'start', code }, null, ctx)).status, 200);
+  assert.equal(sent.length, 1);
+  assert.deepEqual(sent[0].tokens.sort(), [tok('u2'), tok('u3')]);
+  assert.match(sent[0].msg.body, /Ann has dealt/);
+  assert.equal(sent[0].msg.code, code);
+  await playOut(db, code);
+  const r = await handle(db, 'u2', { op: 'rematch', code }, null, ctx);
+  assert.equal(sent.length, 2);
+  assert.deepEqual(sent[1].tokens.sort(), [tok('u1'), tok('u3')]);
+  assert.equal(sent[1].msg.code, r.body.code);
+  // a broken sender never breaks the game
+  const bad = { notify: async () => { throw new Error('apns down'); } };
+  const c2 = (await handle(db, 'u1', { op: 'create', rules: {}, max: 5 })).body.code;
+  await handle(db, 'u2', { op: 'join', code: c2 });
+  assert.equal((await handle(db, 'u1', { op: 'start', code: c2 }, null, bad)).status, 200);
+  // deleting the account removes the device token
+  await handle(db, 'u3', { op: 'delete_me', confirm: 'DELETE' });
+  assert.ok(!db.t.shed_push.some(p => p.user_id === 'u3'));
+});

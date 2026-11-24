@@ -1,5 +1,16 @@
 {
   "appId": "com.playshiphead.app",
   "appName": "Shiphead",
-  "webDir": "dist"
+  "webDir": "dist",
+  "backgroundColor": "#0f1a14",
+  "ios": {
+    "contentInset": "never",
+    "scheme": "Shiphead",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 600, "backgroundColor": "#0f1a14", "showSpinner": false, "launchFadeOutDuration": 250 },
+    "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] },
+    "StatusBar": { "style": "DARK", "overlaysWebView": true }
+  }
 }

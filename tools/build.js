@@ -18,5 +18,6 @@ html = html.replace('/*{{CSS}}*/', () => css).replace('/*{{JS}}*/', () => js.rep
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist/index.html'), html);
 // static files next to the page: icons, share image, web app manifest
-for (const f of fs.readdirSync(path.join(root, 'public'))) fs.copyFileSync(path.join(root, 'public', f), path.join(root, 'dist', f));
+// (folders too: .well-known holds the file that lets invite links open the iPhone app)
+fs.cpSync(path.join(root, 'public'), path.join(root, 'dist'), { recursive: true });
 console.log('dist/index.html', (html.length / 1024).toFixed(1) + ' KB');

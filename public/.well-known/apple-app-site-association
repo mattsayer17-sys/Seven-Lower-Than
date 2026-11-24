@@ -1,0 +1,19 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "TEAMID.com.playshiphead.app"
+        ],
+        "components": [
+          {
+            "?": {
+              "join": "?*"
+            },
+            "comment": "invite links open the table in the app"
+          }
+        ]
+      }
+    ]
+  }
+}
