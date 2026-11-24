@@ -68,7 +68,17 @@ async function roomAct(db, table, seats, uid, action) {
   return { status: 200, body: { ok: true }, table: next };
 }
 
-async function handle(db, uid, b, ip) {
+// Tell people's phones something happened (game started, rematch). `ctx.notify` is supplied by the edge function when push is
+// set up; without it this does nothing. Never blocks or fails the request.
+async function tell(db, ctx, uids, msg) {
+  if (!ctx || !ctx.notify || !uids.length) return;
+  try {
+    const rows = (await db.from('shed_push').select('token,user_id').in('user_id', uids)).data || [];
+    if (rows.length) await ctx.notify(rows.map(r => r.token), msg);
+  } catch (e) { /* a push failure never breaks the game */ }
+}
+
+async function handle(db, uid, b, ip, ctx) {
   b = b || {};
   if (await over(db, 'u:' + uid, LIMITS.user)) return reply({ error: 'Slow down a little' }, 429);
   if (ip && await over(db, 'ip:' + ip, LIMITS.ip)) return reply({ error: 'Too many requests from this network' }, 429);
@@ -123,6 +133,14 @@ async function handle(db, uid, b, ip) {
   const prof = await db.from('shed_profiles').select('id,name').eq('id', uid).maybeSingle();
   if (!prof.data) return reply({ error: 'Pick a name first' }, 400);
   if (b.op === 'profile') return reply({ ok: true });
+
+  // Register this device for notifications. A token moves to whoever registered it last.
+  if (b.op === 'push_token') {
+    const token = String(b.token || '');
+    if (!/^[A-Za-z0-9:_-]{20,300}$/.test(token)) return reply({ error: 'Bad token' }, 400);
+    await db.from('shed_push').upsert({ token, user_id: uid, platform: b.platform === 'android' ? 'android' : 'ios', updated_at: new Date().toISOString() });
+    return reply({ ok: true });
+  }
 
   // Block or unblock a player: their reactions are hidden from me and they can't sit at tables I host.
   // Report a player for their name or behaviour at a table. Both are checked here (App Store 1.2).
@@ -230,7 +248,10 @@ async function handle(db, uid, b, ip) {
       await db.from('shed_seats').insert({ code: code2, user_id: uid, seat: 0 });
       // only one rematch per table: if someone else got there first, drop mine and sit at theirs
       const up = await db.from('shed_tables').update({ next_code: code2 }).eq('code', code).is('next_code', null).select('code');
-      if (up.data && up.data.length) return reply({ ok: true, code: code2, made: true });
+      if (up.data && up.data.length) {
+        await tell(db, ctx, seats.map(x => x.user_id).filter(id => id !== uid), { title: 'Rematch?', body: prof.data.name + ' wants a rematch. Tap to sit down', code: code2 });
+        return reply({ ok: true, code: code2, made: true });
+      }
       await db.from('shed_tables').delete().eq('code', code2);
       const again = (await db.from('shed_tables').select('next_code').eq('code', code).maybeSingle()).data;
       return again && again.next_code ? sitAt(again.next_code) : reply({ error: 'Try again' }, 409);
@@ -268,6 +289,7 @@ async function handle(db, uid, b, ip) {
     if (!up.data || !up.data.length) return reply({ error: 'Already started' }, 409);
     await db.from('shed_games').upsert({ code, state: g, version: 1 });
     await db.from('shed_views').upsert(ids.map(id => ({ code, user_id: id, view: T.projectView(g, T.seatOf(g, id)), version: 1 })));
+    await tell(db, ctx, ids.filter(id => id !== uid), { title: 'Shiphead', body: (nameOf[uid] || 'Your host') + ' has dealt. Your cards are waiting', code });
     return reply({ ok: true });
   }
 

@@ -1,6 +1,6 @@
 'use strict';
 // A tiny in-memory stand-in for the Supabase client: only the calls the handler makes. Used by tests and the local preview.
-const PK = { shed_blocks: ['blocker', 'blocked'], shed_reports: ['id'], shed_profiles: ['id'], shed_tables: ['code'], shed_seats: ['code', 'user_id'], shed_games: ['code'], shed_views: ['code', 'user_id'], shed_results: ['code', 'user_id'], shed_chat: ['id'] };
+const PK = { shed_push: ['token'], shed_blocks: ['blocker', 'blocked'], shed_reports: ['id'], shed_profiles: ['id'], shed_tables: ['code'], shed_seats: ['code', 'user_id'], shed_games: ['code'], shed_views: ['code', 'user_id'], shed_results: ['code', 'user_id'], shed_chat: ['id'] };
 const clone = v => JSON.parse(JSON.stringify(v));
 class Q {
   constructor(db, name) { this.db = db; this.name = name; this.f = []; this.op = 'select'; this.ret = false; this.one = false; this.ord = null; this.desc = false; this.lim = null; }
@@ -55,7 +55,7 @@ class Q {
 }
 class FakeDb {
   constructor() {
-    this.t = { shed_profiles: [], shed_tables: [], shed_seats: [], shed_games: [], shed_views: [], shed_results: [], shed_chat: [], shed_blocks: [], shed_reports: [] };
+    this.t = { shed_profiles: [], shed_tables: [], shed_seats: [], shed_games: [], shed_views: [], shed_results: [], shed_chat: [], shed_blocks: [], shed_reports: [], shed_push: [] };
     this.hits = {};
     this.deleted = [];
     // auth.admin.deleteUser, with the cascades the real foreign keys make
@@ -63,7 +63,7 @@ class FakeDb {
       this.deleted.push(uid);
       const t = this.t;
       t.shed_profiles = t.shed_profiles.filter(r => r.id !== uid);
-      for (const n of ['shed_seats', 'shed_views', 'shed_results', 'shed_chat']) t[n] = t[n].filter(r => r.user_id !== uid);
+      for (const n of ['shed_seats', 'shed_views', 'shed_results', 'shed_chat', 'shed_push']) t[n] = t[n].filter(r => r.user_id !== uid);
       t.shed_blocks = t.shed_blocks.filter(r => r.blocker !== uid && r.blocked !== uid);
       t.shed_reports = t.shed_reports.filter(r => r.reporter !== uid);
       t.shed_tables.forEach(r => { if (r.host === uid) r.host = null; });

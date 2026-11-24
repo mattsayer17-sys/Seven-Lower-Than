@@ -8,19 +8,28 @@
     "build": "node tools/build.js",
     "build:min": "node tools/build.js --minify && node tools/build-fn.js",
     "verify": "npm run lint && npm test && npm run build && node tools/build-fn.js && node tools/vote-drive.js dist/index.html && node tools/presets-drive.js dist/index.html && node tools/a11y-drive.js dist/index.html && node tools/setup-drive.js dist/index.html && node tools/onboarding-drive.js dist/index.html && node tools/online-drive.js dist/index.html && node tools/compare.js",
-    "status": "node tools/status.js"
+    "status": "node tools/status.js",
+    "ios": "npm run build:min && npx cap sync ios"
   },
   "devDependencies": {
     "@babel/generator": "^8.1.2",
     "@babel/parser": "^8.1.2",
     "@babel/traverse": "^8.1.2",
     "@babel/types": "^8.1.2",
+    "@capacitor/cli": "^8.6.2",
     "esbuild": "^0.28.2",
     "eslint": "^9.39.5",
     "globals": "^17.14.0",
     "puppeteer-core": "^25.18.1"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.6.2",
+    "@capacitor/push-notifications": "^8.1.3",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4",
     "qrcode-generator": "^1.4.4"
   }
 }

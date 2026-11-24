@@ -20,6 +20,7 @@ import { chatFrom, chatOn, reactHint } from './chat.js';
 import { finalFlip, isFinalFlip } from './reveal.js';
 import { fillChange, proposeHTML, readChange, voteCard } from './vote.js';
 import qrcode from 'qrcode-generator';
+import { askForPush } from './native.js';
 
 // ---------- invites: a link that opens straight into the table, sent by WhatsApp, the share sheet, a copy or a QR code ----------
 const SITE = 'https://shiphead.vercel.app/';
@@ -531,7 +532,15 @@ function showWaiting(c) {
 }
 
 // The game-over sheet of an online game: Rematch is the big button. If someone else asked first, it says so and one tap sits you down.
+// After an online game, the app asks once whether to tell you when friends start a game or want a rematch.
+function offerPush() {
+  const r = store.remote;
+  if (!r) return;
+  askForPush(token => r.client.t.call({ op: 'push_token', token, platform: 'ios' }));
+}
+
 function wireRematch() {
+  offerPush();
   const r = store.remote;
   if (!r || !r.code || !$('#again')) return;
   const old = r.code, t = getTransport();
