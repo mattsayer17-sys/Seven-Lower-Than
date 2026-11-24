@@ -15,7 +15,9 @@ Deno.serve(async req => {
     const db = createClient(url, service, { auth: { persistSession: false } });
     let b;
     try { b = await req.json(); } catch (e) { return json({ error: 'Bad request' }, 400); }
-    const r = await handler.handle(db, user.id, b);
+    // first address in x-forwarded-for is the caller as seen by Supabase's edge
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim().slice(0, 64);
+    const r = await handler.handle(db, user.id, b, ip);
     return json(r.body, r.status);
   } catch (e) {
     return json({ error: 'Server error' }, 500);

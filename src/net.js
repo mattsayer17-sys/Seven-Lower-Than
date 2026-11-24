@@ -39,6 +39,8 @@
 
     return {
       get uid() { return session && session.uid; },
+      // drop the saved session (after the account is deleted)
+      forget() { session = null; try { kv.setItem(KEY, 'null'); } catch (e) {} },
       get token() { return session && session.access; },
       async call(body) {
         let r = await fetch(base + '/functions/v1/shed', { method: 'POST', headers: await auth(), body: JSON.stringify(body) });

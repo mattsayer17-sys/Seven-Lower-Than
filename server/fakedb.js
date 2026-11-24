@@ -1,6 +1,6 @@
 'use strict';
 // A tiny in-memory stand-in for the Supabase client: only the calls the handler makes. Used by tests and the local preview.
-const PK = { shed_profiles: ['id'], shed_tables: ['code'], shed_seats: ['code', 'user_id'], shed_games: ['code'], shed_views: ['code', 'user_id'], shed_results: ['code', 'user_id'], shed_chat: ['id'] };
+const PK = { shed_blocks: ['blocker', 'blocked'], shed_reports: ['id'], shed_profiles: ['id'], shed_tables: ['code'], shed_seats: ['code', 'user_id'], shed_games: ['code'], shed_views: ['code', 'user_id'], shed_results: ['code', 'user_id'], shed_chat: ['id'] };
 const clone = v => JSON.parse(JSON.stringify(v));
 class Q {
   constructor(db, name) { this.db = db; this.name = name; this.f = []; this.op = 'select'; this.ret = false; this.one = false; this.ord = null; this.desc = false; this.lim = null; }
@@ -30,6 +30,7 @@ class Q {
     if (this.op === 'insert') {
       const r = clone(this.row);
       if (this.name === 'shed_tables') { if (r.status === undefined) r.status = 'lobby'; Object.assign(r, { vote: null, vote_seq: 0, note: '', rev: 0 }); }
+      if (this.name === 'shed_reports') { this.db.repId = (this.db.repId || 0) + 1; r.id = this.db.repId; }
       if (this.name === 'shed_chat') { this.db.chatId = (this.db.chatId || 0) + 1; Object.assign(r, { id: this.db.chatId, created_at: new Date(this.db.now ? this.db.now() : Date.now()).toISOString() }); }
       if (rows.some(x => same(x, r))) return { data: null, error: { code: '23505', message: 'duplicate' } };
       rows.push(r);
@@ -52,7 +53,34 @@ class Q {
     }
   }
 }
-class FakeDb { constructor() { this.t = { shed_profiles: [], shed_tables: [], shed_seats: [], shed_games: [], shed_views: [], shed_results: [], shed_chat: [] }; } from(n) { return new Q(this, n); } }
+class FakeDb {
+  constructor() {
+    this.t = { shed_profiles: [], shed_tables: [], shed_seats: [], shed_games: [], shed_views: [], shed_results: [], shed_chat: [], shed_blocks: [], shed_reports: [] };
+    this.hits = {};
+    this.deleted = [];
+    // auth.admin.deleteUser, with the cascades the real foreign keys make
+    this.auth = { admin: { deleteUser: async uid => {
+      this.deleted.push(uid);
+      const t = this.t;
+      t.shed_profiles = t.shed_profiles.filter(r => r.id !== uid);
+      for (const n of ['shed_seats', 'shed_views', 'shed_results', 'shed_chat']) t[n] = t[n].filter(r => r.user_id !== uid);
+      t.shed_blocks = t.shed_blocks.filter(r => r.blocker !== uid && r.blocked !== uid);
+      t.shed_reports = t.shed_reports.filter(r => r.reporter !== uid);
+      t.shed_tables.forEach(r => { if (r.host === uid) r.host = null; });
+      return { error: null };
+    } } };
+  }
+  from(n) { return new Q(this, n); }
+  // shed_hit: fixed-window counter. Off unless db.limitsOn, since tests play whole games in a few milliseconds.
+  async rpc(fn, a) {
+    if (fn !== 'shed_hit') return { data: null, error: { message: 'unknown rpc' } };
+    if (!this.limitsOn) return { data: true, error: null };
+    const now = this.now ? this.now() : Date.now();
+    const k = a.p_key + '@' + Math.floor(now / 1000 / a.p_window);
+    this.hits[k] = (this.hits[k] || 0) + 1;
+    return { data: this.hits[k] <= a.p_limit, error: null };
+  }
+}
 // What a lobby screen needs to know about a table.
 function lobbyOf(db, code) {
   const t = db.t.shed_tables.find(x => x.code === code);

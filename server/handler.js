@@ -14,6 +14,29 @@ const cleanName = n => String(n || '').replace(/[\u0000-\u001f<>]/g, '').trim().
 const reply = (body, status = 200) => ({ status, body });
 const H2H_GAMES = 1000; // most recent games counted for head to head
 
+// Abuse and cost limits. Fixed windows counted in the database (shed_hit), so they hold across edge function instances.
+const LIMITS = {
+  user: [120, 60],      // any request: 120 a minute per user (a fast game is well under 40)
+  ip: [600, 60],        // any request: 600 a minute per network (a family on one wifi still fits)
+  create: [20, 3600],   // new tables and rematches: 20 an hour per user
+  join: [60, 3600],     // sitting down: 60 an hour per user
+  report: [10, 3600],   // reports: 10 an hour per user
+};
+const REPORT_REASONS = ['name', 'behaviour', 'cheating', 'other'];
+const MAX_HOSTING = 3;  // tables in the lobby or playing that one user hosts
+const MAX_SEATED = 8;   // unfinished tables one user sits at
+async function over(db, key, [n, secs]) {
+  if (!db.rpc) return false;
+  const r = await db.rpc('shed_hit', { p_key: key, p_limit: n, p_window: secs });
+  return r.data === false; // a database hiccup lets the request through rather than lock everyone out
+}
+async function openCounts(db, uid) {
+  const hosting = ((await db.from('shed_tables').select('code,status').eq('host', uid)).data || []).filter(t => t.status !== 'over').length;
+  const seated = (await db.from('shed_seats').select('code').eq('user_id', uid)).data || [];
+  const tabs = seated.length ? (await db.from('shed_tables').select('code,status').in('code', seated.map(s => s.code))).data || [] : [];
+  return { hosting, seated: tabs.filter(t => t.status !== 'over').length };
+}
+
 // House rule votes before the game starts. The same Room reducer solo play uses, run here with the server's clock.
 // Each write is checked against `rev`, so two people voting at the same instant cannot overwrite each other.
 async function roomAct(db, table, seats, uid, action) {
@@ -45,8 +68,21 @@ async function roomAct(db, table, seats, uid, action) {
   return { status: 200, body: { ok: true }, table: next };
 }
 
-async function handle(db, uid, b) {
+async function handle(db, uid, b, ip) {
   b = b || {};
+  if (await over(db, 'u:' + uid, LIMITS.user)) return reply({ error: 'Slow down a little' }, 429);
+  if (ip && await over(db, 'ip:' + ip, LIMITS.ip)) return reply({ error: 'Too many requests from this network' }, 429);
+  // Delete my account and everything that is mine (App Store 5.1.1(v)). Works with or without a name.
+  // Any game I am still in is ended for the others first, so nobody is left waiting on a seat that no longer exists.
+  if (b.op === 'delete_me') {
+    if (b.confirm !== 'DELETE') return reply({ error: 'Confirm first' }, 400);
+    const seated = (await db.from('shed_seats').select('code').eq('user_id', uid)).data || [];
+    if (seated.length) await db.from('shed_tables').update({ status: 'over' }).in('code', seated.map(s => s.code)).eq('status', 'playing');
+    await db.from('shed_tables').delete().eq('host', uid).eq('status', 'lobby');
+    const del = await db.auth.admin.deleteUser(uid);
+    if (del && del.error) return reply({ error: 'Could not delete, try again' }, 500);
+    return reply({ ok: true });
+  }
   if (b.name !== undefined) {
     const nc = Names.check(cleanName(b.name));
     if (!nc.ok) return reply({ error: nc.error }, 400);
@@ -88,7 +124,28 @@ async function handle(db, uid, b) {
   if (!prof.data) return reply({ error: 'Pick a name first' }, 400);
   if (b.op === 'profile') return reply({ ok: true });
 
+  // Block or unblock a player: their reactions are hidden from me and they can't sit at tables I host.
+  // Report a player for their name or behaviour at a table. Both are checked here (App Store 1.2).
+  if (b.op === 'block' || b.op === 'unblock' || b.op === 'report') {
+    const who = String(b.user || '');
+    if (!/^[\w-]{1,64}$/.test(who) || who === uid) return reply({ error: 'Pick a player' }, 400);
+    const target = (await db.from('shed_profiles').select('id,name').eq('id', who).maybeSingle()).data;
+    if (!target) return reply({ error: 'That player has gone' }, 404);
+    if (b.op === 'unblock') { await db.from('shed_blocks').delete().eq('blocker', uid).eq('blocked', who); return reply({ ok: true }); }
+    if (b.op === 'block') { await db.from('shed_blocks').upsert({ blocker: uid, blocked: who }); return reply({ ok: true }); }
+    if (!REPORT_REASONS.includes(b.reason)) return reply({ error: 'Pick a reason' }, 400);
+    if (await over(db, 'r:' + uid, LIMITS.report)) return reply({ error: 'Thanks, we have your reports. Try again later' }, 429);
+    const ins = await db.from('shed_reports').insert({ reporter: uid, target: who, code: String(b.code || '').toUpperCase().slice(0, 8) || null, reason: b.reason, name_seen: target.name });
+    if (ins.error) return reply({ error: 'Could not send, try again' }, 500);
+    if (b.block) await db.from('shed_blocks').upsert({ blocker: uid, blocked: who });
+    return reply({ ok: true });
+  }
+
   if (b.op === 'create') {
+    if (await over(db, 'c:' + uid, LIMITS.create)) return reply({ error: 'That is a lot of new tables, try again later' }, 429);
+    const oc = await openCounts(db, uid);
+    if (oc.hosting >= MAX_HOSTING) return reply({ error: 'You already have ' + MAX_HOSTING + ' tables open. Finish or leave one first' }, 409);
+    if (oc.seated >= MAX_SEATED) return reply({ error: 'You are at too many tables. Finish or leave one first' }, 409);
     let opts;
     try { opts = T.cleanRules(b.rules); } catch (e) { return reply({ error: 'Those rules clash: ' + e.message }, 400); }
     const max = Math.min(5, Math.max(2, b.max | 0 || 5));
@@ -112,6 +169,9 @@ async function handle(db, uid, b) {
   if (b.op === 'join') {
     if (seats.some(s => s.user_id === uid)) return reply({ ok: true, code });
     if (table.status !== 'lobby') return reply({ error: 'That game has already started' }, 409);
+    if (await over(db, 'j:' + uid, LIMITS.join)) return reply({ error: 'Too many tables joined, try again later' }, 429);
+    if (table.host && (await db.from('shed_blocks').select('blocker').eq('blocker', table.host).eq('blocked', uid)).data.length) return reply({ error: "You can't join that table" }, 403);
+    if ((await openCounts(db, uid)).seated >= MAX_SEATED) return reply({ error: 'You are at too many tables. Finish or leave one first' }, 409);
     if (seats.length >= table.max_players) return reply({ error: 'That table is full' }, 409);
     const next = seats.reduce((m, s) => Math.max(m, s.seat), -1) + 1;
     const ins = await db.from('shed_seats').insert({ code, user_id: uid, seat: next });
@@ -162,6 +222,7 @@ async function handle(db, uid, b) {
       return ins.error ? reply({ error: 'Someone joined at the same moment, try again' }, 409) : reply({ ok: true, code: next, made: false });
     };
     if (table.next_code) return sitAt(table.next_code);
+    if (await over(db, 'c:' + uid, LIMITS.create)) return reply({ error: 'That is a lot of new tables, try again later' }, 429);
     for (let i = 0; i < 8; i++) {
       const code2 = newCode();
       const ins = await db.from('shed_tables').insert({ code: code2, host: uid, rules: table.rules, max_players: table.max_players });
@@ -218,7 +279,7 @@ async function handle(db, uid, b) {
     const r = T.applyAction(g, uid, b.action);
     if (!r.ok) return reply({ error: r.err || 'Not allowed' }, 400);
     const version = gr.data.version + 1;
-    const up = await db.from('shed_games').update({ state: g, version }).eq('code', code).eq('version', gr.data.version).select('code');
+    const up = await db.from('shed_games').update({ state: g, version, updated_at: new Date().toISOString() }).eq('code', code).eq('version', gr.data.version).select('code');
     if (!up.data || !up.data.length) return reply({ error: 'Out of date, try again' }, 409);
     // Results go in before the views, so by the time a phone sees the game is over its head to head already counts it.
     if (g.phase === 'over') await db.from('shed_results').upsert(g.finished.map((pi, k) => ({ code, user_id: g.seats[pi], place: k + 1, players: g.seats.length })));
@@ -229,4 +290,4 @@ async function handle(db, uid, b) {
   return reply({ error: 'Unknown request' }, 400);
 }
 
-module.exports = { handle, cleanName };
+module.exports = { handle, cleanName, REPORT_REASONS, LIMITS, MAX_HOSTING, MAX_SEATED };

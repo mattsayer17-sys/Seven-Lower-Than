@@ -6,7 +6,7 @@ import { SFX } from './audio.js';
 import { isSting } from './flow.js';
 import { dailyStreak } from './daily.js';
 import { hideModal, showModal } from './sheets.js';
-import { fetchRivals } from './online.js';
+import { deleteOnline, fetchRivals } from './online.js';
 
 // ---------- profiles, records, achievements ----------
 const AVATARS = ['🐭', '🦊', '🐸', '🐙', '🦉', '🐢'];
@@ -373,6 +373,26 @@ function syncRivals(uids, redraw) {
   fetchRivals(uids).then(m => { if (applyRivals(m) && redraw) redraw(); });
 }
 
+// Small print under the profile: the policies, help, and deleting everything (App Store 5.1.1(v)).
+const LEGAL = '<p class="legal"><a href="/privacy" target="_blank" rel="noopener">Privacy</a> · <a href="/terms" target="_blank" rel="noopener">Terms</a> · <a href="/support" target="_blank" rel="noopener">Help</a> · <button class="linkbtn" id="pDel">Delete my data</button></p>';
+function wireLegal() {
+  const b = $('#pDel');
+  if (b) b.onclick = confirmDelete;
+}
+function confirmDelete() {
+  showModal('<h2>Delete everything?</h2><p>This removes your online account, your head to head with friends, and every profile, record and setting on this phone. It cannot be undone.</p><div class="note err" id="dNote" role="status"></div><div class="btns"><button class="btn" id="dNo">Keep it</button><button class="btn danger" id="dYes">Delete</button></div>');
+  $('#dNo').onclick = showProfile;
+  $('#dYes').onclick = async () => {
+    $('#dYes').disabled = true;
+    $('#dNote').textContent = '';
+    const ok = await deleteOnline();
+    if (!ok) { $('#dNote').textContent = "Couldn't reach the server to delete your online account. Check your connection and try again"; $('#dYes').disabled = false; return; }
+    try { Object.keys(localStorage).filter(k => k.indexOf('ms.') === 0).forEach(k => localStorage.removeItem(k)); } catch (e) { /* storage blocked: nothing saved */ }
+    showModal('<h2>Deleted</h2><p>Everything is gone. The game starts fresh.</p><div class="btns"><button class="btn primary" id="dDone">OK</button></div>');
+    $('#dDone').onclick = () => location.reload();
+  };
+}
+
 function showProfile() {
   const p = prof(),
     ks = Object.keys(p.h2h);
@@ -381,7 +401,8 @@ function showProfile() {
   const ach = ACH.map(a => '<div class="ach' + (p.ach[a.id] ? ' on' : '') + '"><i>' + a.i + '</i><span><b>' + esc(a.n) + '</b><small>' + esc(a.d) + '</small></span></div>').join('');
   const profs = store.P.list.map(q => '<button class="chip pb' + (q.id === p.id ? ' on' : '') + '" data-id="' + q.id + '">' + q.av + ' ' + esc(q.name) + '</button>').join('');
   const avs = AVATARS.map(a => '<button class="av' + (a === p.av ? ' on' : '') + '" data-a="' + a + '">' + a + '</button>').join('');
-  showModal('<h2>Profile</h2><div class="chips">' + profs + '</div>' + '<div class="inp"><input id="pName" maxlength="16" value="' + esc(p.name) + '" aria-label="Name"><button class="btn" id="pSave">Rename</button></div><div class="note err" id="pNote" role="status"></div>' + '<div class="avs">' + avs + '</div>' + '<h3>Record</h3><div class="stat3"><div><b>' + p.g + '</b><small>Games</small></div><div><b>' + p.w + '</b><small>1st</small></div><div><b>' + p.m + '</b><small>🪨 Last</small></div></div>' + '<h3>Head to head</h3>' + rows + (human ? '' : '<p class="note" style="margin-top:8px">Play friends online and your record against each of them builds here, the same on their phone as on yours.</p>') + '<h3>Achievements ' + Object.keys(p.ach).length + '/' + ACH.length + '</h3><div class="achs">' + ach + '</div>' + '<div class="inp" style="margin-top:14px"><input id="pNew" maxlength="16" placeholder="New profile name" aria-label="New profile name"><button class="btn" id="pAdd">Add profile</button></div>' + '<div class="btns"><button class="btn primary" id="pClose">Done</button></div>');
+  showModal('<h2>Profile</h2><div class="chips">' + profs + '</div>' + '<div class="inp"><input id="pName" maxlength="16" value="' + esc(p.name) + '" aria-label="Name"><button class="btn" id="pSave">Rename</button></div><div class="note err" id="pNote" role="status"></div>' + '<div class="avs">' + avs + '</div>' + '<h3>Record</h3><div class="stat3"><div><b>' + p.g + '</b><small>Games</small></div><div><b>' + p.w + '</b><small>1st</small></div><div><b>' + p.m + '</b><small>🪨 Last</small></div></div>' + '<h3>Head to head</h3>' + rows + (human ? '' : '<p class="note" style="margin-top:8px">Play friends online and your record against each of them builds here, the same on their phone as on yours.</p>') + '<h3>Achievements ' + Object.keys(p.ach).length + '/' + ACH.length + '</h3><div class="achs">' + ach + '</div>' + '<div class="inp" style="margin-top:14px"><input id="pNew" maxlength="16" placeholder="New profile name" aria-label="New profile name"><button class="btn" id="pAdd">Add profile</button></div>' + '<div class="btns"><button class="btn primary" id="pClose">Done</button></div>' + LEGAL);
+  wireLegal();
   document.querySelectorAll('.pb').forEach(b => b.onclick = () => {
     store.P.cur = b.dataset.id;
     save();

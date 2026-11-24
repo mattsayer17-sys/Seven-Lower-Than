@@ -77,6 +77,16 @@ async function fetchRivals(uids) {
   try { const r = await t.call({ op: 'h2h', with: uids }); return r.status === 200 && r.body.h2h ? r.body.h2h : null; } catch (e) { return null; }
 }
 
+// Delete this player's online account and everything the server holds for them. With no session on this device there is
+// nothing online to delete. Returns true when the server is clear (or there was nothing there).
+async function deleteOnline() {
+  const t = getTransport();
+  if (!t.uid) return true;
+  try { const r = await t.call({ op: 'delete_me', confirm: 'DELETE' }); if (r.status !== 200) return false; } catch (e) { return false; }
+  if (t.forget) t.forget();
+  return true;
+}
+
 const friendly = e => (/fetch|network|Failed|reach|sign in/i.test(e.message || '') ? "Can't reach the online service from here. Check your connection, or open the web version" : e.message || 'Something went wrong');
 
 // who we are still waiting on to lock in, by name
@@ -253,10 +263,63 @@ function startGame(client, code, res) {
   game.players[0].name = 'You';
   const r = makeRemote(client, code);
   store.remote = r;
+  wireHold();
   hideModal();
   hideWelcome(); // the getting-started card is for solo play; online it would cover the other player's cards
   newGame({ remote: { game } });
   later(() => reactHint(), FAST ? 10 : 6000);
+}
+
+// ---------- block and report (App Store 1.2) ----------
+// Press and hold another player's name at an online table. A sheet offers block, or report with an optional block.
+// The game keeps running underneath; the sheet never takes a turn.
+const REASONS = [['name', 'Offensive name'], ['behaviour', 'Abusive reactions'], ['cheating', 'Cheating or stalling'], ['other', 'Something else']];
+function playerSheet(pi) {
+  const g = store.game, r = store.remote;
+  if (!g || !g.online || !r || !g.seats || !g.seats[pi]) return;
+  const uid = g.seats[pi], name = g.players[pi].name;
+  const t = r.client.t;
+  const done = msg => {
+    showModal('<h2>' + esc(msg) + '</h2><div class="btns"><button class="btn primary" id="psOk">Back to the game</button></div>');
+    $('#psOk').onclick = hideModal;
+  };
+  const call = async body => {
+    try { const x = await t.call(body); return x.status === 200 ? null : (x.body.error || 'Could not send'); } catch (e) { return friendly(e); }
+  };
+  showModal('<h2>' + esc(name) + '</h2><p>Blocking hides their reactions from you and stops them joining tables you host. Reports are read by a person.</p>' +
+    '<div class="btns col"><button class="btn" id="psBlock">Block ' + esc(name) + '</button></div>' +
+    '<h3>Report</h3><div class="chips" id="psWhy">' + REASONS.map(([k, l]) => '<button class="chip" data-k="' + k + '">' + l + '</button>').join('') + '</div>' +
+    '<label class="tick"><input type="checkbox" id="psAlso" checked> Block them too</label><div class="note err" id="psNote" role="status"></div>' +
+    '<div class="btns"><button class="btn" id="psCancel">Cancel</button><button class="btn primary" id="psSend" disabled>Send report</button></div>');
+  let why = null;
+  document.querySelectorAll('#psWhy .chip').forEach(c => c.onclick = () => {
+    why = c.dataset.k;
+    document.querySelectorAll('#psWhy .chip').forEach(x => x.classList.toggle('on', x === c));
+    $('#psSend').disabled = false;
+  });
+  $('#psCancel').onclick = hideModal;
+  $('#psBlock').onclick = async () => { const e = await call({ op: 'block', user: uid }); if (e) $('#psNote').textContent = e; else done(name + ' is blocked'); };
+  $('#psSend').onclick = async () => {
+    $('#psSend').disabled = true;
+    const e = await call({ op: 'report', user: uid, code: r.code, reason: why, block: $('#psAlso').checked });
+    if (e) { $('#psNote').textContent = e; $('#psSend').disabled = false; } else done('Thanks, report sent');
+  };
+}
+let holdWired = false;
+function wireHold() {
+  if (holdWired) return;
+  holdWired = true;
+  let timer = null;
+  const target = e => { const l = e.target.closest && e.target.closest('[id^="lblP"]'); return l && store.game && store.game.online ? +l.id.slice(4) : null; };
+  document.addEventListener('pointerdown', e => {
+    const pi = target(e);
+    if (pi == null) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => { timer = null; playerSheet(pi); }, 550);
+  });
+  const stop = () => { clearTimeout(timer); timer = null; };
+  ['pointerup', 'pointercancel', 'pointerleave', 'scroll'].forEach(n => document.addEventListener(n, stop, true));
+  document.addEventListener('contextmenu', e => { const pi = target(e); if (pi != null) { e.preventDefault(); stop(); playerSheet(pi); } });
 }
 
 // ---------- the lobby ----------
@@ -482,4 +545,4 @@ function wireRematch() {
   look();
 }
 
-export { fetchRivals, showOnline, wireRematch };
+export { deleteOnline, playerSheet, fetchRivals, showOnline, wireRematch };
