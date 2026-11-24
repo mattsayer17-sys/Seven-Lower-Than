@@ -58,12 +58,35 @@ function wireInvite(code) {
 const POLL = FAST ? 40 : 1300;
 let transport = null;
 
+// An invisible Cloudflare Turnstile check, only when a new online account is made. Loaded on first use, never for solo play.
+function turnstileToken() {
+  return new Promise((resolve, reject) => {
+    const go = () => {
+      const box = document.createElement('div');
+      box.style.cssText = 'position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:99';
+      document.body.appendChild(box);
+      window.turnstile.render(box, {
+        sitekey: CFG.turnstile, appearance: 'interaction-only',
+        callback: t => { box.remove(); resolve(t); },
+        'error-callback': () => { box.remove(); reject(new Error('Could not sign in')); },
+      });
+    };
+    if (window.turnstile) return go();
+    const s = document.createElement('script');
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    s.async = true;
+    s.onload = go;
+    s.onerror = () => reject(new Error('Could not sign in'));
+    document.head.appendChild(s);
+  });
+}
+
 function getTransport() {
   if (window.__MS_TRANSPORT) return window.__MS_TRANSPORT;
   if (!transport) {
     let kv;
     try { kv = window.localStorage; kv.getItem('x'); } catch (e) { kv = null; }
-    transport = Net.supabaseTransport(CFG, kv);
+    transport = Net.supabaseTransport(CFG.turnstile ? Object.assign({}, CFG, { captcha: turnstileToken }) : CFG, kv);
   }
   return transport;
 }

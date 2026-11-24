@@ -67,6 +67,7 @@ as $$
   delete from public.shed_games g using public.shed_tables t where g.code = t.code and t.status = 'over' and g.updated_at < now() - interval '2 days';
   delete from public.shed_views v using public.shed_tables t where v.code = t.code and t.status = 'over' and t.created_at < now() - interval '2 days';
   delete from public.shed_chat where created_at < now() - interval '7 days';
+  delete from public.shed_tables t where t.status = 'over' and not exists (select 1 from public.shed_seats s where s.code = t.code);
   delete from public.shed_hits where win < extract(epoch from now()) - 86400;
   delete from auth.users u where u.is_anonymous and u.created_at < now() - interval '7 days'
     and not exists (select 1 from public.shed_profiles p where p.id = u.id);

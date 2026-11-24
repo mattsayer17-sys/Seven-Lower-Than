@@ -3,14 +3,14 @@
 The single source of truth for what is live, what is in flight and what is next. Every session reads this first and
 updates it before finishing (see CLAUDE.md). History is in CHANGELOG.md.
 
-Last updated: 23 Nov 2026 23:55
+Last updated: 24 Nov 2026 21:00
 
 ## Live
 - Site: https://shiphead.vercel.app (also https://seven-lower-than.vercel.app). Every push to `main` deploys to production.
-- Server: Supabase project fmgyzabdkityfyakmqhg, edge function `shed` v10 (server/build/handler-a31f41f0ed4f.mjs, pinned at the PR #8 merge commit on main: Lower than card, Invisible card wording, plus v9's `h2h`). Deployed and live-tested 23 Nov. Backwards compatible with the live site.
-- SQL applied: server/sql/2026-11-21-reactions-only.sql, server/sql/2026-11-21-rematch.sql.
+- Server: Supabase project fmgyzabdkityfyakmqhg (London, eu-west-2), edge function `shed` v11 (server/build/handler-146b333dcf46.mjs, pinned at commit 3f573f1 on branch `protection`, PR waiting for Matt). Adds rate limits, open-table caps, `delete_me`, `block`/`unblock`/`report`. Deployed and live-tested 24 Nov. Backwards compatible with the live site (new ops only; limits sit well above normal play).
+- SQL applied: server/sql/2026-11-21-reactions-only.sql, server/sql/2026-11-21-rematch.sql, server/sql/2026-11-24-protection.sql (shed_hits + shed_hit(), profile writes server-only, cascading deletes, reports with target/code/name_seen, pg_cron `shed-cleanup` hourly at :17).
 - Vercel project prj_1CPlStcWsf3u0Hh8lLjv0CbWZW4Z, team team_L010Khha3QfqKwmIRHO0vNCb.
-- Test rows from live tests are still in the database (tables QBF75, PF9H6, W4JPS, NX57H, TF5XY, BS99B, H3HC4, B4RX6 and their anonymous Test users). Deleting needs Matt to confirm in Supabase.
+- Old live-test rows deleted 24 Nov (Matt said yes): 51 Test users, 20 tables. live-test.js now deletes its own users at the end with `delete_me`.
 
 - Look (live 22 Nov, PR #2): royal blue #152f78; card-brand identity: S over a spade and H over a heart on a double-ended card with a double gold frame and the Shiphead suit (a spade with a heart set in it) in the centre (brand/mark.svg, brand/emblem.svg); Bodoni Moda Black for indices and wordmark, outlined. Header: white spade-and-heart + Bodoni wordmark. Favicon: the emblem. Card back: casino house back, royal blue, fine lattice, double gold frame, gold medallion with "SH" (src/ui/state.js SHIP_BACK, brand/back.svg); default 'shiphead', a saved 'red' default migrated once (settings.backV). Card faces: original court plates, crisp white stock, fine edge, bolder tabular indices, flat gold plate. Labels in sentence case, avatar in a disc, pot outline a soft inset ring. compare.js squashes case.
 - Face-down follow-up (live 22 Nov, PR #4): after a face-down card goes on, the go stays open; tap another face-down card (everyone sees it turn): same rank and allowed, it goes on and you may try again; otherwise it goes into your hand and the go ends; or tap Done. Engine g.follow {pi, rank, count, last}, followDone; play and pickUp refused while open; effects apply when the go closes. CPU tries 35% of the time. Server action `done`, follow in the view, online replay of 'follow' events.
@@ -19,18 +19,20 @@ Last updated: 23 Nov 2026 23:55
 - Pacing (live 23 Nov, PR #8, Matt's playtest 22 Nov): effects run 1.4x longer on Normal (Fast 0.7x); the table waits for a burn (2.2 s), pick-ups (1.3 s, 2.6 s for 10+ with the OUCH) and forced pick-ups; a CPU's face-down follow-up try is quick (0.65 s on a match); achievement toast sits at the top, clear of cards; invisible card lands showing itself, goes see-through to show the card beneath, then back; last-card reveal is one move, turning over slowly while it grows to the centre (about 3.3 s). "Invisible card" is the name everywhere (was "Transparent card" in the Rules tab and votes).
 
 ## In flight (not in main)
-- Nothing from this session.
+- `protection` (PR open, waiting for Matt): abuse and cost protection, Delete my data in the profile, press and hold a name online to block or report, /privacy /terms /support pages, Turnstile hook (off until the site key is set in src/online-config.js), CSP allows Turnstile and Realtime wss. Server side is already live (v11 + SQL).
 
 ## Decisions (22 Nov)
 - No light mode. Appearance choices stay per player and on their own device (felt, card back, colour-blind deck). More table themes later as cosmetics.
 
 ## Next, in order
-0. Before the iOS build: abuse and cost protection. Today anyone can sign in anonymously and call the `shed` function without limit. Add: Supabase spend cap on, Vercel spend management on; captcha (Cloudflare Turnstile) on anonymous sign-in; per-user and per-IP rate limits in the handler (create table, actions per minute); cap open tables per user; a cleanup job for stale tables and anonymous users; App Check style attestation (Apple App Attest) once in the iOS wrapper. Only the publishable key is in the app; the service role key stays in the edge function.
+0. Abuse and cost protection: done in `protection` except the parts that need Matt: Supabase spend cap + Pro plan, Vercel spend management, Turnstile site key (then set `turnstile` in src/online-config.js and switch captcha on in Supabase Auth with the secret). App Attest comes with the iOS wrap.
+   Limits (server/handler.js LIMITS): 120 requests/min per user, 600/min per network, 20 new tables/hour, 60 joins/hour, 10 reports/hour; max 3 hosted open tables, 8 unfinished seats.
+   Reports land in public.shed_reports (reporter, target, name_seen, reason, code). Someone must read them: the policy pages promise a person does. Next: a daily email of new reports to Matt.
 1. Matt buys domains; connect playshiphead.com to the Vercel project, switch the invite SITE constant and og URLs.
 2. Head-to-head tally on the server: live 23 Nov (PR #6). Server request `h2h` {with:[uids]} gives {n,w,l,meRb,theyRb} per opponent from shed_results; the phone syncs on the game-over sheet and profile.
 3. Computer players filling empty seats and replacing leavers, plus forfeits.
 4. Live updates: Supabase Realtime instead of polling (CSP connect-src needs wss://fmgyzabdkityfyakmqhg.supabase.co).
-5. Report/block UI (long-press a seat name; tables shed_blocks, shed_reports exist).
+5. Report/block UI: done in `protection` (press and hold an opponent's name at an online table).
 7. Accounts: anonymous first, Apple/Google offered at a moment of value (after the first online game).
 8. Progression (XP, seasonal goals), share card, fairness signals.
 9. Ads between games, cosmetics.
@@ -38,7 +40,7 @@ Last updated: 23 Nov 2026 23:55
 11. 4-player and tablet layout.
 
 ## Matt's own steps
-Buy domains (playshiphead.com primary; shiphead.app, shiphead.co.uk as redirects). Trademark attorney: classes 9 and 41 in UK, EU, US (US SHIPHEAD marks exist for beer and clothing; check visual distance from Heads Up!). Apple Developer and Google Play enrolment. Real-device VoiceOver/TalkBack pass.
+Contact address on the policy pages is hello@playshiphead.com (tools/legal-pages.js), so it needs the domain and a mailbox or forward. Buy domains (playshiphead.com primary; shiphead.app, shiphead.co.uk as redirects). Trademark attorney: classes 9 and 41 in UK, EU, US (US SHIPHEAD marks exist for beer and clothing; check visual distance from Heads Up!). Apple Developer and Google Play enrolment. Real-device VoiceOver/TalkBack pass.
 
 ## Product decisions and rulings
 - Brand: Shiphead. Logo: double-ended court card, SHIP court red #d4231b upright, HEAD royal blue upside down (live: #1b3d8f; branch visuals: #152f78). Wordmark Big Shoulders Display Black. Design system artifact: https://claude.ai/artifact/YZWDb14MRo5yqHdeEVfY13

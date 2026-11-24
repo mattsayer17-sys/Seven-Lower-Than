@@ -160,6 +160,7 @@ function decide(g) {
       await ev(() => document.querySelector('#lblP1').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })));
       await until(() => !!document.querySelector('#psSend'), 'report sheet');
       assert.match(await text('.sheet h2'), /Bot1/);
+      await wait(700);
       await page.screenshot({ path: '/tmp/report-sheet.png' });
       assert.equal(await ev(() => document.querySelector('#psSend').disabled), true, 'report needs a reason');
       await click('#psWhy .chip[data-k="name"]');
@@ -295,6 +296,7 @@ function decide(g) {
     await until(() => !!document.querySelector('#pDel'), 'delete link in profile');
     await click('#pDel');
     await until(() => !!document.querySelector('#dYes'), 'delete confirm');
+    await wait(700);
     await page.screenshot({ path: '/tmp/delete-confirm.png' });
     assert.ok(db.t.shed_profiles.some(p => p.id === 'ui'));
     await click('#dYes');

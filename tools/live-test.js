@@ -20,7 +20,7 @@ function decide(g) {
 }
 
 (async () => {
-  const games = +process.argv[2] || 1, made = [], codes = [];
+  const games = +process.argv[2] || 1, made = [], codes = [], all = [];
   for (let k = 0; k < games; k++) {
     const players = 2 + (k % 4);
     const cs = [];
@@ -83,7 +83,22 @@ function decide(g) {
     const fine = hh.status === 200 && rows.length === players - 1 && rows.every(x => x.n === 1 && x.w + x.l === 1) && rows.filter(x => x.theyRb).length + rows[0].meRb === 1;
     console.log('  head to head ' + (fine ? 'ok' : 'WRONG ' + JSON.stringify(hh.body)));
     if (!fine) process.exitCode = 1;
+    // v11: report and block go through the server; a blocked player cannot sit at the blocker's next table
+    if (k === 0) {
+      const rep = await cs[0].t.call({ op: 'report', user: cs[1].t.uid, code, reason: 'name', block: true });
+      const nt = await cs[0].t.call({ op: 'create', rules: {}, max: 5 });
+      const jn = await cs[1].t.call({ op: 'join', code: nt.body.code });
+      const fineR = rep.status === 200 && nt.status === 200 && jn.status === 403;
+      console.log('  report + block ' + (fineR ? 'ok' : 'WRONG ' + JSON.stringify([rep, nt, jn])));
+      if (!fineR) process.exitCode = 1;
+    }
+    all.push(...cs);
   }
+  // v11: every test user deletes itself (App Store 5.1.1(v)), which also leaves nothing behind in the database
+  let deleted = 0;
+  for (const c of all) { const d = await c.t.call({ op: 'delete_me', confirm: 'DELETE' }); if (d.status === 200) deleted++; }
+  console.log('  delete my data ' + (deleted === all.length ? 'ok, ' + deleted + ' test users removed' : 'WRONG ' + deleted + '/' + all.length));
+  if (deleted !== all.length) process.exitCode = 1;
   console.log('USERS ' + made.join(','));
   console.log('CODES ' + codes.join(','));
 })().catch(e => { console.error('FAIL', e.message); process.exit(1); });

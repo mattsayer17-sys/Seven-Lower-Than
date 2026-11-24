@@ -2,6 +2,17 @@
 
 Newest first. One line per change. Every session adds its lines here in the same commit as the work.
 
+## 2026-11-24
+- Server limits how fast one player or one network can send requests, make tables, join tables and send reports; caps open tables per player.
+- An hourly cleanup removes stale lobbies, abandoned games, old reactions and unused anonymous accounts.
+- Names can only be set through the server, so the name filter can't be skipped.
+- Delete my data in the profile removes the online account and everything on the phone.
+- Press and hold another player's name at an online table to block or report them; a blocked player can't join your tables.
+- Privacy policy, terms and help pages at /privacy, /terms and /support, linked from the profile.
+- Ready for a Cloudflare Turnstile check on new online accounts (off until the site key is added).
+- Live test removes its own test users at the end; old test users and tables deleted.
+- Server v11 deployed and live-tested.
+
 ## 2026-11-23
 - The see-through rule is called "Invisible card" everywhere, including the Rules tab and table votes.
 - Effects and pauses are longer so burns, pick-ups and their words can be read; a CPU's face-down follow-up tries are quick.
