@@ -15,7 +15,10 @@
     const keep = j => save({ access: j.access_token, refresh: j.refresh_token, uid: j.user.id, exp: Date.now() + (j.expires_in || 3600) * 1000 - 60000 });
 
     async function signIn() {
-      const r = await fetch(base + '/auth/v1/signup', { method: 'POST', headers: plain, body: JSON.stringify({ data: {} }) });
+      // With captcha switched on in Supabase Auth, a new anonymous account needs a Turnstile token (cfg.captcha supplies it)
+      const body = { data: {} };
+      if (cfg.captcha) body.gotrue_meta_security = { captcha_token: await cfg.captcha() };
+      const r = await fetch(base + '/auth/v1/signup', { method: 'POST', headers: plain, body: JSON.stringify(body) });
       if (!r.ok) throw new Error('Could not sign in');
       keep(await r.json());
     }
@@ -39,6 +42,8 @@
 
     return {
       get uid() { return session && session.uid; },
+      // drop the saved session (after the account is deleted)
+      forget() { session = null; try { kv.setItem(KEY, 'null'); } catch (e) {} },
       get token() { return session && session.access; },
       async call(body) {
         let r = await fetch(base + '/functions/v1/shed', { method: 'POST', headers: await auth(), body: JSON.stringify(body) });

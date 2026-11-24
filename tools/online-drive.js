@@ -155,6 +155,23 @@ function decide(g) {
     assert.equal((await text('#chatlog')).split('👍').length - 1, 1, 'my own reaction is not echoed back');
     ok(label + ': reactions relayed both ways (bot 😂 bubble over its seat, my 👍 stored once), preset-only panel');
     await page.screenshot({ path: '/tmp/online-start-' + nBots + '.png' });
+    if (nBots === 1) {
+      // press and hold an opponent's name: block and report sheet (App Store 1.2). Report with block ticked reaches the server.
+      await ev(() => document.querySelector('#lblP1').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })));
+      await until(() => !!document.querySelector('#psSend'), 'report sheet');
+      assert.match(await text('.sheet h2'), /Bot1/);
+      await wait(700);
+      await page.screenshot({ path: '/tmp/report-sheet.png' });
+      assert.equal(await ev(() => document.querySelector('#psSend').disabled), true, 'report needs a reason');
+      await click('#psWhy .chip[data-k="name"]');
+      await click('#psSend');
+      await until(() => /report sent/.test((document.querySelector('.sheet h2') || {}).textContent || ''), 'report sent');
+      assert.ok(db.t.shed_reports.some(x => x.reporter === 'ui' && x.target === bots[0].uid && x.reason === 'name' && x.code === code));
+      assert.ok(db.t.shed_blocks.some(x => x.blocker === 'ui' && x.blocked === bots[0].uid));
+      await click('#psOk');
+      await handle(db, 'ui', { op: 'unblock', user: bots[0].uid }); // the rest of the drive plays Bot1 again
+      ok(label + ': hold a name, report it (block ticked): report and block stored, back to the game');
+    }
     // play it out
     let shot = false;
     let reloaded = false, moves = 0;
@@ -269,6 +286,24 @@ function decide(g) {
     await until(() => /closed/.test((document.querySelector('#olInvTitle') || {}).textContent || ''), 'closed table');
     assert.equal(await text('#olSit'), 'Play the computer');
     ok('a dead link says the table has closed and offers the computer');
+  }
+
+  // Delete my data from the profile: the server account and everything on the phone go (App Store 5.1.1(v))
+  {
+    await page.goto('file://' + path.resolve(process.argv[2]));
+    await until(() => !!document.querySelector('#bProf'), 'loaded for delete');
+    await ev(() => { document.querySelector('#modal').classList.add('hidden'); document.querySelector('#bProf').click(); });
+    await until(() => !!document.querySelector('#pDel'), 'delete link in profile');
+    await click('#pDel');
+    await until(() => !!document.querySelector('#dYes'), 'delete confirm');
+    await wait(700);
+    await page.screenshot({ path: '/tmp/delete-confirm.png' });
+    assert.ok(db.t.shed_profiles.some(p => p.id === 'ui'));
+    await click('#dYes');
+    await until(() => !!document.querySelector('#dDone'), 'deleted');
+    assert.ok(!db.t.shed_profiles.some(p => p.id === 'ui'), 'online profile deleted');
+    assert.equal(await ev(() => Object.keys(localStorage).filter(k => k.indexOf('ms.') === 0).length), 0, 'phone storage cleared');
+    ok('Delete my data: confirm sheet, server account gone, nothing left on the phone');
   }
 
   console.log(steps.join('\n'));

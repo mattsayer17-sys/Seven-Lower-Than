@@ -490,3 +490,75 @@ test('in a 3 player game, head to head compares places, Rock Bottom is last plac
     assert.equal(h[o].meRb, place.u1 === 3 ? 1 : 0);
   }
 });
+
+test('rate limits: a flood of requests from one user is turned away, others are not', async () => {
+  const db = new FakeDb();
+  db.limitsOn = true;
+  let last;
+  for (let i = 0; i < 125; i++) last = await handle(db, 'u1', { op: 'profile', name: 'Ann' });
+  assert.equal(last.status, 429);
+  assert.equal((await handle(db, 'u2', { op: 'profile', name: 'Ben' })).status, 200);
+  // a new minute starts a new window
+  db.now = () => Date.now() + 61000;
+  assert.equal((await handle(db, 'u1', { op: 'profile' })).status, 200);
+});
+
+test('rate limits: one network is capped across users', async () => {
+  const db = new FakeDb();
+  db.limitsOn = true;
+  let st = 200;
+  for (let i = 0; i < 610 && st === 200; i++) st = (await handle(db, 'n' + (i % 50), { op: 'peek', code: 'ZZZZZ' }, '1.2.3.4')).status === 429 ? 429 : 200;
+  assert.equal(st, 429);
+  assert.notEqual((await handle(db, 'n1', { op: 'peek', code: 'ZZZZZ' }, '5.6.7.8')).status, 429);
+});
+
+test('open table caps: hosting and seats', async () => {
+  const db = new FakeDb();
+  await handle(db, 'u1', { op: 'profile', name: 'Ann' });
+  for (let i = 0; i < 3; i++) assert.equal((await handle(db, 'u1', { op: 'create', rules: {}, max: 5 })).status, 200);
+  const r = await handle(db, 'u1', { op: 'create', rules: {}, max: 5 });
+  assert.equal(r.status, 409);
+  assert.match(r.body.error, /3 tables open/);
+  // leaving one frees a slot
+  const code = db.t.shed_tables[0].code;
+  assert.equal((await handle(db, 'u1', { op: 'leave', code })).status, 200);
+  assert.equal((await handle(db, 'u1', { op: 'create', rules: {}, max: 5 })).status, 200);
+});
+
+test('delete my account: everything of mine goes, other players keep their tables', async () => {
+  const db = new FakeDb();
+  const code = await lobby(db, 2);
+  assert.equal((await handle(db, 'u1', { op: 'start', code })).status, 200);
+  // a finished table hosted by u2 stays for u2
+  assert.equal((await handle(db, 'u2', { op: 'delete_me' })).status, 400); // needs confirming
+  assert.equal((await handle(db, 'u2', { op: 'delete_me', confirm: 'DELETE' })).status, 200);
+  assert.deepEqual(db.deleted, ['u2']);
+  assert.ok(!db.t.shed_profiles.some(p => p.id === 'u2'));
+  assert.ok(!db.t.shed_seats.some(s => s.user_id === 'u2'));
+  assert.equal(db.t.shed_tables.find(t => t.code === code).status, 'over'); // u1 is not left waiting
+  // a lobby I host goes with me; works even if I never picked a name
+  await handle(db, 'u3', { op: 'profile', name: 'Cat' });
+  const c3 = (await handle(db, 'u3', { op: 'create', rules: {}, max: 5 })).body.code;
+  assert.equal((await handle(db, 'u3', { op: 'delete_me', confirm: 'DELETE' })).status, 200);
+  assert.ok(!db.t.shed_tables.some(t => t.code === c3));
+  assert.equal((await handle(db, 'nobody', { op: 'delete_me', confirm: 'DELETE' })).status, 200);
+});
+
+test('block and report: checked, and a blocked player cannot sit at my tables', async () => {
+  const db = new FakeDb();
+  await handle(db, 'u1', { op: 'profile', name: 'Ann' });
+  await handle(db, 'u2', { op: 'profile', name: 'Ben' });
+  assert.equal((await handle(db, 'u1', { op: 'block', user: 'u1' })).status, 400);
+  assert.equal((await handle(db, 'u1', { op: 'block', user: 'ghost' })).status, 404);
+  assert.equal((await handle(db, 'u1', { op: 'block', user: 'u2' })).status, 200);
+  assert.equal(db.t.shed_blocks.length, 1);
+  const code = (await handle(db, 'u1', { op: 'create', rules: {}, max: 5 })).body.code;
+  assert.equal((await handle(db, 'u2', { op: 'join', code })).status, 403);
+  assert.equal((await handle(db, 'u1', { op: 'unblock', user: 'u2' })).status, 200);
+  assert.equal((await handle(db, 'u2', { op: 'join', code })).status, 200);
+  assert.equal((await handle(db, 'u1', { op: 'report', user: 'u2', reason: 'rude' })).status, 400);
+  const r = await handle(db, 'u1', { op: 'report', user: 'u2', reason: 'name', code, block: true });
+  assert.equal(r.status, 200);
+  assert.equal(db.t.shed_reports[0].name_seen, 'Ben');
+  assert.equal(db.t.shed_blocks.length, 1);
+});
