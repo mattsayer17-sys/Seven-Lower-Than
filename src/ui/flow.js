@@ -26,7 +26,7 @@ function newGame(o) {
   $('#offer').classList.add('hidden');
   chatReset();
   let rules, n, seed;
-  if (!o.remote) store.remote = null;
+  if (!o.remote) { if (store.remote && store.remote.over) store.remote.over(); store.remote = null; }
   if (o.remote) {
     rules = o.remote.game.rules;
     n = o.remote.game.players.length;

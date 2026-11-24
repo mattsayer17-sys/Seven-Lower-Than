@@ -57,6 +57,17 @@ function wireInvite(code) {
 
 
 const POLL = FAST ? 40 : 1300;
+const IDLE_MS = 91 * 1000; // matches the server's 90s, plus a second for clocks
+// After a move lands, how long before the computer makes the next one: long enough for that move's effect to play out
+// (burns and big pick-ups run longest, see docs/STATE.md Pacing).
+const botPause = ev => {
+  if (!ev) return 1100;
+  const n = ev.type === 'pickup' ? ev.count : ev.picked || 0;
+  if (n >= 10) return 3000;
+  if (ev.burned) return 2500;
+  if (n > 1 || ev.stung) return 1700;
+  return 1100;
+};
 let transport = null;
 
 // An invisible Cloudflare Turnstile check, only when a new online account is made. Loaded on first use, never for solo play.
@@ -195,6 +206,8 @@ function makeRemote(client, code) {
     let res;
     try { res = await client.t.view(code); } catch (e) { return; }
     if (store.remote !== r || r.busy || r.inflight || !res) return;
+    if (!r.raw || res.version !== r.raw.version) r.changedAt = Date.now();
+    r.raw = res;
     const game = g();
     if (res.version <= (game.version || 0)) return;
     // someone else turned over their last face-down card: show everyone the card turning before anything moves
@@ -260,22 +273,52 @@ function makeRemote(client, code) {
       }
     } catch (e) { /* try again next time */ }
   }
+  // ---- computer players and idle people ----
+  // When the seat that must move is the computer's (or someone who left), or a person has been idle for 90s, ask the
+  // server to make that move. One move per nudge, so each one animates like anyone else's.
+  r.changedAt = Date.now();
+  const actorOf = v => (v.phase === 'swap' ? v.players.findIndex(p => !p.ready) : v.phase === 'play' ? (v.follow ? v.follow.pi : v.turn) : -1);
+  r.botTurn = () => { const v = r.raw && r.raw.view; if (!v) return false; const a = actorOf(v); return a >= 0 && a !== v.me && ((v.bots || []).includes(a) || (v.left || []).includes(a)); };
+  async function maybeNudge() {
+    const res = r.raw;
+    if (!res || r.nudging || r.busy || r.inflight || store.ui.intro || store.ui.drag || store.remote !== r) return;
+    const game = g();
+    if (!game || (game.version || 0) < res.version) return; // still catching up on screen
+    const v = res.view, a = actorOf(v);
+    if (a < 0 || a === v.me) return;
+    // the computer waits for the last move to play out on screen; a person gets 90 seconds
+    if (Date.now() - r.changedAt < (r.botTurn() ? (FAST ? 20 : botPause(v.lastEvent)) : IDLE_MS)) return;
+    r.nudging = true;
+    try {
+      const x = await client.t.call({ op: 'nudge', code, version: res.version });
+      if (x.body && x.body.moved) r.pollNow();
+    } catch (e) { /* next loop tries again */ } finally { r.nudging = false; }
+  }
   // Poll fast while waiting for someone else, slowly while it's my go (nothing changes until I move).
   const waiting = () => { const gm = g(); return !gm || gm.phase !== 'play' || gm.turn !== 0 || gm.players[0].out; };
   const loop = async () => {
     if (store.remote !== r || r.stopped) return;
     r.polling = true;
     try { await poll(); } finally { r.polling = false; }
+    await maybeNudge();
     refreshStatus();
     if (store.remote !== r || r.stopped) return;
     const soon = r.soon;
     r.soon = false;
-    r.timer = setTimeout(loop, FAST ? POLL : soon ? 60 : waiting() ? 450 : 1500);
+    // with the live channel up, polling is only the safety net
+    r.timer = setTimeout(loop, FAST ? POLL : soon ? 60 : r.botTurn() ? 350 : r.live ? 4000 : waiting() ? 450 : 1500);
   };
-  r.over = () => { r.stopped = true; clearTimeout(r.timer); };
+  r.over = () => { r.stopped = true; clearTimeout(r.timer); if (r.unwatch) r.unwatch(); };
   // one loop only: if a poll is on its way, the next one just comes sooner
   r.pollNow = () => { if (r.stopped) return; if (r.polling) { r.soon = true; return; } clearTimeout(r.timer); r.timer = setTimeout(loop, FAST ? 5 : 60); };
   r.timer = setTimeout(loop, POLL);
+  // Live updates (Supabase Realtime): a change to my view of this table pulls it straight away
+  if (client.t.watch) {
+    r.unwatch = client.t.watch((c, v) => {
+      if (store.remote !== r) { if (r.unwatch) r.unwatch(); return; }
+      if (c === code && !(v <= (g() && g().version || 0))) r.pollNow();
+    }, up => { r.live = up; });
+  }
   r.chatTimer = setInterval(chatPoll, FAST ? 60 : 1600);
   r.resync = resync;
   return r;
@@ -492,7 +535,12 @@ function showWaiting(c) {
     try { lob = await c.t.lobby(code); } catch (e) { return note(friendly(e)); }
     if (!$('#olSeats')) return;
     if (!lob) { stopLobby(); return showOnline(), note('That table has closed'); }
-    $('#olSeats').innerHTML = lob.seats.map((s, i) => '<div class="row"><span><b>' + esc(s.name) + '</b>' + (s.id === lob.host ? ' · host' : '') + '</span><span class="ctl"><small>Seat ' + (i + 1) + '</small></span></div>').join('');
+    const host = c.t.uid === lob.host;
+    $('#olSeats').innerHTML = lob.seats.map((s, i) => '<div class="row"><span><b>' + esc(s.name) + '</b>' + (s.bot ? ' · computer' : s.id === lob.host ? ' · host' : '') + '</span><span class="ctl">' +
+      (s.bot && host ? '<button class="linkbtn" data-unbot="' + esc(s.id) + '" aria-label="Remove ' + esc(s.name) + '">Remove</button>' : '<small>Seat ' + (i + 1) + '</small>') + '</span></div>').join('') +
+      (host && lob.seats.length < (lob.max || 5) ? '<div class="btns"><button class="btn" id="olBot">Add a computer player</button></div>' : '');
+    document.querySelectorAll('[data-unbot]').forEach(b => b.onclick = act(() => c.t.call({ op: 'remove_bot', code, user: b.dataset.unbot })));
+    if ($('#olBot')) $('#olBot').onclick = act(async () => { $('#olBot').disabled = true; const x = await c.t.call({ op: 'add_bot', code }); if (x.status !== 200) throw new Error(x.body.error || 'Could not add'); });
     const lines = Meta.summarise(lob.rules);
     $('#olRules').innerHTML = lines.map(l => '<div class="row"><span>' + esc(l) + '</span></div>').join('');
     $('#olRulesSum').textContent = 'House rules · ' + lines.length;
@@ -503,7 +551,7 @@ function showWaiting(c) {
     $('#olStatus').textContent = lob.vote ? 'A rule change is being voted on' : mine ? (others.length ? others.join(' and ') + (others.length > 1 ? ' are' : ' is') + ' here. Start when you\'re ready' : 'Send the invite. Your friend taps it and sits straight down') : 'You\'re in. Waiting for ' + hostName + ' to start';
     // the invite stays up until the table is full; a guest can still bring someone else
     $('#olInv').classList.toggle('hidden', lob.seats.length >= (lob.max || 5));
-    const room = { players: lob.seats, hostId: lob.host, opts: lob.rules, vote: lob.vote };
+    const room = { players: lob.seats.filter(s => !s.bot), hostId: lob.host, opts: lob.rules, vote: lob.vote }; // the computer doesn't vote
     $('#olVote').innerHTML = lob.vote ? voteCard(room, c.t.uid) : '';
     if (lob.vote) {
       $('#vYes').onclick = act(() => c.vote('yes'));

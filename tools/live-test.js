@@ -94,6 +94,34 @@ function decide(g) {
     }
     all.push(...cs);
   }
+  // v13: a computer player at a live table: added by the host, plays its own moves when nudged
+  {
+    const t = Net.supabaseTransport(cfg), c = new Online.Client(t);
+    await c.profile('Test9'); all.push(c); made.push(t.uid);
+    const code = await c.create({}, 2);
+    const ab = await t.call({ op: 'add_bot', code });
+    if (ab.status !== 200) throw new Error('add_bot: ' + JSON.stringify(ab));
+    await t.call({ op: 'start', code });
+    await t.call({ op: 'act', code, action: { type: 'ready' } });
+    let bot = 0, mine = 0;
+    for (let i = 0; i < 400; i++) {
+      const r = await t.view(code), v = r.view;
+      if (v.phase === 'over') break;
+      const a = v.follow ? v.follow.pi : v.turn;
+      if (a === v.me) {
+        const g = Online.fromView(v); const d = decide(g);
+        if (d) { await t.call({ op: 'act', code, action: d }); mine++; }
+      } else {
+        await new Promise(res => setTimeout(res, 750));
+        const n = await t.call({ op: 'nudge', code, version: r.version });
+        if (n.body.moved) bot++;
+      }
+    }
+    const end = (await t.view(code)).view;
+    const fine = end.phase === 'over' && bot > 3;
+    console.log('  computer player ' + (fine ? 'ok' : 'WRONG') + ': ' + ab.body.name + ' made ' + bot + ' moves, me ' + mine + ', phase ' + end.phase);
+    if (!fine) process.exitCode = 1;
+  }
   // v11: every test user deletes itself (App Store 5.1.1(v)), which also leaves nothing behind in the database
   let deleted = 0;
   for (const c of all) { const d = await c.t.call({ op: 'delete_me', confirm: 'DELETE' }); if (d.status === 200) deleted++; }
