@@ -590,3 +590,83 @@ test('push: tokens register, game start and rematch tell the others, never the o
   await handle(db, 'u3', { op: 'delete_me', confirm: 'DELETE' });
   assert.ok(!db.t.shed_push.some(p => p.user_id === 'u3'));
 });
+
+test('computer players: host adds them, they swap at once and play by nudges, one move per version', async () => {
+  const db = new FakeDb();
+  await handle(db, 'u1', { op: 'profile', name: 'Ann' });
+  const code = (await handle(db, 'u1', { op: 'create', rules: {}, max: 3 })).body.code;
+  assert.equal((await handle(db, 'u2', { op: 'profile', name: 'Ben' })).status, 200);
+  assert.equal((await handle(db, 'u2', { op: 'join', code })).status, 200);
+  assert.equal((await handle(db, 'u2', { op: 'add_bot', code })).status, 403); // host only
+  const a = await handle(db, 'u1', { op: 'add_bot', code });
+  assert.equal(a.status, 200);
+  assert.equal(a.body.name, 'Ace');
+  assert.equal((await handle(db, 'u1', { op: 'add_bot', code })).status, 409); // full at 3
+  assert.equal((await handle(db, 'u1', { op: 'start', code })).status, 200);
+  const st = () => db.t.shed_games.find(x => x.code === code);
+  assert.deepEqual(st().state.bots, [2]);
+  assert.equal(st().state.players[2].ready, true);
+  // people lock in, then play; the computer only moves on a nudge once BOT_GAP has passed
+  for (const u of ['u1', 'u2']) await handle(db, u, { op: 'act', code, action: { type: 'ready' } });
+  let guard = 0, botMoves = 0;
+  const realNow = Date.now;
+  let clock = realNow();
+  Date.now = () => clock;
+  try {
+    while (st().state.phase !== 'over' && guard++ < 3000) {
+      const g = st().state, a = g.follow ? g.follow.pi : g.turn;
+      if (g.bots.includes(a)) {
+        st().updated_at = new Date(clock - 100).toISOString();
+        assert.equal((await handle(db, 'u1', { op: 'nudge', code })).body.moved, false); // too soon
+        st().updated_at = new Date(clock - 1000).toISOString();
+        const v = st().version;
+        assert.equal((await handle(db, 'u1', { op: 'nudge', code })).body.moved, true);
+        assert.equal(st().version, v + 1);
+        botMoves++;
+      } else {
+        const v = { state: g };
+        const uid = g.seats[a];
+        const view = T.projectView(g, a);
+        const act = choose(Object.assign(view, { phase: g.phase }));
+        await handle(db, uid, { op: 'act', code, action: act });
+        if (st().state === g && st().version === v) break;
+      }
+    }
+  } finally { Date.now = realNow; }
+  assert.equal(st().state.phase, 'over');
+  assert.ok(botMoves > 3);
+  assert.equal(db.t.shed_results.filter(r => r.code === code).length, 3);
+  // rematch brings the computer along
+  const rm = await handle(db, 'u1', { op: 'rematch', code });
+  assert.ok(db.t.shed_seats.some(s => s.code === rm.body.code && s.user_id === st().state.seats[2]));
+});
+
+test('idle players: the computer plays their go after 90s, takes the seat after 3, leavers finish last', async () => {
+  const db = new FakeDb();
+  const code = await lobby(db, 3);
+  await handle(db, 'u1', { op: 'start', code });
+  for (const u of ['u1', 'u2', 'u3']) await handle(db, u, { op: 'act', code, action: { type: 'ready' } });
+  const st = () => db.t.shed_games.find(x => x.code === code);
+  // a human's turn: a nudge before 90s does nothing
+  assert.equal((await handle(db, 'u1', { op: 'nudge', code })).body.moved, false);
+  // u3 leaves: computer plays u3 from now on
+  assert.equal((await handle(db, 'u3', { op: 'leave_game', code })).status, 200);
+  assert.deepEqual(st().state.left, [2]);
+  assert.equal((await handle(db, 'u3', { op: 'act', code, action: { type: 'pickup' } })).status, 400);
+  // the remaining two time out every go; the computer finishes the game for everyone
+  let guard = 0;
+  while (st().state.phase !== 'over' && guard++ < 3000) {
+    st().updated_at = new Date(Date.now() - 100000).toISOString();
+    await handle(db, 'u1', { op: 'nudge', code });
+  }
+  assert.equal(st().state.phase, 'over');
+  const res = db.t.shed_results.filter(r => r.code === code);
+  const last = res.filter(r => r.place === 3)[0];
+  assert.ok(st().state.left.includes(st().state.seats.indexOf(last.user_id)), 'a leaver finished last');
+  // nobody left: leaving ends the game
+  const c2 = await lobby(db, 2);
+  await handle(db, 'u1', { op: 'start', code: c2 });
+  await handle(db, 'u1', { op: 'leave_game', code: c2 });
+  await handle(db, 'u2', { op: 'leave_game', code: c2 });
+  assert.equal(db.t.shed_tables.find(t => t.code === c2).status, 'over');
+});

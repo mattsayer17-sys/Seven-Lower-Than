@@ -59,7 +59,7 @@ class FakeDb {
     this.hits = {};
     this.deleted = [];
     // auth.admin.deleteUser, with the cascades the real foreign keys make
-    this.auth = { admin: { deleteUser: async uid => {
+    this.auth = { admin: { createUser: async o => { this.uidN = (this.uidN || 0) + 1; return { data: { user: { id: 'cpu' + this.uidN, email: o.email } }, error: null }; }, deleteUser: async uid => {
       this.deleted.push(uid);
       const t = this.t;
       t.shed_profiles = t.shed_profiles.filter(r => r.id !== uid);
@@ -86,8 +86,9 @@ function lobbyOf(db, code) {
   const t = db.t.shed_tables.find(x => x.code === code);
   if (!t) return null;
   const seats = db.t.shed_seats.filter(x => x.code === code).sort((a, b) => a.seat - b.seat);
-  const name = id => (db.t.shed_profiles.find(p => p.id === id) || {}).name || 'Player';
-  return { status: t.status, host: t.host, rules: t.rules, max: t.max_players, vote: t.vote || null, note: t.note || '', next: t.next_code || null, seats: seats.map(s => ({ id: s.user_id, name: name(s.user_id) })) };
+  const pr = id => db.t.shed_profiles.find(p => p.id === id) || {};
+  const name = id => pr(id).name || 'Player';
+  return { status: t.status, host: t.host, rules: t.rules, max: t.max_players, vote: t.vote || null, note: t.note || '', next: t.next_code || null, seats: seats.map(s => ({ id: s.user_id, name: name(s.user_id), bot: !!pr(s.user_id).bot })) };
 }
 // The tables a user is seated at that are not finished.
 function mineOf(db, uid) {

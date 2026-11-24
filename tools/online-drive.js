@@ -288,6 +288,41 @@ function decide(g) {
     ok('a dead link says the table has closed and offers the computer');
   }
 
+  // Online with a computer player: the host adds one in the waiting room, it plays its own moves through nudges
+  {
+    db.botGap = 30;
+    await page.goto('file://' + path.resolve(process.argv[2]));
+    await until(() => window.__ms && window.__ms.game() && !window.__ms.ui().busy, 'ready for computer table');
+    await ev(() => document.querySelector('#modal').classList.add('hidden'));
+    await click('#bNew');
+    await until(() => !!document.querySelector('#mode'), 'setup sheet');
+    await click('#mode button[data-m="online"]');
+    await click('#rNew');
+    await until(() => !!document.querySelector('#olMake'), 'online sheet');
+    await click('#olMake');
+    await until(() => !!document.querySelector('#olBot'), 'Add a computer player');
+    await click('#olBot');
+    await until(() => /computer/.test(document.querySelector('#olSeats').textContent) && !document.querySelector('#olStart').disabled, 'computer seated');
+    await wait(300);
+    await page.screenshot({ path: '/tmp/online-computer-lobby.png' });
+    const code = (await text('.sheet h2')).replace('Table ', '').trim();
+    await click('#olStart');
+    await until(() => window.__ms.game() && window.__ms.game().online && window.__ms.game().phase !== 'over' && !window.__ms.ui().intro, 'computer game running');
+    let botMoves = 0, guard = 0, lastV = 0;
+    while (guard++ < 4000) {
+      const g = await ev(() => { const x = window.__ms.game(); return { phase: x.phase, v: x.version, turn: x.turn }; });
+      if (g.phase === 'over') break;
+      if (g.v !== lastV) { if (g.turn !== 0) botMoves++; lastV = g.v; }
+      await uiMove();
+      await wait(25);
+    }
+    if (await ev(() => window.__ms.game().phase) !== 'over') console.log('STUCK', guard, botMoves, JSON.stringify(await ev(() => { const r = window.__ms.remote(), g = window.__ms.game(); return { turn: g.turn, v: g.version, rawV: r.raw && r.raw.version, bots: r.raw && r.raw.view.bots, rawTurn: r.raw && r.raw.view.turn, me: r.raw && r.raw.view.me, busy: window.__ms.ui().busy, rbusy: r.busy, infl: r.inflight, nud: r.nudging, live: r.live, follow: r.raw && r.raw.view.follow }; })), JSON.stringify(db.t.shed_games.find(x => x.code === code).version));
+    assert.equal(await ev(() => window.__ms.game().phase), 'over');
+    assert.ok(botMoves > 3, 'computer moved ' + botMoves);
+    assert.equal(db.t.shed_results.filter(r => r.code === code).length, 2);
+    ok('online with a computer player: added in the waiting room, it played its own moves (' + botMoves + ' seen), game finished and counted');
+  }
+
   // Delete my data from the profile: the server account and everything on the phone go (App Store 5.1.1(v))
   {
     await page.goto('file://' + path.resolve(process.argv[2]));

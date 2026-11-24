@@ -42,6 +42,36 @@
 
     return {
       get uid() { return session && session.uid; },
+      // Live updates: a Supabase Realtime channel on my own view rows. onChange(code) fires when a table I sit at moves on;
+      // onState(true|false) says whether the channel is up. Plain WebSocket, Phoenix protocol, reconnects with backoff.
+      // Returns a stop function. Polling stays as the safety net, so a dropped socket only makes updates slower.
+      watch(onChange, onState) {
+        if (typeof WebSocket === 'undefined' || !session) return () => {};
+        let ws = null, hb = null, closed = false, retry = 0, ref = 0;
+        const send = (topic, event, payload) => { try { ws.send(JSON.stringify({ topic, event, payload, ref: String(++ref) })); } catch (e) {} };
+        const open = async () => {
+          if (closed) return;
+          let tok;
+          try { tok = await token(); } catch (e) { return later(); }
+          ws = new WebSocket(base.replace(/^http/, 'ws') + '/realtime/v1/websocket?apikey=' + encodeURIComponent(cfg.key) + '&vsn=1.0.0');
+          ws.onopen = () => {
+            send('realtime:shed-' + session.uid, 'phx_join', { config: { broadcast: { self: false }, presence: { key: '' }, postgres_changes: [{ event: '*', schema: 'public', table: 'shed_views', filter: 'user_id=eq.' + session.uid }] }, access_token: tok });
+            hb = setInterval(() => send('phoenix', 'heartbeat', {}), 25000);
+          };
+          ws.onmessage = e => {
+            let m;
+            try { m = JSON.parse(e.data); } catch (x) { return; }
+            if (m.event === 'phx_reply' && m.payload && m.payload.status === 'ok' && m.topic !== 'phoenix') { retry = 0; if (onState) onState(true); }
+            if (m.event === 'postgres_changes') { const rec = m.payload && m.payload.data && m.payload.data.record; if (rec && rec.code) onChange(rec.code, rec.version); }
+            if (m.event === 'phx_error' || m.event === 'system' && m.payload && m.payload.status === 'error') { try { ws.close(); } catch (x) {} }
+          };
+          ws.onclose = () => { clearInterval(hb); if (onState) onState(false); later(); };
+          ws.onerror = () => {};
+        };
+        const later = () => { if (!closed) setTimeout(open, Math.min(30000, 1000 * 2 ** retry++)); };
+        open();
+        return () => { closed = true; clearInterval(hb); try { if (ws) ws.close(); } catch (e) {} };
+      },
       // drop the saved session (after the account is deleted)
       forget() { session = null; try { kv.setItem(KEY, 'null'); } catch (e) {} },
       get token() { return session && session.access; },
@@ -81,9 +111,10 @@
         if (!t) return null;
         const seats = await rest('shed_seats?code=eq.' + encodeURIComponent(code) + '&select=user_id,seat&order=seat');
         const ids = seats.map(s => s.user_id);
-        const prof = ids.length ? await rest('shed_profiles?id=in.(' + ids.join(',') + ')&select=id,name') : [];
+        const prof = ids.length ? await rest('shed_profiles?id=in.(' + ids.join(',') + ')&select=id,name,bot') : [];
         const name = Object.fromEntries(prof.map(p => [p.id, p.name]));
-        return { status: t.status, host: t.host, rules: t.rules, max: t.max_players, vote: t.vote || null, note: t.note || '', next: t.next_code || null, seats: seats.map(s => ({ id: s.user_id, name: name[s.user_id] || 'Player' })) };
+        const bot = new Set(prof.filter(p => p.bot).map(p => p.id));
+        return { status: t.status, host: t.host, rules: t.rules, max: t.max_players, vote: t.vote || null, note: t.note || '', next: t.next_code || null, seats: seats.map(s => ({ id: s.user_id, name: name[s.user_id] || 'Player', bot: bot.has(s.user_id) })) };
       },
     };
   }

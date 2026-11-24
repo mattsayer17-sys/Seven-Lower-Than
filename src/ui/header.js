@@ -54,10 +54,16 @@ $('#bRules').onclick = () => {
 $('#bNew').onclick = () => {
   const g = store.game;
   if (!(store.remote && g && g.online && g.phase !== 'over')) return showSetup();
-  showModal('<h2>Leave this game?</h2><p>The others will be left waiting for you. You can come back to it from Play online, under Your tables.</p>' +
-    '<div class="btns"><button class="btn" id="lvGo">Leave for now</button><button class="btn primary" id="lvStay">Keep playing</button></div>');
+  showModal('<h2>Leave this game?</h2><p>Leave for now and come back from Play online, under Your tables. If you are away for 90 seconds on your go, the computer plays it for you.</p><p>Leave for good and the computer takes your seat. You finish last.</p>' +
+    '<div class="btns col"><button class="btn primary" id="lvStay">Keep playing</button><button class="btn" id="lvGo">Leave for now</button><button class="btn danger" id="lvQuit">Leave for good</button></div>');
   $('#lvStay').onclick = hideModal;
   $('#lvGo').onclick = showSetup;
+  $('#lvQuit').onclick = async () => {
+    const r = store.remote;
+    $('#lvQuit').disabled = true;
+    try { if (r) await r.client.t.call({ op: 'leave_game', code: r.code }); } catch (e) { /* the 90s rule covers it */ }
+    showSetup();
+  };
 };
 window.addEventListener('resize', () => render());
 }
