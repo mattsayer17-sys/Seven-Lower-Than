@@ -12,6 +12,11 @@ Newest first. One line per change. Every session adds its lines here in the same
 - Ready for a Cloudflare Turnstile check on new online accounts (off until the site key is added).
 - Live test removes its own test users at the end; old test users and tables deleted.
 - Server v11 deployed and live-tested.
+- iPhone app project (Capacitor): brand icon and splash, iPhone only, portrait, privacy manifest, real haptics through the app.
+- Invite links and notification taps open the right table in the app.
+- After a first online game the app asks once for notifications; friends get told when a game is dealt or a rematch is offered (switches on when the Apple push key is added).
+- Cloud build set up to send app builds to TestFlight without a Mac.
+- Server v12 deployed and live-tested.
 
 ## 2026-11-23
 - The see-through rule is called "Invisible card" everywhere, including the Rules tab and table votes.

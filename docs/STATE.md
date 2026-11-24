@@ -7,8 +7,8 @@ Last updated: 24 Nov 2026 21:00
 
 ## Live
 - Site: https://shiphead.vercel.app (also https://seven-lower-than.vercel.app). Every push to `main` deploys to production.
-- Server: Supabase project fmgyzabdkityfyakmqhg (London, eu-west-2), edge function `shed` v11 (server/build/handler-146b333dcf46.mjs, pinned at commit 3f573f1 on branch `protection`, PR waiting for Matt). Adds rate limits, open-table caps, `delete_me`, `block`/`unblock`/`report`. Deployed and live-tested 24 Nov. Backwards compatible with the live site (new ops only; limits sit well above normal play).
-- SQL applied: server/sql/2026-11-21-reactions-only.sql, server/sql/2026-11-21-rematch.sql, server/sql/2026-11-24-protection.sql (shed_hits + shed_hit(), profile writes server-only, cascading deletes, reports with target/code/name_seen, pg_cron `shed-cleanup` hourly at :17).
+- Server: Supabase project fmgyzabdkityfyakmqhg (London, eu-west-2), edge function `shed` v12 (server/build/handler-2bab0853e10e.mjs, pinned at commit f179e96 on branch `ios`, PRs waiting for Matt). v11 added rate limits, open-table caps, `delete_me`, `block`/`unblock`/`report`; v12 adds `push_token` and APNs sending on deal and rematch (inactive until the APNS_* secrets are set). Deployed and live-tested 24 Nov. Backwards compatible with the live site (new ops only; limits sit well above normal play).
+- SQL applied: server/sql/2026-11-21-reactions-only.sql, server/sql/2026-11-21-rematch.sql, server/sql/2026-11-24-protection.sql (shed_hits + shed_hit(), profile writes server-only, cascading deletes, reports with target/code/name_seen, pg_cron `shed-cleanup` hourly at :17), server/sql/2026-11-24-push.sql (shed_push device tokens).
 - Vercel project prj_1CPlStcWsf3u0Hh8lLjv0CbWZW4Z, team team_L010Khha3QfqKwmIRHO0vNCb.
 - Old live-test rows deleted 24 Nov (Matt said yes): 51 Test users, 20 tables. live-test.js now deletes its own users at the end with `delete_me`.
 
@@ -20,6 +20,7 @@ Last updated: 24 Nov 2026 21:00
 
 ## In flight (not in main)
 - `protection` (PR open, waiting for Matt): abuse and cost protection, Delete my data in the profile, press and hold a name online to block or report, /privacy /terms /support pages, Turnstile hook (off until the site key is set in src/online-config.js), CSP allows Turnstile and Realtime wss. Server side is already live (v11 + SQL).
+- `ios` (PR on top of `protection`, waiting for Matt): Capacitor 8 iOS project in ios/ (Swift Package Manager, no CocoaPods; iPhone only, portrait, iOS 16+), brand icon and splash, PrivacyInfo.xcprivacy, entitlements (push, associated domains, App Attest), src/ui/native.js (status bar, splash, invite links into the lobby, push opt-in after the first online game, notification taps open the table), APNs sender in server/entry.mjs, codemagic.yaml (tag `ios-*` builds and uploads to TestFlight), public/.well-known/apple-app-site-association (TEAMID placeholder). `npm run ios` builds and copies the web app into the iOS project.
 
 ## Decisions (22 Nov)
 - No light mode. Appearance choices stay per player and on their own device (felt, card back, colour-blind deck). More table themes later as cosmetics.
@@ -36,7 +37,7 @@ Last updated: 24 Nov 2026 21:00
 7. Accounts: anonymous first, Apple/Google offered at a moment of value (after the first online game).
 8. Progression (XP, seasonal goals), share card, fairness signals.
 9. Ads between games, cosmetics.
-10. iOS wrap (Capacitor) + push + Core Haptics. Needs Matt's Apple Developer enrolment (about £79/yr UK) and a Mac or cloud build.
+10. iOS wrap: built in `ios`. To ship: Matt's Apple Developer account; then (Claude) put the Team ID into apple-app-site-association, create the APNs key secrets (APNS_KEY, APNS_KEY_ID, APNS_TEAM_ID, APNS_TOPIC=com.playshiphead.app) in Supabase, connect Codemagic, push tag ios-0.1.0 for the first TestFlight build. Haptics already call Capacitor Haptics (src/ui/audio.js). App Attest needs a small native plugin (next). Push for "your go" when someone is away is next after Realtime.
 11. 4-player and tablet layout.
 
 ## Matt's own steps
