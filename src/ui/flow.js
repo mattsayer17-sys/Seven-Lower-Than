@@ -7,7 +7,7 @@ import { hint, render, setMsg } from './render.js';
 import { shake } from './input.js';
 import { trackEvent } from './profile.js';
 import { hashSeed } from './daily.js';
-import { fxForEvent, fxOn } from './fx.js';
+import { burnAway, fxForEvent, fxOn } from './fx.js';
 import { rigTour } from './tour.js';
 import { chatReset, chatSync, reactTo } from './chat.js';
 import { hideWelcome } from './welcome.js';
@@ -268,14 +268,20 @@ function afterAction(r) {
     });
     store.ui.hold = bl;
     render();
-    // the water lands on the pile and you see it go before play moves on
+    // the fireball lands, the pile chars, then it crumbles to ash on its way to the burn pile before play moves on
     delay = 2200;
     later(() => {
       store.ui.hold = null;
       bl.forEach(c => {
-        if (store.els[c.id]) store.els[c.id].classList.remove('burning');
+        const el = store.els[c.id];
+        if (el) {
+          el.classList.remove('burning');
+          if (fxOn()) el.classList.add('ashing');
+        }
       });
+      burnAway();
       render();
+      later(() => bl.forEach(c => store.els[c.id] && store.els[c.id].classList.remove('ashing')), 700);
     }, 1200);
   } else if (ev.forced) {
     store.ui.hold = ev.forced.cards.slice();

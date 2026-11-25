@@ -23,6 +23,8 @@ function humanTap(id) {
     return render();
   }
   if (g.phase !== 'play' || g.turn !== 0) return;
+  // cards picked: a tap on the pile plays them
+  if (store.ui.sel.length && g.pile.includes(c)) return humanPlay();
   const z = Shed.zone(g, me);
   if (z === 'down' && me.down.includes(c)) {
     if (store.remote) return store.remote.blind(id);
@@ -44,27 +46,25 @@ function humanTap(id) {
     return;
   }
   buzz('tick');
-  if (store.ui.sel.includes(id)) {
-    if (store.ui.sel.length > 1) {
-      store.ui.sel = store.ui.sel.filter(x => x !== id);
-      hint(store.ui.sel.length + ' selected. Tap Play, or tap more ' + c.rank + 's');
-      return render();
-    }
-    return humanPlay();
-  }
+  // a picked card tapped again plays everything picked
+  if (store.ui.sel.includes(id)) return humanPlay();
+  const pool = z === 'hand' ? me.hand : me.up;
   const first = store.ui.sel.length ? findCard(store.ui.sel[0]) : null;
   if (first && first.rank === c.rank) {
     store.ui.sel.push(id);
+    // every matching card picked: nothing left to choose, so they go straight on
+    const left = pool.filter(o => o.rank === c.rank && !store.ui.sel.includes(o.id)).length;
+    if (!left) return humanPlay();
+    hint(store.ui.sel.length + ' picked. Tap one again to play them, or tap another ' + c.rank);
     return render();
   }
-  const pool = z === 'hand' ? me.hand : me.up;
   const twins = pool.filter(o => o.id !== id && o.rank === c.rank).length;
   if (store.settings.oneTap && !twins) {
     store.ui.sel = [];
     return humanPlay([id]);
   }
   store.ui.sel = [id];
-  if (twins) hint(twins === 1 ? 'Tap the other ' + c.rank + ' to play both, or Play for one' : 'Tap the other ' + c.rank + 's to play them together, or Play for one');
+  if (twins) hint(twins === 1 ? 'Tap the other ' + c.rank + ' to play both, or tap this one again' : 'Tap the other ' + c.rank + 's to add them, or tap this one again');
   render();
 }
 
@@ -196,6 +196,10 @@ window.addEventListener('pointermove', e => {
 window.addEventListener('pointerup', e => endDrag(e, false));
 window.addEventListener('pointercancel', e => endDrag(e, true));
 $('#bPlay').onclick = () => humanPlay();
+// the pot outline takes a tap too, for when the pile is empty
+$('#ring').onclick = () => {
+  if (store.ui.sel.length) humanPlay();
+};
 $('#bPick').onclick = () => {
   if (store.ui.busy) return;
   store.ui.busy = true;

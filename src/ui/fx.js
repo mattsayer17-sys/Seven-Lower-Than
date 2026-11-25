@@ -61,37 +61,60 @@ function addFx(cls, x, y, html, ms, css) {
   return d;
 }
 
-// Burn: a bucket's worth of cold water drops onto the 10, washes over the pile and trickles out across the felt. About a second.
+// Burn: a fireball drops onto the 10, the pile catches and chars, then it crumbles to ash on its way to the burn pile.
+// burnFx runs when the 10 lands; burnAway runs when the cards leave the pile (flow.js holds them there for 1.2 s).
 function burnFx() {
   const L = store.lastL;
   if (!L) return;
   const cw = store.cw,
     ch = store.ch,
     x = L.pileX,
-    y = L.centerCy;
-  addFx('fall', x, y, '', 420, 'width:' + cw * .9 + 'px;height:' + ch * 1.3 + 'px;--from:' + (-ch * 2.4).toFixed(0) + 'px');
-  // a few streaks of water chasing the main splash down, so it reads as poured, not dropped
-  for (let i = 0; i < 4; i++) addFx('streak', x + (rnd() * 2 - 1) * cw * .35, y, '', 520, 'height:' + (ch * (1 + rnd() * .6)).toFixed(0) + 'px;--from:' + (-ch * 2.6).toFixed(0) + 'px;animation-delay:' + kms(40 + i * 45) + 'ms');
-  addFx('wash', x, y, '', 1150, 'width:' + cw * 1.7 + 'px;height:' + ch * 1.35 + 'px');
-  // the splash: a ring of water thrown out from where it lands
-  addFx('ring', x, y + ch * .1, '', 800, 'width:' + cw * 1.2 + 'px;height:' + cw * .5 + 'px;animation-delay:' + kms(230) + 'ms');
-  for (let i = 0; i < 16; i++) {
-    const a = rnd() * Math.PI * 2,
-      r = cw * (.6 + rnd() * .9);
-    addFx('drop', x, y, '', 900, '--dx:' + (Math.cos(a) * r).toFixed(0) + 'px;--up:' + (-ch * (.35 + rnd() * .45)).toFixed(0) + 'px;--dy:' + (Math.sin(a) * r * .5 + ch * .15).toFixed(0) + 'px;animation-delay:' + kms(230 + (rnd() * 80 | 0)) + 'ms');
+    y = L.centerCy,
+    sx = cw * 1.9,
+    sy = -ch * 2.4,
+    hit = 330;
+  // the fireball comes in from above, trailing sparks
+  addFx('fireball', x, y, '', 520, 'width:' + (cw * .62).toFixed(0) + 'px;height:' + (cw * .62).toFixed(0) + 'px;--sx:' + sx.toFixed(0) + 'px;--sy:' + sy.toFixed(0) + 'px');
+  for (let i = 0; i < 9; i++) {
+    const f = i / 9;
+    addFx('spark', x + sx * (1 - f) + (rnd() * 2 - 1) * 6, y + sy * (1 - f) + (rnd() * 2 - 1) * 6, '', 600, '--dx:' + ((rnd() * 2 - 1) * 14).toFixed(0) + 'px;animation-delay:' + kms(f * hit) + 'ms');
   }
-  // cold water on a burning pile: a little steam lifts off
-  for (let i = 0; i < 5; i++) addFx('steam', x + (rnd() * 2 - 1) * cw * .5, y - ch * .2, '', 1300, 'width:' + (cw * (.5 + rnd() * .3)).toFixed(0) + 'px;height:' + (cw * (.5 + rnd() * .3)).toFixed(0) + 'px;animation-delay:' + kms(320 + i * 70) + 'ms');
-  // the felt darkens where it's wet, then runs of water trickle outwards and soak away
-  addFx('wet', x, y, '', 1500, 'width:' + cw * 2.3 + 'px;height:' + ch * 1.8 + 'px;animation-delay:' + kms(260) + 'ms');
-  for (let i = 0; i < 7; i++) {
-    const a = (i / 7) * Math.PI * 2 + rnd() * .5,
-      d = cw * (.9 + rnd() * .7);
-    addFx('run', x + Math.cos(a) * cw * .45, y + Math.sin(a) * ch * .4, '', 1400, 'width:' + (cw * (.35 + rnd() * .2)).toFixed(0) + 'px;height:' + (7 + rnd() * 4).toFixed(0) + 'px;--a:' + (a * 180 / Math.PI).toFixed(0) + 'deg;--d:' + d.toFixed(0) + 'px;animation-delay:' + kms(360 + (rnd() * 160 | 0)) + 'ms');
+  // impact: a burst of light and heat where it lands
+  addFx('blast', x, y, '', 700, 'width:' + (cw * 2.2).toFixed(0) + 'px;height:' + (cw * 2.2).toFixed(0) + 'px;animation-delay:' + kms(hit) + 'ms');
+  // the pile goes up: a glow of heat over it, and tongues of flame licking upwards, overlapping so they read as one fire
+  addFx('heat', x, y, '', 1000, 'width:' + (cw * 1.7).toFixed(0) + 'px;height:' + (ch * 1.3).toFixed(0) + 'px;animation-delay:' + kms(hit) + 'ms');
+  for (let i = 0; i < 11; i++) {
+    const f = (i + .5) / 11 - .5,
+      w = cw * (.38 + rnd() * .18) * (1 - Math.abs(f) * .55);
+    addFx('flame', x + f * cw * 1.0, y + ch * (.18 - (.5 - Math.abs(f)) * .25), '', 1000, 'width:' + w.toFixed(0) + 'px;height:' + w.toFixed(0) + 'px;--sw:' + ((rnd() * 2 - 1) * 6).toFixed(0) + 'px;animation-delay:' + kms(hit + 20 + (rnd() * 180 | 0)) + 'ms');
+  }
+  for (let k = 0; k < 14; k++) addFx('ember', x + (rnd() * 2 - 1) * cw * .6, y - ch * .1, '', 1100, '--dx:' + ((rnd() * 2 - 1) * cw * .6).toFixed(0) + 'px;animation-delay:' + kms(hit + (rnd() * 450 | 0)) + 'ms');
+  for (let k = 0; k < 4; k++) addFx('smoke', x + (rnd() * 2 - 1) * cw * .4, y - ch * .25, '', 1500, 'width:' + (cw * (.55 + rnd() * .3)).toFixed(0) + 'px;height:' + (cw * (.55 + rnd() * .3)).toFixed(0) + 'px;animation-delay:' + kms(hit + 300 + k * 90) + 'ms');
+}
+
+// The charred pile leaves for the burn pile: a trail of ash and embers follows it there and it crumbles as it goes.
+function burnAway() {
+  const L = store.lastL;
+  if (!L || !fxOn()) return;
+  const cw = store.cw,
+    x0 = L.pileX,
+    x1 = L.pileX + cw * L.gap,
+    y = L.centerCy;
+  for (let i = 0; i < 16; i++) {
+    const f = rnd();
+    addFx(i % 3 ? 'ash' : 'ember', x0 + (x1 - x0) * f + (rnd() * 2 - 1) * cw * .25, y + (rnd() * 2 - 1) * cw * .3, '', 900, '--dx:' + ((rnd() * 2 - 1) * cw * .4).toFixed(0) + 'px;animation-delay:' + kms(f * 220 + (rnd() * 120 | 0)) + 'ms');
   }
 }
 
-// Stung: STUNG bursts into flame over the pile, where everyone is looking, and the stung player's seat pulses red.
+// STINGER in flame lettering, once, over the pile, where every player is looking on their own screen.
+function stingerWord() {
+  const L = store.lastL;
+  const sy = L.centerCy - store.ch * .1;
+  addFx('stung', L.pileX, sy, 'STINGER', 1150);
+  return sy;
+}
+
+// Stung: STINGER bursts into flame over the pile and the stung player's seat pulses red.
 function stungFx(i) {
   const L = store.lastL,
     s = seatEl(i);
@@ -102,10 +125,7 @@ function stungFx(i) {
     setTimeout(() => s.classList.remove('stungseat'), kms(900));
   }
   if (!L) return;
-  const sy = L.centerCy - store.ch * .95;
-  addFx('stung', L.pileX, sy, 'STUNG', 1150);
-  // the stung player is looking at their own cards, so it lands there too
-  if (i === 0 && L.meTableCy) addFx('stung', L.W / 2, L.meTableCy - store.ch * .1, 'STUNG', 1300);
+  const sy = stingerWord();
   for (let k = 0; k < 12; k++) {
     const dx = (rnd() * 2 - 1) * store.cw * .5;
     addFx('ember', L.pileX + (rnd() * 2 - 1) * store.cw * .9, sy + store.ch * .12, '', 900, '--dx:' + dx.toFixed(0) + 'px;animation-delay:' + kms(rnd() * 200 | 0) + 'ms');
@@ -174,6 +194,7 @@ function fxForEvent(ev) {
   if (ev.skipped != null) (ev.skippedAll || [ev.skipped]).forEach(skipFx);
   if (isSting(ev) && !ev.burned) {
     lockFx();
+    if (store.lastL) stingerWord();
   }
   if (ev.stung) {
     stungFx(ev.pi);
@@ -198,4 +219,4 @@ const fxTest = {
   ghost: id => { const el = store.els[id]; if (el) el.classList.add('ghosting'); }
 };
 
-export { applyMotion, fxForEvent, fxOn, fxTest, pickFx };
+export { applyMotion, burnAway, fxForEvent, fxOn, fxTest, pickFx };

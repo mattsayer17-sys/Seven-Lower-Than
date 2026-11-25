@@ -2,6 +2,13 @@
 
 Newest first. One line per change. Every session adds its lines here in the same commit as the work.
 
+## 2026-11-25
+- Picking a card with matching cards in hand lifts the matching ones with a bold gold frame, and the fan opens round them so every one can be seen and tapped in a big hand.
+- Multiple cards play without the button: tap a picked card again, tap the pile, or pick every matching card and they go straight on. The Play button stays.
+- Invisible card now plays on a skip card too (Matt's ruling, replaces the skip exception); the skip card still counts underneath. Needs the server redeployed (handler-ca58ac741567).
+- Burn effect is a fireball: it lands on the pile, the pile catches and chars, then crumbles to ash on its way to the burn pile. BURN word unchanged. Burn sound and achievement renamed to match (Burn it down).
+- STINGER in flame lettering appears once, over the pile, when a stinger is played and when someone gets stung. The second STUNG by your own cards is gone.
+
 ## 2026-11-23
 - The see-through rule is called "Invisible card" everywhere, including the Rules tab and table votes.
 - Effects and pauses are longer so burns, pick-ups and their words can be read; a CPU's face-down follow-up tries are quick.

@@ -97,10 +97,10 @@ const SFX = {
     tone(1400, .05, 'triangle', .05, 500);
   },
   burn(ev) {
-    // cold water: a splash, then a hiss of steam
-    noise(.32, .16, .1, 2600);
-    tone(140, .18, 'sine', .08, 60, .1);
-    noise(.5, .035, .3, 9000);
+    // fireball: a low whoosh as it falls, a thump as it lands, then the crackle of the pile going up
+    noise(.32, .16, 0, 900);
+    tone(110, .22, 'sine', .1, 40, .3);
+    noise(.5, .05, .32, 6000);
     if (ev && ev.pi === 0) buzz('burn');
   },
   stung(me) {

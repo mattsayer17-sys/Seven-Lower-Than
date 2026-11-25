@@ -3,7 +3,7 @@
 The single source of truth for what is live, what is in flight and what is next. Every session reads this first and
 updates it before finishing (see CLAUDE.md). History is in CHANGELOG.md.
 
-Last updated: 23 Nov 2026 23:55
+Last updated: 25 Nov 2026 08:40
 
 ## Live
 - Site: https://shiphead.vercel.app (also https://seven-lower-than.vercel.app). Every push to `main` deploys to production.
@@ -19,7 +19,8 @@ Last updated: 23 Nov 2026 23:55
 - Pacing (live 23 Nov, PR #8, Matt's playtest 22 Nov): effects run 1.4x longer on Normal (Fast 0.7x); the table waits for a burn (2.2 s), pick-ups (1.3 s, 2.6 s for 10+ with the OUCH) and forced pick-ups; a CPU's face-down follow-up try is quick (0.65 s on a match); achievement toast sits at the top, clear of cards; invisible card lands showing itself, goes see-through to show the card beneath, then back; last-card reveal is one move, turning over slowly while it grows to the centre (about 3.3 s). "Invisible card" is the name everywhere (was "Transparent card" in the Rules tab and votes).
 
 ## In flight (not in main)
-- Nothing from this session.
+- Branch `table-polish` (25 Nov, Matt's playtest screenshots): matching cards lift with a bold gold frame and the hand fans open round them; tap a picked card again, tap the pile, or pick every match to play (Play button kept); invisible card plays on a skip card; fireball burn replaces cold water; one STINGER over the pile replaces the two STUNGs. verify passes. Engine rule changed, so on merge deploy server handler-ca58ac741567 (steps below) and run `node tools/live-test.js 2`.
+- Other sessions' branches not in main at the start of this session: `ios`, `protection`, `realtime` (24 Nov). Not touched.
 
 ## Decisions (22 Nov)
 - No light mode. Appearance choices stay per player and on their own device (felt, card back, colour-blind deck). More table themes later as cosmetics.
@@ -44,9 +45,10 @@ Buy domains (playshiphead.com primary; shiphead.app, shiphead.co.uk as redirects
 - Brand: Shiphead. Logo: double-ended court card, SHIP court red #d4231b upright, HEAD royal blue upside down (live: #1b3d8f; branch visuals: #152f78). Wordmark Big Shoulders Display Black. Design system artifact: https://claude.ai/artifact/YZWDb14MRo5yqHdeEVfY13
 - Look: dark + gold game UI on green baize, PokerStars-class finish without looking like a poker site. Crisp 2.5 px gold edges, no glows or endless pulses (exception: the final flip verdict). Buttons 10 px radius, 40 px high. Copy in sentence case, no full stops in headings, no emoji in sentences. unslop / frontend-design in polish mode only.
 - First launch: no sign-in, no form, cards already dealt; the coach card shows the house rules as switches. Name only asked when going online.
-- Rules: max 5 players. 2 resets, 10 burns, ace high always. Lower than on by default, on 7, card can be changed. Stinger plays on anything, only same rank or invisible follows, stingers burn on pickup. Transparent (invisible) plays on anything except a skip card. Face-down follow-up: tap to try the next face-down card after one goes on; a match goes on, a miss goes in your hand, or Done (Matt, 22 Nov; replaced the auto-turn seen only by the owner). Votes online: simple majority, host breaks ties.
+- Rules: max 5 players. 2 resets, 10 burns, ace high always. Lower than on by default, on 7, card can be changed. Stinger plays on anything, only same rank or invisible follows, stingers burn on pickup. Invisible card plays on anything, a skip card included (Matt, 25 Nov; replaced the skip exception), and the card underneath still counts. Face-down follow-up: tap to try the next face-down card after one goes on; a match goes on, a miss goes in your hand, or Done (Matt, 22 Nov; replaced the auto-turn seen only by the owner). Votes online: simple majority, host breaks ties.
 - Final face-down flip: only when two players are left and the mover's only card is face-down. Heartbeat on both phones; about 3.3 s from tap to result, one move: turns over while it grows to the centre.
-- Pairs: tap one card, matching cards get a gold edge and a prompt. No badges or extra buttons.
+- Pairs: tap one card, matching cards lift with a bold gold frame (dark hairline inside) and the fan opens round them. Tap a picked card again or tap the pile to play; picking every match plays them at once. No badges or extra buttons (25 Nov).
+- Burn: fireball onto the pile, pile chars, crumbles to ash on its way to the burn pile (25 Nov, replaced cold water). Stinger: one STINGER in flame lettering over the pile for everyone, on play and on a sting (25 Nov).
 - Online: reactions only (no free text); one-tap rematch; head to head shown on the game-over sheet, counted on the server so both phones agree.
 - Loser is "Rock Bottom". Business model: free, ads, cosmetic packs, subscription after 5 online games.
 - Haptics: named patterns in src/ui/audio.js. iPhone web has none (Safari has no vibration API); real haptics come with the app wrap. No paid haptics SDK needed.
