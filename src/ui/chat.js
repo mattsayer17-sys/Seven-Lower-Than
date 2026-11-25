@@ -85,7 +85,7 @@ function reactTo(ev) {
   if (!others.length) return;
   if (ev.stung && ev.pi === 0) return cpuSay(pick(others), ['😂', 'Stung! 😂', 'Ouch 😬', 'Unlucky!', 'Enjoy those'], .7);
   if (ev.stung && ev.pi > 0) return cpuSay(ev.pi, ['😬', 'Ouch', 'Not again 😤'], .6);
-  if (ev.burned && ev.pi === 0) return cpuSay(pick(others), ['🔥', 'Cold water, really? 💧', 'Hmm 😤'], .35);
+  if (ev.burned && ev.pi === 0) return cpuSay(pick(others), ['🔥', 'Torched it, really?', 'Hmm 😤'], .35);
   const big = ev.type === 'pickup' ? ev.count : ev.type === 'blind' && !ev.success ? ev.picked : 0;
   if (big >= 8 && ev.pi === 0) return cpuSay(pick(others), ['Heavy bag 🎒', '😂', 'Rock Bottom here you come 🪨'], .6);
   if (big >= 8 && ev.pi > 0) return cpuSay(ev.pi, ['😩', 'Great.', 'Don\'t say it'], .5);

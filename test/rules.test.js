@@ -148,8 +148,15 @@ test('transparent over a seven keeps the lower rule in force', () => {
 
 test('a transparent card plays on anything', () => {
   const r = S.makeRuleset({ transparentOn: true });
-  // Matt's ruling (Nov 2026): a transparent card plays on anything except a skip card.
   assert.ok(can(r, '4H', ['9S']));
+});
+
+test('an invisible card plays on a skip card, and the skip card still counts underneath', () => {
+  // Matt, 25 Nov 2026 (reverses the earlier skip exception): invisible goes on anything.
+  const r = S.makeRuleset({ transparentOn: true, skipOn: true });
+  assert.ok(can(r, '4H', ['8S']));
+  assert.ok(!can(r, '6H', ['8S', '4H']), 'the 8 still counts under the invisible card');
+  assert.ok(can(r, '9H', ['8S', '4H']));
 });
 
 test('stinger: only the same rank, or a transparent card', () => {
@@ -222,15 +229,14 @@ test('a transparent card plays on any card, high or low, and on an empty pile', 
   assert.ok(can(r, '4H', []));
 });
 
-test('a transparent card cannot go on a skip card, whichever rank skips', () => {
+test('a transparent card goes on a skip card, whichever rank skips', () => {
   const r = S.makeRuleset({ transparentOn: true, transparentRank: '4', skipOn: true, skipRank: '8' });
-  assert.ok(!can(r, '4H', ['8S']));
-  assert.ok(!can(r, '4H', ['3D', '8S']));
+  assert.ok(can(r, '4H', ['8S']));
+  assert.ok(can(r, '4H', ['3D', '8S']));
   const r9 = S.makeRuleset({ transparentOn: true, transparentRank: '4', skipOn: true, skipRank: '9' });
-  assert.ok(!can(r9, '4H', ['9S']));
-  assert.ok(can(r9, '4H', ['8S']), 'an 8 is an ordinary card when skip sits on 9');
+  assert.ok(can(r9, '4H', ['9S']));
   const own = S.makeRuleset({ transparentOn: true, transparentRank: '4', custom: [{ rank: '5', effect: 'skip' }] });
-  assert.ok(!can(own, '4H', ['5S']), 'a skip from your own rule counts too');
+  assert.ok(can(own, '4H', ['5S']), 'a skip from your own rule too');
 });
 
 test('a transparent card is still fine on a stinger, a lower card and a reset', () => {

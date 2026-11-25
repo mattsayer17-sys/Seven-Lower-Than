@@ -27,7 +27,6 @@ const REWORD = [
   ['The Mouse Shed', 'Shiphead'],
   // 21 Nov 2026: grammar fix in the move line
   [/\(You is out,/g, '(You are out,'],
-  ['🔥 Burn it down Burn the pile 🃏', '💧 Cold water Pour cold water on the pile 🃏'],
   // Setup sheet headings: + Play against, + More, + Add a card rule, - Your own special cards, - Or pick one yourself
   [/^setup 7$/, 'setup 8'],
   // 21 Nov 2026: a stinger rule now lives in its own Stinger tick row, not the list of your own rules

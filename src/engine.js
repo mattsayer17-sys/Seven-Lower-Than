@@ -8,7 +8,7 @@
     reset: 'Plays on anything, next player starts fresh',
     burn: 'Burns the pile, you go again',
     lower: 'Next player must play equal or lower',
-    transparent: 'Invisible, the card underneath still counts. Plays on anything except a skip card',
+    transparent: 'Invisible, the card underneath still counts. Plays on anything',
     skip: 'Next player misses their turn',
     reverse: 'Reverses the direction of play (with 2 players you go again)',
     again: 'You play again',
@@ -129,8 +129,8 @@
     if (te === 'stinger') return card.rank === top.rank || ce === 'transparent';
     // The stinger itself goes on anything (except another stinger, handled above).
     if (ce === 'stinger') return true;
-    // An invisible card plays on anything, except a skip card: it would let the skip be dodged.
-    if (ce === 'transparent') return te !== 'skip';
+    // An invisible card plays on anything, a skip card included (Matt, 25 Nov; the skip has already taken effect).
+    if (ce === 'transparent') return true;
     if (ce === 'reset' || ce === 'burn') return true;
     if (te === 'lower') return power(rules, card) <= power(rules, top);
     if (te === 'reset') return true;

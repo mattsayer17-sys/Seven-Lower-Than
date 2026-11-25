@@ -133,7 +133,7 @@ let steps0 = [];
   assert.equal(await ev(() => JSON.parse(localStorage.getItem('ms.settings')).motion), 'off');
   await pick('#rMotion', 'normal');
   await ev(() => { const id = window.__ms.game().players[0].up[0].id; window.__ms.fx.burn(); window.__ms.fx.stung(1); window.__ms.fx.sting(id); window.__ms.fx.ghost(id); });
-  assert.ok(await ev(() => !!document.querySelector('#fx .stung') && !!document.querySelector('#fx .wash')));
+  assert.ok(await ev(() => !!document.querySelector('#fx .stung') && !!document.querySelector('#fx .fireball')));
   ok('card effects setting: Normal, Fast, Off saved, and all four effects fire');
 
   // saved rule sets and the colour builder

@@ -181,18 +181,38 @@ function computeLayout() {
     if (!n) return;
     const maxSpread = maxW - store.cw * scale - 8;
     const step = n > 1 ? Math.min(isMe ? store.cw * .78 : store.cw * .3 * scale, maxSpread / (n - 1)) : 0;
-    const startX = cx - step * (n - 1) / 2;
+    // a card picked with matching cards still in hand: the matching ones rise with it and the fan opens round them,
+    // so in a big hand you can see and tap every card of that rank
+    const selRank = isMe && store.ui.sel.length ? (findCard(store.ui.sel[0]) || {}).rank : null;
+    const inGroup = c => !!selRank && c.rank === selRank;
+    const gaps = [];
+    for (let i = 0; i < n - 1; i++) gaps.push(step);
+    const wide = store.cw * .5;
+    if (selRank && step < wide) {
+      const g = [];
+      for (let i = 0; i < n - 1; i++) if (inGroup(cards[i])) g.push(i);
+      if (g.length) {
+        const rest = n - 1 - g.length,
+          room = maxSpread - g.length * wide,
+          other = rest ? Math.max(store.cw * .12, Math.min(step, room / rest)) : 0;
+        for (let i = 0; i < n - 1; i++) gaps[i] = g.includes(i) ? wide : other;
+      }
+    }
+    const span = gaps.reduce((a, b) => a + b, 0);
+    let x = cx - span / 2;
     cards.forEach((c, i) => {
       const mm = i - (n - 1) / 2;
       const sel = isMe && (store.ui.sel.includes(c.id) || store.ui.swapSel === c.id);
+      const twin = !sel && inGroup(c);
       pos[c.id] = {
-        cx: startX + i * step,
-        cy: cy + Math.min(mm * mm * .9, 16) * (isMe ? 1 : -.3) * (isMe ? 1 : scale) - (sel ? store.ch * .3 : 0),
+        cx: x,
+        cy: cy + Math.min(mm * mm * .9, 16) * (isMe ? 1 : -.3) * (isMe ? 1 : scale) - (sel ? store.ch * .3 : twin ? store.ch * .2 : 0),
         rot: mm * (n > 6 ? 1.1 : 2.2) * (isMe ? 1 : -1),
         s: scale,
-        z: 200 + i + (sel ? 500 : 0),
+        z: 200 + i + (sel || twin ? 500 : 0),
         down: down
       };
+      x += gaps[i] || 0;
     });
   };
   cpus.forEach((p, k) => { const S = L.seats[k]; fan(p.hand, S.cx, S.handCy, S.hs, true, false, S.w); });
@@ -348,6 +368,7 @@ function render() {
   if (st.textContent !== stT) st.textContent = stT;
   $('#bReady').classList.toggle('hidden', !(g.phase === 'swap' && !store.ui.busy && !store.ui.intro));
   $('#bPlay').classList.toggle('hidden', !(myTurn && store.ui.sel.length));
+  $('#ring').classList.toggle('target', !!(myTurn && store.ui.sel.length));
   if (store.ui.sel.length) {
     const c = findCard(store.ui.sel[0]);
     $('#bPlay').textContent = 'Play ' + (store.ui.sel.length > 1 ? store.ui.sel.length + ' × ' : '') + c.rank;

@@ -272,7 +272,7 @@ test('the view hides everything it should, for every seat, at the start', () => 
 test('the deployed bundle carries the current engine, not an old copy', () => {
   const esbuild = require('esbuild');
   const out = esbuild.buildSync({ entryPoints: ['server/entry.mjs'], bundle: true, format: 'esm', platform: 'neutral', mainFields: ['module', 'main'], external: ['jsr:*'], write: false, logLevel: 'silent' }).outputFiles[0].text;
-  for (const must of ['takePile', 'Plays on anything. Only the same rank can be played on it', 'ce === "transparent") return te !== "skip"', 'if (ce === "stinger") return true']) assert.ok(out.includes(must), 'bundle is missing: ' + must);
+  for (const must of ['takePile', 'Plays on anything. Only the same rank can be played on it', 'ce === "transparent") return true', 'if (ce === "stinger") return true']) assert.ok(out.includes(must), 'bundle is missing: ' + must);
 });
 
 // ---- house rule votes before the game ----
